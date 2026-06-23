@@ -4,7 +4,7 @@
 
 <br/>
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=16&duration=2500&pause=900&color=6F4E37&center=true&vCenter=true&width=560&lines=Pedidos+en+tiempo+real+%E2%98%95;Cocina+%E2%86%92+Mesero+%E2%86%92+Caja+sin+friction;FastAPI+%2B+PostgreSQL+%2B+WebSockets;Hecho+con+mucho+caf%C3%A9" alt="Typing SVG" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=16&duration=2500&pause=900&color=6F4E37&center=true&vCenter=true&width=560&lines=Pedidos+en+tiempo+real;Cocina+%E2%86%92+Mesero+%E2%86%92+Caja+sin+friction;FastAPI+%2B+PostgreSQL+%2B+WebSockets;Hecho+con+mucho+caf%C3%A9" alt="Typing SVG" />
 
 <br/><br/>
 
@@ -19,7 +19,7 @@
 
 <br/>
 
-> ☕ **Coffee Code** es el sistema digital que reemplaza la operación manual de una cafetería: pedidos, cocina, caja e inventario en un solo flujo, en tiempo real, sin papelitos perdidos ni gritos a través del mostrador.
+> **Coffee Code** es el sistema digital que reemplaza la operación manual de una cafetería: pedidos, cocina, caja e inventario en un solo flujo, en tiempo real, sin papelitos perdidos ni gritos a través del mostrador.
 >
 > Proyecto académico — Ingeniería en Sistemas Computacionales (UPQ). Asesor: ISC Iván Isay Guerra López.
 
@@ -27,30 +27,30 @@
 
 <div align="center">
 
-### 🫘 Tabla de contenidos
+### Tabla de contenidos
 
-[Arquitectura](#%EF%B8%8F-arquitectura) · [Modelo de datos](#-modelo-de-datos) · [Endpoints](#-endpoints) · [Tiempo real](#-tiempo-real-websockets) · [Levantar el proyecto](#-levantar-el-proyecto) · [Testing](#-testing) · [Estructura](#-estructura-del-repo) · [Equipo](#-equipo)
+[Arquitectura](#arquitectura) · [Modelo de datos](#modelo-de-datos) · [Endpoints](#endpoints) · [Tiempo real](#tiempo-real-websockets) · [Levantar el proyecto](#levantar-el-proyecto) · [Testing](#testing) · [Estructura](#estructura-del-repo) · [Equipo](#equipo)
 
 </div>
 
 ---
 
-## ☕ El problema
+## El problema
 
 Una cafetería que opera sin sistema digital integrado pierde tiempo y dinero en tres puntos exactos: el mesero no sabe si cocina ya vio el pedido, cocina no sabe si ya se cobró, y caja no sabe qué se vendió hasta el corte del día. **Coffee Code** ataca eso con un núcleo único de lógica de negocio (FastAPI) que tres roles —Mesero, Cocina, Caja— consultan en tiempo real desde sus propios dispositivos, más un panel de Administración para gobernar usuarios, productos y reportes.
 
 <br/>
 
-## 🏗️ Arquitectura
+## Arquitectura
 
 <div align="center">
 
 | Componente | Tecnología | Responsabilidad |
 |:--|:--|:--|
-| ☕ **API Central** | `FastAPI` + `Python 3.12` | Única capa que toca PostgreSQL. Toda la lógica de negocio, JWT, WebSockets. |
-| 📱 **Cliente Móvil** | `React Native` + `Expo` | App por rol: Mesero, Cocina, Caja. *(próximamente)* |
-| 🖥️ **Panel Admin** | `Flask` | Usuarios/roles, estadísticas, export PDF/XLSX. Consume la API, no toca la BD. *(próximamente)* |
-| 🗄️ **Base de datos** | `PostgreSQL 15` | Única fuente de verdad — modelo 2FN, 16 entidades. |
+| **API Central** | `FastAPI` + `Python 3.12` | Única capa que toca PostgreSQL. Toda la lógica de negocio, JWT, WebSockets. |
+| **Cliente Móvil** | `React Native` + `Expo` | App por rol: Mesero, Cocina, Caja. *(próximamente)* |
+| **Panel Admin** | `Flask` | Usuarios/roles, estadísticas, export PDF/XLSX. Consume la API, no toca la BD. *(próximamente)* |
+| **Base de datos** | `PostgreSQL 15` | Única fuente de verdad — modelo 2FN, 16 entidades. |
 
 </div>
 
@@ -71,7 +71,7 @@ Una cafetería que opera sin sistema digital integrado pierde tiempo y dinero en
 
 <br/>
 
-## 🫘 Modelo de datos
+## Modelo de datos
 
 16 tablas en 2FN, fieles al diccionario de datos del análisis original — sin atajos ni `create_all` silencioso, todo versionado con **Alembic**.
 
@@ -91,10 +91,10 @@ MESAS ─┴─ ESTATUS_MESAS          ESTATUS_PEDIDOS · ESTATUS_COCINA · CATE
 
 <br/>
 
-## 📋 Endpoints
+## Endpoints
 
 <details>
-<summary><b>🧑‍🍳 Mesero</b></summary>
+<summary><b>Mesero</b></summary>
 <br/>
 
 | Método | Ruta | Descripción |
@@ -107,7 +107,7 @@ MESAS ─┴─ ESTATUS_MESAS          ESTATUS_PEDIDOS · ESTATUS_COCINA · CATE
 </details>
 
 <details>
-<summary><b>💰 Caja</b></summary>
+<summary><b>Caja</b></summary>
 <br/>
 
 | Método | Ruta | Descripción |
@@ -120,7 +120,7 @@ MESAS ─┴─ ESTATUS_MESAS          ESTATUS_PEDIDOS · ESTATUS_COCINA · CATE
 </details>
 
 <details>
-<summary><b>🔥 Cocina</b></summary>
+<summary><b>Cocina</b></summary>
 <br/>
 
 | Método | Ruta | Descripción |
@@ -134,7 +134,7 @@ MESAS ─┴─ ESTATUS_MESAS          ESTATUS_PEDIDOS · ESTATUS_COCINA · CATE
 </details>
 
 <details>
-<summary><b>🛠️ Administración</b></summary>
+<summary><b>Administración</b></summary>
 <br/>
 
 | Método | Ruta | Descripción |
@@ -146,7 +146,7 @@ MESAS ─┴─ ESTATUS_MESAS          ESTATUS_PEDIDOS · ESTATUS_COCINA · CATE
 
 <br/>
 
-## ⚡ Tiempo real (WebSockets)
+## Tiempo real (WebSockets)
 
 ```
 ws://<host>/ws/{canal}?token=<jwt>      canal ∈ { mesero, cocina, caja }
@@ -160,7 +160,7 @@ ws://<host>/ws/{canal}?token=<jwt>      canal ∈ { mesero, cocina, caja }
 
 <br/>
 
-## 🚀 Levantar el proyecto
+## Levantar el proyecto
 
 ```bash
 git clone https://github.com/EmilianoLedesma/Coffe_Code_App.git
@@ -190,7 +190,7 @@ La API queda en **`http://localhost:8010`** · Swagger interactivo en **`/docs`*
 
 <br/>
 
-## 🧪 Testing
+## Testing
 
 ```bash
 cd api
@@ -204,7 +204,7 @@ npx newman run coffee-code.postman_collection.json   # 23 requests end-to-end
 
 <br/>
 
-## 📂 Estructura del repo
+## Estructura del repo
 
 ```
 coffee-code/
@@ -226,7 +226,7 @@ coffee-code/
 
 <br/>
 
-## 👥 Equipo
+## Equipo
 
 <div align="center">
 
@@ -245,6 +245,6 @@ coffee-code/
 
 <img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:3B2412,100:6F4E37&height=120&section=footer" />
 
-*Hecho con ☕ en UPQ*
+*Hecho en UPQ*
 
 </div>
