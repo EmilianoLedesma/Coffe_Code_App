@@ -33,5 +33,20 @@ services:
     volumes:
       - ./api:/app
 
+  coffee_code_web:
+    build: ./web-admin
+    container_name: coffee_code_web
+    restart: unless-stopped
+    env_file:
+      - ./web-admin/.env
+    environment:
+      COFFEE_API_URL: http://coffee_code_api:8000
+    ports:
+      - "8020:5000"
+    depends_on:
+      - coffee_code_api
+    volumes:
+      - ./web-admin:/app
+
 volumes:
   coffee_code_db_data:
