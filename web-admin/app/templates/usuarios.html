@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Usuarios — Coffee Code Admin{% endblock %}
+{% block content %}
+<div x-data="{ modalAbierto: false, editando: null }">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-serif">Usuarios y roles</h1>
+    <button @click="modalAbierto = true; editando = null" class="bg-espresso text-cream px-4 py-2 rounded-lg hover:bg-coffee">
+      + Nuevo usuario
+    </button>
+  </div>
+
+  <div class="card overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-espresso/5 text-left text-xs uppercase tracking-wide text-coffee">
+        <tr>
+          <th class="px-4 py-3">Nombre</th>
+          <th class="px-4 py-3">Correo</th>
+          <th class="px-4 py-3">Rol</th>
+          <th class="px-4 py-3">Estado</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for usuario in usuarios %}
+        <tr class="border-t border-caramel/20 hover:bg-cream/60">
+          <td class="px-4 py-3">{{ usuario.nombre }} {{ usuario.apellido_paterno }}</td>
+          <td class="px-4 py-3">{{ usuario.correo_electronico }}</td>
+          <td class="px-4 py-3">
+            <span class="px-2 py-1 rounded-full bg-caramel/20 text-espresso text-xs">{{ usuario.rol.nombre }}</span>
+          </td>
+          <td class="px-4 py-3">
+            {% if usuario.activo %}
+              <span class="text-green-700">Activo</span>
+            {% else %}
+              <span class="text-red-700">Inactivo</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-right">
+            <button
+              @click="modalAbierto = true; editando = {{ {
+                'id': usuario.id,
+                'nombre': usuario.nombre,
+                'apellido_paterno': usuario.apellido_paterno,
+                'apellido_materno': usuario.apellido_materno or '',
+                'correo_electronico': usuario.correo_electronico,
+                'id_rol': usuario.rol.id,
+                'activo': usuario.activo,
+              } | tojson }}"
+              class="text-coffee hover:underline">Editar</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div x-show="modalAbierto" x-cloak class="fixed inset-0 bg-espresso/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md" @click.outside="modalAbierto = false">
+      <h2 class="text-lg font-serif mb-4" x-text="editando ? 'Editar usuario' : 'Nuevo usuario'"></h2>
+      <form :action="editando ? `/usuarios/${editando.id}/editar` : '/usuarios/nuevo'" method="post" class="space-y-3">
+        <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" name="nombre" placeholder="Nombre" :value="editando ? editando.nombre : ''" required>
+        <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" name="apellido_paterno" placeholder="Apellido paterno" :value="editando ? editando.apellido_paterno : ''" required>
+        <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" name="apellido_materno" placeholder="Apellido materno (opcional)" :value="editando ? editando.apellido_materno : ''">
+        <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" type="email" name="correo_electronico" placeholder="Correo electrónico" :value="editando ? editando.correo_electronico : ''" required>
+        <template x-if="!editando">
+          <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" type="password" name="password" placeholder="Contraseña" required>
+        </template>
+        <select class="w-full rounded-lg border border-caramel/40 px-3 py-2" name="id_rol" required>
+          {% for rol in roles %}
+          <option value="{{ loop.index }}" x-bind:selected="editando && editando.id_rol === {{ loop.index }}">{{ rol }}</option>
+          {% endfor %}
+        </select>
+        <template x-if="editando">
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="activo" :checked="editando && editando.activo"> Usuario activo
+          </label>
+        </template>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" @click="modalAbierto = false" class="px-4 py-2 rounded-lg border border-caramel/40">Cancelar</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-espresso text-cream hover:bg-coffee">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
