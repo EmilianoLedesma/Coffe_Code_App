@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Coffee Code Admin{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            espresso: '#3B2412',
+            coffee: '#6F4E37',
+            caramel: '#A87C5F',
+            cream: '#F5E6D3',
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+</head>
+<body class="bg-cream text-espresso min-h-screen flex">
+  {% if session.get('token') %}
+  <aside class="w-64 bg-espresso text-cream flex flex-col shrink-0">
+    <div class="px-6 py-5 border-b border-coffee/40">
+      <span class="font-serif text-xl tracking-wide">Coffee Code</span>
+      <div class="text-xs text-caramel">Panel Admin</div>
+    </div>
+    <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
+      <a href="{{ url_for('dashboard.index') }}" class="block px-3 py-2 rounded-lg hover:bg-coffee/40">Dashboard</a>
+      <a href="{{ url_for('usuarios.listar') }}" class="block px-3 py-2 rounded-lg hover:bg-coffee/40">Usuarios</a>
+      <a href="{{ url_for('productos.listar') }}" class="block px-3 py-2 rounded-lg hover:bg-coffee/40">Productos</a>
+      <a href="{{ url_for('ingredientes.listar') }}" class="block px-3 py-2 rounded-lg hover:bg-coffee/40">Ingredientes</a>
+      <a href="{{ url_for('recetas.listar') }}" class="block px-3 py-2 rounded-lg hover:bg-coffee/40">Recetas</a>
+    </nav>
+    <div class="px-6 py-4 border-t border-coffee/40 text-xs">
+      <div class="truncate">{{ session.get('correo') }}</div>
+      <a href="{{ url_for('auth.logout') }}" class="text-caramel hover:underline">Cerrar sesión</a>
+    </div>
+  </aside>
+  {% endif %}
+  <main class="flex-1 p-8">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-6 space-y-2">
+          {% for category, message in messages %}
+            <div class="px-4 py-3 rounded-lg text-sm {{ 'bg-red-100 text-red-800' if category == 'error' else 'bg-green-100 text-green-800' }}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
