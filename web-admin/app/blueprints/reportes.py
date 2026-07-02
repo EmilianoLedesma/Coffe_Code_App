@@ -4,7 +4,6 @@ from datetime import date, datetime, timedelta
 from flask import Blueprint, Response, render_template, request
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
-from weasyprint import HTML
 
 from app.api_client import (
     listar_ingredientes,
@@ -58,6 +57,8 @@ def _construir_datos_reporte(desde: date, hasta: date) -> dict:
 @bp.route("/exportar.pdf")
 @login_required
 def exportar_pdf():
+    from weasyprint import HTML
+
     hoy = date.today()
     hasta = _parsear_fecha(request.args.get("hasta"), hoy)
     desde = _parsear_fecha(request.args.get("desde"), hoy - timedelta(days=30))
