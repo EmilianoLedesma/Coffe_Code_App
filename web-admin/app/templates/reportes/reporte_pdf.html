@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: 'Helvetica', sans-serif; color: #3B2412; }
+    h1 { color: #3B2412; margin-bottom: 0; }
+    .subtitulo { color: #6F4E37; margin-top: 4px; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    th { background: #6F4E37; color: #F5E6D3; text-align: left; padding: 8px; font-size: 12px; }
+    td { padding: 8px; border-bottom: 1px solid #E5D5BE; font-size: 12px; }
+    .kpis { display: flex; gap: 16px; margin-bottom: 24px; }
+    .kpi { border: 1px solid #E5D5BE; border-radius: 8px; padding: 12px 16px; flex: 1; }
+    .kpi .valor { font-size: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Coffee Code — Reporte de Administración</h1>
+  <p class="subtitulo">Periodo: {{ desde.strftime('%d/%m/%Y') }} — {{ hasta.strftime('%d/%m/%Y') }}</p>
+
+  <div class="kpis">
+    <div class="kpi"><div>Ventas</div><div class="valor">${{ "%.2f"|format(reporte.total_ventas|float) }}</div></div>
+    <div class="kpi"><div>Gastos</div><div class="valor">${{ "%.2f"|format(reporte.total_gastos|float) }}</div></div>
+    <div class="kpi"><div>Ganancia neta</div><div class="valor">${{ "%.2f"|format(reporte.ganancia_neta|float) }}</div></div>
+    <div class="kpi"><div>Margen</div><div class="valor">{{ margen }}%</div></div>
+  </div>
+
+  <h3>Rendimiento de producto</h3>
+  <table>
+    <tr><th>Producto</th><th>Ingresos</th><th>Costo estimado</th><th>Margen</th><th>Margen %</th></tr>
+    {% for fila in ranking %}
+    <tr>
+      <td>{{ fila.nombre }}</td>
+      <td>${{ "%.2f"|format(fila.ingresos) }}</td>
+      <td>${{ "%.2f"|format(fila.costo_total) }}</td>
+      <td>${{ "%.2f"|format(fila.margen) }}</td>
+      <td>{{ fila.margen_pct }}%</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <h3>Riesgo de inventario</h3>
+  {% if riesgo %}
+  <table>
+    <tr><th>Ingrediente</th><th>Falta</th><th>Costo de reposición</th><th>Productos afectados</th></tr>
+    {% for fila in riesgo %}
+    <tr>
+      <td>{{ fila.nombre }}</td>
+      <td>{{ fila.falta }} {{ fila.unidad }}</td>
+      <td>${{ "%.2f"|format(fila.costo_reposicion) }}</td>
+      <td>{{ fila.productos_afectados | join(", ") }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p>Sin ingredientes bajo el stock mínimo.</p>
+  {% endif %}
+</body>
+</html>
