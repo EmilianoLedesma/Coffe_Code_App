@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Coffee Code Admin{% endblock %}
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+  <h1 class="text-2xl font-serif">Dashboard</h1>
+  <form method="get" class="flex items-center gap-2 text-sm">
+    <input type="date" name="desde" value="{{ desde.isoformat() }}" class="rounded-lg border border-caramel/40 px-3 py-1.5">
+    <span class="text-coffee">a</span>
+    <input type="date" name="hasta" value="{{ hasta.isoformat() }}" class="rounded-lg border border-caramel/40 px-3 py-1.5">
+    <button type="submit" class="bg-espresso text-cream px-3 py-1.5 rounded-lg hover:bg-coffee">Filtrar</button>
+    <a href="{{ url_for('reportes.exportar_pdf', desde=desde.isoformat(), hasta=hasta.isoformat()) }}" class="px-3 py-1.5 rounded-lg border border-caramel/40 hover:bg-cream">PDF</a>
+    <a href="{{ url_for('reportes.exportar_xlsx', desde=desde.isoformat(), hasta=hasta.isoformat()) }}" class="px-3 py-1.5 rounded-lg border border-caramel/40 hover:bg-cream">XLSX</a>
+  </form>
+</div>
+
+<div class="grid grid-cols-4 gap-4 mb-8">
+  <div class="card p-5">
+    <div class="text-xs uppercase text-coffee">Ventas</div>
+    <div class="text-2xl font-serif mt-1">${{ "%.2f"|format(reporte.total_ventas|float) }}</div>
+    {% if variacion_ventas is not none %}
+    <div class="text-xs mt-1 {{ 'text-green-700' if variacion_ventas >= 0 else 'text-red-700' }}">
+      {{ "+" if variacion_ventas >= 0 else "" }}{{ variacion_ventas }}% vs. periodo anterior
+    </div>
+    {% endif %}
+  </div>
+  <div class="card p-5">
+    <div class="text-xs uppercase text-coffee">Gastos</div>
+    <div class="text-2xl font-serif mt-1">${{ "%.2f"|format(reporte.total_gastos|float) }}</div>
+  </div>
+  <div class="card p-5">
+    <div class="text-xs uppercase text-coffee">Ganancia neta</div>
+    <div class="text-2xl font-serif mt-1">${{ "%.2f"|format(reporte.ganancia_neta|float) }}</div>
+    {% if variacion_ganancia is not none %}
+    <div class="text-xs mt-1 {{ 'text-green-700' if variacion_ganancia >= 0 else 'text-red-700' }}">
+      {{ "+" if variacion_ganancia >= 0 else "" }}{{ variacion_ganancia }}% vs. periodo anterior
+    </div>
+    {% endif %}
+  </div>
+  <div class="card p-5">
+    <div class="text-xs uppercase text-coffee">Margen</div>
+    <div class="text-2xl font-serif mt-1">{{ margen_actual }}%</div>
+    <div class="text-xs mt-1 text-coffee">Periodo anterior: {{ margen_anterior }}%</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-6 mb-8">
+  <div class="card p-5">
+    <h2 class="font-serif text-lg mb-3">Ventas vs. gastos</h2>
+    <canvas id="chartVentasGastos" height="180"></canvas>
+  </div>
+  <div class="card p-5">
+    <h2 class="font-serif text-lg mb-3">Ranking de margen por producto</h2>
+    <canvas id="chartMargen" height="180"></canvas>
+  </div>
+</div>
+
+<div class="card p-5 mb-8">
+  <h2 class="font-serif text-lg mb-3">Rendimiento de producto</h2>
+  <table class="w-full text-sm">
+    <thead class="text-left text-xs uppercase tracking-wide text-coffee">
+      <tr>
+        <th class="py-2">Producto</th>
+        <th class="py-2">Ingresos</th>
+        <th class="py-2">Costo estimado</th>
+        <th class="py-2">Margen</th>
+        <th class="py-2">Margen %</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fila in ranking %}
+      <tr class="border-t border-caramel/20">
+        <td class="py-2">{{ fila.nombre }}</td>
+        <td class="py-2">${{ "%.2f"|format(fila.ingresos) }}</td>
+        <td class="py-2">${{ "%.2f"|format(fila.costo_total) }}</td>
+        <td class="py-2">${{ "%.2f"|format(fila.margen) }}</td>
+        <td class="py-2">{{ fila.margen_pct }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card p-5">
+  <h2 class="font-serif text-lg mb-3">Riesgo de inventario</h2>
+  {% if riesgo %}
+  <table class="w-full text-sm">
+    <thead class="text-left text-xs uppercase tracking-wide text-coffee">
+      <tr>
+        <th class="py-2">Ingrediente</th>
+        <th class="py-2">Falta</th>
+        <th class="py-2">Costo de reposición</th>
+        <th class="py-2">Productos afectados</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fila in riesgo %}
+      <tr class="border-t border-caramel/20 bg-red-50">
+        <td class="py-2">{{ fila.nombre }}</td>
+        <td class="py-2">{{ fila.falta }} {{ fila.unidad }}</td>
+        <td class="py-2">${{ "%.2f"|format(fila.costo_reposicion) }}</td>
+        <td class="py-2">{{ fila.productos_afectados | join(", ") }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-green-700 text-sm">Sin ingredientes bajo el stock mínimo.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts-theme.js') }}"></script>
+<script>
+  new Chart(document.getElementById('chartVentasGastos'), {
+    type: 'bar',
+    data: {
+      labels: ['Ventas', 'Gastos', 'Ganancia neta'],
+      datasets: [{
+        label: 'Periodo actual',
+        data: [{{ reporte.total_ventas }}, {{ reporte.total_gastos }}, {{ reporte.ganancia_neta }}],
+        backgroundColor: [coffeeChartPalette.coffee, coffeeChartPalette.negative, coffeeChartPalette.positive],
+      }]
+    },
+    options: { plugins: { legend: { display: false } } }
+  });
+
+  new Chart(document.getElementById('chartMargen'), {
+    type: 'bar',
+    data: {
+      labels: [{% for fila in ranking %}{{ fila.nombre|tojson }},{% endfor %}],
+      datasets: [{
+        label: 'Margen %',
+        data: [{% for fila in ranking %}{{ fila.margen_pct }},{% endfor %}],
+        backgroundColor: coffeeChartPalette.caramel,
+      }]
+    },
+    options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+  });
+</script>
+{% endblock %}
