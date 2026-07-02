@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.routers.admin import router as admin_router
 from app.routers.auth import router as auth_router
 from app.routers.caja import router as caja_router
+from app.routers.categorias import router as categorias_router
 from app.routers.ingredientes import router as ingredientes_router
 from app.routers.mesas import router as mesas_router
 from app.routers.pedidos import router as pedidos_router
@@ -40,6 +41,7 @@ app.include_router(caja_router)
 app.include_router(productos_router)
 app.include_router(ingredientes_router)
 app.include_router(recetas_router)
+app.include_router(categorias_router)
 app.include_router(admin_router)
 app.include_router(websockets_router)
 
