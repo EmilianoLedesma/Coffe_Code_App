@@ -11,7 +11,22 @@ from app.security.auth import require_rol
 
 router = APIRouter(prefix="/producto_ingrediente", tags=["recetas"])
 
+_lectura = require_rol(RolNombre.COCINERO, RolNombre.ADMINISTRADOR)
 _escritura = require_rol(RolNombre.COCINERO, RolNombre.ADMINISTRADOR)
+
+
+@router.get("", response_model=list[RecetaOut])
+def listar_por_producto(
+    producto_id: int,
+    db: Session = Depends(get_db),
+    _=Depends(_lectura),
+) -> list[Receta]:
+    return (
+        db.query(Receta)
+        .options(joinedload(Receta.ingrediente))
+        .filter(Receta.id_producto == producto_id)
+        .all()
+    )
 
 
 @router.post("", response_model=RecetaOut, status_code=status.HTTP_201_CREATED)
@@ -48,3 +63,21 @@ def crear_receta(
         .filter(Receta.id_producto == datos.producto_id, Receta.id_ingrediente == datos.ingrediente_id)
         .first()
     )
+
+
+@router.delete("/{producto_id}/{ingrediente_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_receta(
+    producto_id: int,
+    ingrediente_id: int,
+    db: Session = Depends(get_db),
+    _=Depends(_escritura),
+) -> None:
+    receta = (
+        db.query(Receta)
+        .filter(Receta.id_producto == producto_id, Receta.id_ingrediente == ingrediente_id)
+        .first()
+    )
+    if not receta:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receta no encontrada")
+    db.delete(receta)
+    db.commit()

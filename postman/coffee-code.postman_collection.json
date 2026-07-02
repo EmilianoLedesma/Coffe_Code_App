@@ -609,6 +609,62 @@
           }
         },
         {
+          "name": "Listar Receta de un Producto",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/producto_ingrediente?producto_id={{producto_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "producto_ingrediente"
+              ],
+              "query": [
+                {
+                  "key": "producto_id",
+                  "value": "{{producto_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Ingrediente de Receta",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/producto_ingrediente/{{producto_id}}/{{ingrediente_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "producto_ingrediente",
+                "{{producto_id}}",
+                "{{ingrediente_id}}"
+              ]
+            }
+          }
+        },
+        {
           "name": "Cola de Cocina (estado=Pendiente)",
           "request": {
             "method": "GET",
