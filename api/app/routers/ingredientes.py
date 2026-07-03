@@ -4,7 +4,12 @@ from sqlalchemy.orm import Session
 from app.core.constants import RolNombre
 from app.data.db import get_db
 from app.data.ingredientes import Ingrediente
-from app.models.ingredientes import ActualizarStock, IngredienteCreate, IngredienteOut
+from app.models.ingredientes import (
+    ActualizarStock,
+    IngredienteCreate,
+    IngredienteOut,
+    IngredienteUpdate,
+)
 from app.security.auth import require_rol
 
 router = APIRouter(prefix="/ingredientes", tags=["ingredientes"])
@@ -22,13 +27,51 @@ def _get_ingrediente_o_404(db: Session, ingrediente_id: int) -> Ingrediente:
 
 @router.get("", response_model=list[IngredienteOut])
 def listar(db: Session = Depends(get_db), _=Depends(_lectura)) -> list[Ingrediente]:
-    return db.query(Ingrediente).order_by(Ingrediente.nombre).all()
+    return (
+        db.query(Ingrediente)
+        .filter(Ingrediente.activo.is_(True))
+        .order_by(Ingrediente.nombre)
+        .all()
+    )
+
+
+@router.get("/{ingrediente_id}", response_model=IngredienteOut)
+def obtener(
+    ingrediente_id: int, db: Session = Depends(get_db), _=Depends(_lectura)
+) -> Ingrediente:
+    return _get_ingrediente_o_404(db, ingrediente_id)
 
 
 @router.post("", response_model=IngredienteOut, status_code=status.HTTP_201_CREATED)
 def crear(datos: IngredienteCreate, db: Session = Depends(get_db), _=Depends(_escritura)) -> Ingrediente:
     ingrediente = Ingrediente(**datos.model_dump())
     db.add(ingrediente)
+    db.commit()
+    db.refresh(ingrediente)
+    return ingrediente
+
+
+@router.put("/{ingrediente_id}", response_model=IngredienteOut)
+def actualizar(
+    ingrediente_id: int,
+    datos: IngredienteUpdate,
+    db: Session = Depends(get_db),
+    _=Depends(_escritura),
+) -> Ingrediente:
+    ingrediente = _get_ingrediente_o_404(db, ingrediente_id)
+    for campo, valor in datos.model_dump(exclude_unset=True).items():
+        setattr(ingrediente, campo, valor)
+    db.commit()
+    db.refresh(ingrediente)
+    return ingrediente
+
+
+@router.put("/{ingrediente_id}/desactivar", response_model=IngredienteOut)
+def desactivar(
+    ingrediente_id: int, db: Session = Depends(get_db), _=Depends(_escritura)
+) -> Ingrediente:
+    ingrediente = _get_ingrediente_o_404(db, ingrediente_id)
+    ingrediente.activo = False
     db.commit()
     db.refresh(ingrediente)
     return ingrediente
