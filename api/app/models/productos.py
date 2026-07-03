@@ -9,6 +9,17 @@ class CategoriaOut(BaseModel):
     nombre: str
 
 
+class CategoriaCreate(BaseModel):
+    nombre: str = Field(min_length=2, max_length=100)
+    descripcion: str | None = Field(default=None, max_length=255)
+
+
+class CategoriaUpdate(BaseModel):
+    nombre: str | None = Field(default=None, min_length=2, max_length=100)
+    descripcion: str | None = Field(default=None, max_length=255)
+    activo: bool | None = None
+
+
 class ProductoCreate(BaseModel):
     nombre: str = Field(min_length=2, max_length=150)
     descripcion: str | None = None
