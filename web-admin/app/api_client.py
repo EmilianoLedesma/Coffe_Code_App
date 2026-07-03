@@ -167,3 +167,14 @@ def descargar_reporte(
         raise ApiError(respuesta.status_code, detalle)
 
     return respuesta
+
+
+def generar_corte_diario(base_url: str, token: str, fecha: str | None = None) -> dict:
+    params = {"fecha": fecha} if fecha else {}
+    return _request("POST", base_url, "/api/cortes-diarios", token=token, params=params)
+
+
+def listar_cortes_diarios(base_url: str, token: str, desde: str, hasta: str) -> list[dict]:
+    return _request(
+        "GET", base_url, "/api/cortes-diarios", token=token, params={"desde": desde, "hasta": hasta}
+    )

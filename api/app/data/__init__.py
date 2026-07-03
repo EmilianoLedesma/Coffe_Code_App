@@ -14,6 +14,7 @@ from app.data.metodos_pago import MetodoPago
 from app.data.tickets import Ticket
 from app.data.pagos import Pago
 from app.data.gastos import Gasto
+from app.data.cortes_diarios import CorteDiario, CorteMetodoPago
 
 __all__ = [
     "Rol",
@@ -32,4 +33,6 @@ __all__ = [
     "Ticket",
     "Pago",
     "Gasto",
+    "CorteDiario",
+    "CorteMetodoPago",
 ]
