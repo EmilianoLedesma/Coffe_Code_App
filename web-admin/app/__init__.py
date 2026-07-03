@@ -46,6 +46,6 @@ def create_app(config_overrides: dict | None = None) -> Flask:
             return render_template("errors/401.html"), 401
         if error.status_code == 403:
             return render_template("errors/403.html"), 403
-        return render_template("errors/401.html", mensaje=error.detail), error.status_code or 500
+        return render_template("errors/api_error.html", mensaje=error.detail), error.status_code or 500
 
     return app

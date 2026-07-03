@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Error al consultar la API{% endblock %}
+{% block content %}
+<div class="text-center mt-24">
+  <h1 class="text-3xl font-semibold text-starbucks mb-2">No se pudo completar la solicitud</h1>
+  <p class="text-black/58 mb-6">{{ mensaje or "Ocurrió un error al comunicarse con la API." }}</p>
+  <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">Volver al dashboard</a>
+</div>
+{% endblock %}
