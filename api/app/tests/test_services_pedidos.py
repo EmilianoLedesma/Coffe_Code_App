@@ -234,3 +234,21 @@ def test_entregado_no_libera_mesa_si_hay_otro_pedido_activo(
 
     db_session.refresh(mesa_libre)
     assert mesa_libre.estatus.nombre == EstatusMesaNombre.OCUPADA
+
+
+def test_entregado_libera_mesa_con_autoflush_desactivado(
+    db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta
+):
+    """Regresión: SessionLocal de producción (app/data/db.py) usa
+    autoflush=False, a diferencia de la sesión de tests. La liberación de
+    mesa dependía implícitamente de autoflush para ver el cambio de estatus
+    del pedido antes de contar pedidos activos — con autoflush=False esa
+    cuenta veía el estatus viejo y nunca liberaba la mesa."""
+    db_session.autoflush = False
+    pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
+
+    db_session.refresh(mesa_libre)
+    assert mesa_libre.estatus.nombre == EstatusMesaNombre.LIBRE

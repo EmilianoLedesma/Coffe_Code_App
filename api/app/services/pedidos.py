@@ -173,6 +173,7 @@ def cambiar_estado_pedido(db: Session, pedido: Pedido, nuevo_estatus_nombre: str
     pedido.id_estatus = nuevo_estatus.id
 
     if nuevo_estatus_nombre == EstatusPedidoNombre.ENTREGADO:
+        db.flush()
         _liberar_mesa_si_no_hay_pedidos_activos(db, pedido.mesa)
 
     db.commit()
