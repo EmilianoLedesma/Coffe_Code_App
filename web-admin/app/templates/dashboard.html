@@ -88,6 +88,42 @@
         </tbody>
       </table>
     </div>
+
+    <div class="grid grid-cols-3 gap-6 mt-8">
+      <div class="card overflow-hidden">
+        <div class="p-5 pb-0"><h2 class="text-lg font-semibold mb-3">Por categoría</h2></div>
+        <table class="data-table">
+          <thead><tr><th>Categoría</th><th>Total</th></tr></thead>
+          <tbody>
+            {% for fila in financiero.ventas_por_categoria %}
+            <tr><td>{{ fila.nombre }}</td><td>${{ "%.2f"|format(fila.total|float) }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="card overflow-hidden">
+        <div class="p-5 pb-0"><h2 class="text-lg font-semibold mb-3">Por mesero/cajero</h2></div>
+        <table class="data-table">
+          <thead><tr><th>Usuario</th><th>Total</th></tr></thead>
+          <tbody>
+            {% for fila in financiero.ventas_por_usuario %}
+            <tr><td>{{ fila.nombre }}</td><td>${{ "%.2f"|format(fila.total|float) }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="card overflow-hidden">
+        <div class="p-5 pb-0"><h2 class="text-lg font-semibold mb-3">Por método de pago</h2></div>
+        <table class="data-table">
+          <thead><tr><th>Método</th><th>Total</th></tr></thead>
+          <tbody>
+            {% for fila in financiero.ventas_por_metodo_pago %}
+            <tr><td>{{ fila.metodo_pago }}</td><td>${{ "%.2f"|format(fila.total|float) }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <div x-show="tab === 'inventario'">
@@ -122,6 +158,22 @@
       </table>
       {% else %}
       <p class="text-starbucks text-sm p-5">Sin ingredientes bajo el stock mínimo.</p>
+      {% endif %}
+    </div>
+
+    <div class="card overflow-hidden mt-6">
+      <div class="p-5 pb-0"><h2 class="text-lg font-semibold mb-3">Ranking de consumo de ingredientes</h2></div>
+      {% if inventario.ranking_consumo %}
+      <table class="data-table">
+        <thead><tr><th>Ingrediente</th><th>Cantidad consumida</th></tr></thead>
+        <tbody>
+          {% for fila in inventario.ranking_consumo %}
+          <tr><td>{{ fila.nombre }}</td><td>{{ fila.cantidad_consumida }} {{ fila.unidad }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="text-black/58 text-sm p-5">Sin datos de consumo en el periodo seleccionado.</p>
       {% endif %}
     </div>
   </div>

@@ -31,27 +31,36 @@ def _rango_por_defecto(desde: datetime | None, hasta: datetime | None) -> tuple[
 def financiero(
     desde: datetime | None = None,
     hasta: datetime | None = None,
+    categoria_id: int | None = None,
+    usuario_id: int | None = None,
     db: Session = Depends(get_db),
     _=Depends(_solo_admin),
 ) -> dict:
     desde, hasta = _rango_por_defecto(desde, hasta)
-    return construir_reporte_financiero(db, desde, hasta)
+    return construir_reporte_financiero(db, desde, hasta, categoria_id=categoria_id, usuario_id=usuario_id)
 
 
 @router.get("/inventario", response_model=ReporteInventarioOut)
-def inventario(db: Session = Depends(get_db), _=Depends(_solo_admin)) -> dict:
-    return construir_reporte_inventario(db)
+def inventario(
+    desde: datetime | None = None,
+    hasta: datetime | None = None,
+    db: Session = Depends(get_db),
+    _=Depends(_solo_admin),
+) -> dict:
+    return construir_reporte_inventario(db, desde, hasta)
 
 
 @router.get("/financiero/pdf")
 def financiero_pdf(
     desde: datetime | None = None,
     hasta: datetime | None = None,
+    categoria_id: int | None = None,
+    usuario_id: int | None = None,
     db: Session = Depends(get_db),
     _=Depends(_solo_admin),
 ) -> StreamingResponse:
     desde, hasta = _rango_por_defecto(desde, hasta)
-    datos = construir_reporte_financiero(db, desde, hasta)
+    datos = construir_reporte_financiero(db, desde, hasta, categoria_id=categoria_id, usuario_id=usuario_id)
     buffer = generar_pdf_financiero(datos)
     return StreamingResponse(
         buffer,
@@ -64,11 +73,13 @@ def financiero_pdf(
 def financiero_xlsx(
     desde: datetime | None = None,
     hasta: datetime | None = None,
+    categoria_id: int | None = None,
+    usuario_id: int | None = None,
     db: Session = Depends(get_db),
     _=Depends(_solo_admin),
 ) -> StreamingResponse:
     desde, hasta = _rango_por_defecto(desde, hasta)
-    datos = construir_reporte_financiero(db, desde, hasta)
+    datos = construir_reporte_financiero(db, desde, hasta, categoria_id=categoria_id, usuario_id=usuario_id)
     buffer = generar_xlsx_financiero(datos)
     return StreamingResponse(
         buffer,
@@ -78,8 +89,13 @@ def financiero_xlsx(
 
 
 @router.get("/inventario/pdf")
-def inventario_pdf(db: Session = Depends(get_db), _=Depends(_solo_admin)) -> StreamingResponse:
-    datos = construir_reporte_inventario(db)
+def inventario_pdf(
+    desde: datetime | None = None,
+    hasta: datetime | None = None,
+    db: Session = Depends(get_db),
+    _=Depends(_solo_admin),
+) -> StreamingResponse:
+    datos = construir_reporte_inventario(db, desde, hasta)
     buffer = generar_pdf_inventario(datos)
     return StreamingResponse(
         buffer,
@@ -89,8 +105,13 @@ def inventario_pdf(db: Session = Depends(get_db), _=Depends(_solo_admin)) -> Str
 
 
 @router.get("/inventario/xlsx")
-def inventario_xlsx(db: Session = Depends(get_db), _=Depends(_solo_admin)) -> StreamingResponse:
-    datos = construir_reporte_inventario(db)
+def inventario_xlsx(
+    desde: datetime | None = None,
+    hasta: datetime | None = None,
+    db: Session = Depends(get_db),
+    _=Depends(_solo_admin),
+) -> StreamingResponse:
+    datos = construir_reporte_inventario(db, desde, hasta)
     buffer = generar_xlsx_inventario(datos)
     return StreamingResponse(
         buffer,

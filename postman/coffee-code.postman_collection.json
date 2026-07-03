@@ -1125,6 +1125,18 @@
                 {
                   "key": "hasta",
                   "value": "2026-06-30T23:59:59"
+                },
+                {
+                  "key": "categoria_id",
+                  "value": "1",
+                  "description": "Filtra ranking_margen y el reporte por categoria de producto (opcional)",
+                  "disabled": true
+                },
+                {
+                  "key": "usuario_id",
+                  "value": "1",
+                  "description": "Filtra ventas_por_usuario por usuario/mesero/cajero (opcional)",
+                  "disabled": true
                 }
               ]
             }
@@ -1152,6 +1164,20 @@
                 "api",
                 "reportes",
                 "inventario"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00Z",
+                  "description": "Inicio del rango para ranking_consumo (opcional)",
+                  "disabled": true
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59Z",
+                  "description": "Fin del rango para ranking_consumo (opcional)",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -1188,6 +1214,18 @@
                 {
                   "key": "hasta",
                   "value": "2026-06-30T23:59:59"
+                },
+                {
+                  "key": "categoria_id",
+                  "value": "1",
+                  "description": "Filtra ranking_margen y el reporte por categoria de producto (opcional)",
+                  "disabled": true
+                },
+                {
+                  "key": "usuario_id",
+                  "value": "1",
+                  "description": "Filtra ventas_por_usuario por usuario/mesero/cajero (opcional)",
+                  "disabled": true
                 }
               ]
             }
@@ -1225,6 +1263,18 @@
                 {
                   "key": "hasta",
                   "value": "2026-06-30T23:59:59"
+                },
+                {
+                  "key": "categoria_id",
+                  "value": "1",
+                  "description": "Filtra ranking_margen y el reporte por categoria de producto (opcional)",
+                  "disabled": true
+                },
+                {
+                  "key": "usuario_id",
+                  "value": "1",
+                  "description": "Filtra ventas_por_usuario por usuario/mesero/cajero (opcional)",
+                  "disabled": true
                 }
               ]
             }
@@ -1253,6 +1303,20 @@
                 "reportes",
                 "inventario",
                 "pdf"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00Z",
+                  "description": "Inicio del rango para ranking_consumo (opcional)",
+                  "disabled": true
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59Z",
+                  "description": "Fin del rango para ranking_consumo (opcional)",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -1280,6 +1344,20 @@
                 "reportes",
                 "inventario",
                 "xlsx"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00Z",
+                  "description": "Inicio del rango para ranking_consumo (opcional)",
+                  "disabled": true
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59Z",
+                  "description": "Fin del rango para ranking_consumo (opcional)",
+                  "disabled": true
+                }
               ]
             }
           }
