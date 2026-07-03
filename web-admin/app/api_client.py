@@ -57,6 +57,10 @@ def actualizar_usuario(base_url: str, token: str, usuario_id: int, payload: dict
     return _request("PUT", base_url, f"/api/usuarios/{usuario_id}", token=token, json=payload)
 
 
+def listar_roles(base_url: str, token: str) -> list[dict]:
+    return _request("GET", base_url, "/api/roles", token=token)
+
+
 def listar_categorias(base_url: str, token: str) -> list[dict]:
     return _request("GET", base_url, "/categorias", token=token)
 

@@ -62,14 +62,17 @@
         <input class="input-field" name="apellido_paterno" placeholder="Apellido paterno" :value="editando ? editando.apellido_paterno : ''" required>
         <input class="input-field" name="apellido_materno" placeholder="Apellido materno (opcional)" :value="editando ? editando.apellido_materno : ''">
         <input class="input-field" type="email" name="correo_electronico" placeholder="Correo electrónico" :value="editando ? editando.correo_electronico : ''" required>
-        <template x-if="!editando">
-          <input class="input-field" type="password" name="password" placeholder="Contraseña" required>
-        </template>
         <select class="input-field" name="id_rol" required>
           {% for rol in roles %}
-          <option value="{{ loop.index }}" x-bind:selected="editando && editando.id_rol === {{ loop.index }}">{{ rol }}</option>
+          <option value="{{ rol.id }}" x-bind:selected="editando && editando.id_rol === {{ rol.id }}">{{ rol.nombre }}</option>
           {% endfor %}
         </select>
+        <input
+          class="input-field"
+          type="password"
+          name="password"
+          :placeholder="editando ? 'Nueva contraseña (dejar vacío para no cambiar)' : 'Contraseña'"
+          :required="!editando">
         <template x-if="editando">
           <label class="flex items-center gap-2 text-sm">
             <input type="checkbox" name="activo" :checked="editando && editando.activo"> Usuario activo
