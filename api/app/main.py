@@ -14,6 +14,7 @@ from app.routers.mesas import router as mesas_router
 from app.routers.pedidos import router as pedidos_router
 from app.routers.productos import router as productos_router
 from app.routers.recetas import router as recetas_router
+from app.routers.roles import router as roles_router
 from app.routers.websockets import router as websockets_router
 from app.websockets.manager import manager
 
@@ -43,6 +44,7 @@ app.include_router(ingredientes_router)
 app.include_router(recetas_router)
 app.include_router(categorias_router)
 app.include_router(admin_router)
+app.include_router(roles_router)
 app.include_router(websockets_router)
 
 
