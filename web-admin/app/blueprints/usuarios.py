@@ -1,19 +1,19 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from app.api_client import ApiError, crear_usuario, actualizar_usuario, listar_usuarios
+from app.api_client import ApiError, actualizar_usuario, crear_usuario, listar_roles, listar_usuarios
 from app.auth import api_base_url, current_token, login_required
 
 bp = Blueprint("usuarios", __name__, url_prefix="/usuarios")
-
-ROLES_DISPONIBLES = ["Mesero", "Cajero", "Cocinero", "Administrador"]
-ROL_ID_POR_NOMBRE = {"Mesero": 1, "Cajero": 2, "Cocinero": 3, "Administrador": 4}
 
 
 @bp.route("")
 @login_required
 def listar():
-    usuarios = listar_usuarios(api_base_url(), current_token())
-    return render_template("usuarios.html", usuarios=usuarios, roles=ROLES_DISPONIBLES)
+    token = current_token()
+    base_url = api_base_url()
+    roles = listar_roles(base_url, token)
+    usuarios = listar_usuarios(base_url, token)
+    return render_template("usuarios.html", usuarios=usuarios, roles=roles)
 
 
 @bp.route("/nuevo", methods=["POST"])
@@ -46,6 +46,9 @@ def editar(usuario_id: int):
         "id_rol": int(request.form["id_rol"]),
         "activo": request.form.get("activo") == "on",
     }
+    nueva_password = request.form.get("password") or ""
+    if nueva_password:
+        payload["password"] = nueva_password
     try:
         actualizar_usuario(api_base_url(), current_token(), usuario_id, payload)
         flash("Usuario actualizado correctamente.", "success")

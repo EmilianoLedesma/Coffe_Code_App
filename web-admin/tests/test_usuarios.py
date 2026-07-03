@@ -15,6 +15,17 @@ def test_listar_usuarios_muestra_tabla(client):
     _login_como_admin(client)
     responses.add(
         responses.GET,
+        f"{BASE_URL}/api/roles",
+        json=[
+            {"id": 1, "nombre": "Mesero"},
+            {"id": 2, "nombre": "Cajero"},
+            {"id": 3, "nombre": "Cocinero"},
+            {"id": 4, "nombre": "Administrador"},
+        ],
+        status=200,
+    )
+    responses.add(
+        responses.GET,
         f"{BASE_URL}/api/usuarios",
         json=[
             {
@@ -35,6 +46,28 @@ def test_listar_usuarios_muestra_tabla(client):
 
     assert respuesta.status_code == 200
     assert b"ana@coffeecode.com" in respuesta.data
+
+
+@responses.activate
+def test_listar_usuarios_usa_roles_de_la_api(client):
+    _login_como_admin(client)
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/api/roles",
+        json=[
+            {"id": 1, "nombre": "Mesero"},
+            {"id": 2, "nombre": "Cajero"},
+            {"id": 3, "nombre": "Cocinero"},
+            {"id": 4, "nombre": "Administrador"},
+        ],
+        status=200,
+    )
+    responses.add(responses.GET, f"{BASE_URL}/api/usuarios", json=[], status=200)
+
+    respuesta = client.get("/usuarios")
+
+    assert respuesta.status_code == 200
+    assert responses.calls[0].request.url.endswith("/api/roles")
 
 
 @responses.activate
@@ -69,3 +102,63 @@ def test_usuarios_sin_sesion_redirige_a_login(client):
     respuesta = client.get("/usuarios", follow_redirects=False)
     assert respuesta.status_code == 302
     assert "/login" in respuesta.headers["Location"]
+
+
+@responses.activate
+def test_editar_usuario_envia_password_si_se_captura(client):
+    _login_como_admin(client)
+    responses.add(
+        responses.PUT,
+        f"{BASE_URL}/api/usuarios/1",
+        json={"id": 1, "nombre": "Ana"},
+        status=200,
+    )
+
+    respuesta = client.post(
+        "/usuarios/1/editar",
+        data={
+            "nombre": "Ana",
+            "apellido_paterno": "Ruiz",
+            "apellido_materno": "",
+            "correo_electronico": "ana@coffeecode.com",
+            "id_rol": "1",
+            "password": "NuevaClave123!",
+        },
+        follow_redirects=False,
+    )
+
+    assert respuesta.status_code == 302
+    import json
+
+    cuerpo_enviado = json.loads(responses.calls[-1].request.body)
+    assert cuerpo_enviado["password"] == "NuevaClave123!"
+
+
+@responses.activate
+def test_editar_usuario_sin_password_no_la_envia(client):
+    _login_como_admin(client)
+    responses.add(
+        responses.PUT,
+        f"{BASE_URL}/api/usuarios/1",
+        json={"id": 1, "nombre": "Ana"},
+        status=200,
+    )
+
+    respuesta = client.post(
+        "/usuarios/1/editar",
+        data={
+            "nombre": "Ana",
+            "apellido_paterno": "Ruiz",
+            "apellido_materno": "",
+            "correo_electronico": "ana@coffeecode.com",
+            "id_rol": "1",
+            "password": "",
+        },
+        follow_redirects=False,
+    )
+
+    assert respuesta.status_code == 302
+    import json
+
+    cuerpo_enviado = json.loads(responses.calls[-1].request.body)
+    assert "password" not in cuerpo_enviado

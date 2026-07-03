@@ -62,14 +62,17 @@
         <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" name="apellido_paterno" placeholder="Apellido paterno" :value="editando ? editando.apellido_paterno : ''" required>
         <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" name="apellido_materno" placeholder="Apellido materno (opcional)" :value="editando ? editando.apellido_materno : ''">
         <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" type="email" name="correo_electronico" placeholder="Correo electrónico" :value="editando ? editando.correo_electronico : ''" required>
-        <template x-if="!editando">
-          <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" type="password" name="password" placeholder="Contraseña" required>
-        </template>
         <select class="w-full rounded-lg border border-caramel/40 px-3 py-2" name="id_rol" required>
           {% for rol in roles %}
-          <option value="{{ loop.index }}" x-bind:selected="editando && editando.id_rol === {{ loop.index }}">{{ rol }}</option>
+          <option value="{{ rol.id }}" x-bind:selected="editando && editando.id_rol === {{ rol.id }}">{{ rol.nombre }}</option>
           {% endfor %}
         </select>
+        <input
+          class="w-full rounded-lg border border-caramel/40 px-3 py-2"
+          type="password"
+          name="password"
+          :placeholder="editando ? 'Nueva contraseña (dejar vacío para no cambiar)' : 'Contraseña'"
+          :required="!editando">
         <template x-if="editando">
           <label class="flex items-center gap-2 text-sm">
             <input type="checkbox" name="activo" :checked="editando && editando.activo"> Usuario activo
