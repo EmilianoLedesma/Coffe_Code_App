@@ -164,3 +164,31 @@ def test_inventario_xlsx_devuelve_xlsx_valido(client, catalogos, producto_con_re
 
     assert respuesta.status_code == 200
     assert respuesta.content[:2] == b"PK"
+
+
+def test_financiero_acepta_categoria_id(client, db_session, catalogos):
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+    respuesta = client.get(
+        "/api/reportes/financiero?categoria_id=1", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert respuesta.status_code == 200
+    assert "ventas_por_categoria" in respuesta.json()
+
+
+def test_financiero_pdf_acepta_categoria_id(client, db_session, catalogos):
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+    respuesta = client.get(
+        "/api/reportes/financiero/pdf?categoria_id=1", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert respuesta.status_code == 200
+    assert respuesta.headers["content-type"] == "application/pdf"
+
+
+def test_inventario_acepta_rango_de_fechas(client, db_session, catalogos):
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+    respuesta = client.get(
+        "/api/reportes/inventario?desde=2026-01-01T00:00:00Z&hasta=2026-01-31T23:59:59Z",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 200
+    assert "ranking_consumo" in respuesta.json()

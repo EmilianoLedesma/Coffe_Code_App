@@ -29,6 +29,30 @@ class RankingMargenItem(BaseModel):
     margen_pct: Decimal
 
 
+class VentaPorCategoriaItem(BaseModel):
+    categoria_id: int
+    nombre: str
+    total: Decimal
+
+
+class VentaPorUsuarioItem(BaseModel):
+    usuario_id: int
+    nombre: str
+    total: Decimal
+
+
+class VentaPorMetodoPagoItem(BaseModel):
+    metodo_pago: str
+    total: Decimal
+
+
+class RankingConsumoItem(BaseModel):
+    ingrediente_id: int
+    nombre: str
+    unidad: str
+    cantidad_consumida: Decimal
+
+
 class ReporteFinancieroOut(BaseModel):
     desde: datetime
     hasta: datetime
@@ -40,6 +64,9 @@ class ReporteFinancieroOut(BaseModel):
     variacion_ventas_pct: Decimal | None
     variacion_ganancia_pct: Decimal | None
     ranking_margen: list[RankingMargenItem]
+    ventas_por_categoria: list[VentaPorCategoriaItem]
+    ventas_por_usuario: list[VentaPorUsuarioItem]
+    ventas_por_metodo_pago: list[VentaPorMetodoPagoItem]
 
 
 class RiesgoInventarioItem(BaseModel):
@@ -55,3 +82,4 @@ class RiesgoInventarioItem(BaseModel):
 
 class ReporteInventarioOut(BaseModel):
     riesgo: list[RiesgoInventarioItem]
+    ranking_consumo: list[RankingConsumoItem]
