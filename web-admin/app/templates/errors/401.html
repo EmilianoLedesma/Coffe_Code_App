@@ -2,8 +2,8 @@
 {% block title %}Sesión expirada{% endblock %}
 {% block content %}
 <div class="text-center mt-24">
-  <h1 class="text-3xl font-serif mb-2">Tu sesión expiró</h1>
-  <p class="text-coffee mb-6">Vuelve a iniciar sesión para continuar.</p>
-  <a href="{{ url_for('auth.login') }}" class="inline-block bg-espresso text-cream px-5 py-2 rounded-lg">Ir a login</a>
+  <h1 class="text-3xl font-semibold text-starbucks mb-2">Tu sesión expiró</h1>
+  <p class="text-black/58 mb-6">Vuelve a iniciar sesión para continuar.</p>
+  <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Ir a login</a>
 </div>
 {% endblock %}

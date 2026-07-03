@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Recetas — Coffee Code Admin{% endblock %}
 {% block content %}
+<h1 class="text-2xl font-semibold text-starbucks mb-6">Recetas</h1>
 <div class="grid grid-cols-3 gap-6">
   <div class="card p-4 col-span-1">
-    <h2 class="font-serif text-lg mb-3">Productos</h2>
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-black/58 mb-3">Productos</h2>
     <ul class="space-y-1 text-sm">
       {% for producto in productos %}
       <li>
         <a href="{{ url_for('recetas.detalle', producto_id=producto.id) }}"
-           class="block px-3 py-2 rounded-lg {{ 'bg-coffee text-cream' if producto_seleccionado and producto_seleccionado.id == producto.id else 'hover:bg-cream' }}">
+           class="block px-3 py-2 rounded-lg text-sm transition-colors {{ 'bg-accent text-white font-medium' if producto_seleccionado and producto_seleccionado.id == producto.id else 'text-black/70 hover:bg-cream' }}">
           {{ producto.nombre }}
         </a>
       </li>
@@ -18,23 +19,23 @@
 
   <div class="card p-4 col-span-2">
     {% if producto_seleccionado %}
-    <h2 class="font-serif text-lg mb-3">Receta de {{ producto_seleccionado.nombre }}</h2>
-    <table class="w-full text-sm mb-6">
-      <thead class="text-left text-xs uppercase tracking-wide text-coffee">
+    <h2 class="text-lg font-semibold mb-3">Receta de {{ producto_seleccionado.nombre }}</h2>
+    <table class="data-table mb-6">
+      <thead>
         <tr>
-          <th class="py-2">Ingrediente</th>
-          <th class="py-2">Cantidad requerida</th>
-          <th class="py-2"></th>
+          <th>Ingrediente</th>
+          <th>Cantidad requerida</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
         {% for item in receta %}
-        <tr class="border-t border-caramel/20">
-          <td class="py-2">{{ item.ingrediente.nombre }}</td>
-          <td class="py-2">{{ item.cantidad_requerida }} {{ item.ingrediente.unidad }}</td>
-          <td class="py-2 text-right">
+        <tr>
+          <td>{{ item.ingrediente.nombre }}</td>
+          <td>{{ item.cantidad_requerida }} {{ item.ingrediente.unidad }}</td>
+          <td class="text-right">
             <form action="{{ url_for('recetas.eliminar', producto_id=producto_seleccionado.id, ingrediente_id=item.id_ingrediente) }}" method="post" onsubmit="return confirm('¿Quitar este ingrediente de la receta?');">
-              <button type="submit" class="text-red-700 hover:underline">Quitar</button>
+              <button type="submit" class="btn-link-danger">Quitar</button>
             </form>
           </td>
         </tr>
@@ -42,18 +43,18 @@
       </tbody>
     </table>
 
-    <h3 class="font-serif text-base mb-2">Agregar ingrediente</h3>
+    <h3 class="text-base font-semibold mb-2">Agregar ingrediente</h3>
     <form action="{{ url_for('recetas.agregar', producto_id=producto_seleccionado.id) }}" method="post" class="flex gap-2">
-      <select name="ingrediente_id" class="flex-1 rounded-lg border border-caramel/40 px-3 py-2" required>
+      <select name="ingrediente_id" class="input-field flex-1" required>
         {% for ingrediente in ingredientes %}
         <option value="{{ ingrediente.id }}">{{ ingrediente.nombre }} ({{ ingrediente.unidad }})</option>
         {% endfor %}
       </select>
-      <input type="number" step="0.01" min="0.01" name="cantidad" placeholder="Cantidad" class="w-32 rounded-lg border border-caramel/40 px-3 py-2" required>
-      <button type="submit" class="bg-espresso text-cream px-4 py-2 rounded-lg hover:bg-coffee">Agregar</button>
+      <input type="number" step="0.01" min="0.01" name="cantidad" placeholder="Cantidad" class="input-field w-32" required>
+      <button type="submit" class="btn btn-primary">Agregar</button>
     </form>
     {% else %}
-    <p class="text-coffee">Selecciona un producto para ver o editar su receta.</p>
+    <p class="text-black/58">Selecciona un producto para ver o editar su receta.</p>
     {% endif %}
   </div>
 </div>

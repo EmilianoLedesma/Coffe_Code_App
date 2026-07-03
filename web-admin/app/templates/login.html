@@ -2,19 +2,19 @@
 {% block title %}Iniciar sesión — Coffee Code Admin{% endblock %}
 {% block content %}
 <div class="min-h-[80vh] flex items-center justify-center">
-  <div class="w-full max-w-sm bg-white/70 backdrop-blur rounded-2xl shadow-xl p-8 border border-caramel/30">
-    <h1 class="font-serif text-2xl text-espresso mb-1">Coffee Code</h1>
-    <p class="text-sm text-coffee mb-6">Panel de Administración</p>
+  <div class="w-full max-w-sm card p-8">
+    <h1 class="brand-mark text-2xl font-semibold text-starbucks mb-1">Coffee Code</h1>
+    <p class="text-sm text-black/58 mb-6">Panel de Administración</p>
     <form method="post" class="space-y-4">
       <div>
         <label class="block text-sm font-medium mb-1" for="correo">Correo electrónico</label>
-        <input class="w-full rounded-lg border border-caramel/40 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-coffee" type="email" id="correo" name="correo" required>
+        <input class="input-field" type="email" id="correo" name="correo" required>
       </div>
       <div>
         <label class="block text-sm font-medium mb-1" for="password">Contraseña</label>
-        <input class="w-full rounded-lg border border-caramel/40 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-coffee" type="password" id="password" name="password" required>
+        <input class="input-field" type="password" id="password" name="password" required>
       </div>
-      <button type="submit" class="w-full bg-espresso text-cream rounded-lg py-2 font-medium hover:bg-coffee transition-colors">
+      <button type="submit" class="btn btn-primary w-full">
         Entrar
       </button>
     </form>

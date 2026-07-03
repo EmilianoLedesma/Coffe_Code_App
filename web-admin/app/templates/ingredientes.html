@@ -3,36 +3,36 @@
 {% block content %}
 <div x-data="{ modalAbierto: false, modalStock: null }">
   <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-serif">Inventario de ingredientes</h1>
-    <button @click="modalAbierto = true" class="bg-espresso text-cream px-4 py-2 rounded-lg hover:bg-coffee">
+    <h1 class="text-2xl font-semibold text-starbucks">Inventario de ingredientes</h1>
+    <button @click="modalAbierto = true" class="btn btn-primary">
       + Nuevo ingrediente
     </button>
   </div>
 
   <div class="card overflow-hidden">
-    <table class="w-full text-sm">
-      <thead class="bg-espresso/5 text-left text-xs uppercase tracking-wide text-coffee">
+    <table class="data-table">
+      <thead>
         <tr>
-          <th class="px-4 py-3">Nombre</th>
-          <th class="px-4 py-3">Stock actual</th>
-          <th class="px-4 py-3">Stock mínimo</th>
-          <th class="px-4 py-3">Costo unitario</th>
-          <th class="px-4 py-3"></th>
+          <th>Nombre</th>
+          <th>Stock actual</th>
+          <th>Stock mínimo</th>
+          <th>Costo unitario</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
         {% for ingrediente in ingredientes %}
         {% set bajo = ingrediente.stock_actual|float < ingrediente.stock_minimo|float %}
-        <tr class="border-t border-caramel/20 hover:bg-cream/60 {{ 'bg-red-50' if bajo }}">
-          <td class="px-4 py-3">
+        <tr class="{{ 'row-risk' if bajo }}">
+          <td>
             {{ ingrediente.nombre }}
-            {% if bajo %}<span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800">Stock bajo</span>{% endif %}
+            {% if bajo %}<span class="ml-2 badge badge-error">Stock bajo</span>{% endif %}
           </td>
-          <td class="px-4 py-3">{{ ingrediente.stock_actual }} {{ ingrediente.unidad }}</td>
-          <td class="px-4 py-3">{{ ingrediente.stock_minimo }} {{ ingrediente.unidad }}</td>
-          <td class="px-4 py-3">${{ "%.2f"|format(ingrediente.costo_unitario|float) }}</td>
-          <td class="px-4 py-3 text-right">
-            <button @click='modalStock = {{ {"id": ingrediente.id, "nombre": ingrediente.nombre} | tojson }}' class="text-coffee hover:underline">Ajustar stock</button>
+          <td>{{ ingrediente.stock_actual }} {{ ingrediente.unidad }}</td>
+          <td>{{ ingrediente.stock_minimo }} {{ ingrediente.unidad }}</td>
+          <td>${{ "%.2f"|format(ingrediente.costo_unitario|float) }}</td>
+          <td class="text-right">
+            <button @click='modalStock = {{ {"id": ingrediente.id, "nombre": ingrediente.nombre} | tojson }}' class="btn-link">Ajustar stock</button>
           </td>
         </tr>
         {% endfor %}
@@ -40,32 +40,32 @@
     </table>
   </div>
 
-  <div x-show="modalAbierto" x-cloak class="fixed inset-0 bg-espresso/50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md" @click.outside="modalAbierto = false">
-      <h2 class="text-lg font-serif mb-4">Nuevo ingrediente</h2>
+  <div x-show="modalAbierto" x-cloak class="fixed inset-0 modal-overlay flex items-center justify-center z-50">
+    <div class="modal-panel p-6 w-full max-w-md" @click.outside="modalAbierto = false">
+      <h2 class="text-lg font-semibold text-starbucks mb-4">Nuevo ingrediente</h2>
       <form action="{{ url_for('ingredientes.crear') }}" method="post" class="space-y-3">
-        <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" name="nombre" placeholder="Nombre" required>
-        <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" name="unidad" placeholder="Unidad (ml, g, pza)" required>
-        <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" type="number" step="0.01" min="0" name="stock_actual" placeholder="Stock inicial">
-        <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" type="number" step="0.01" min="0" name="stock_minimo" placeholder="Stock mínimo" required>
-        <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" type="number" step="0.01" min="0.01" name="costo_unitario" placeholder="Costo unitario" required>
+        <input class="input-field" name="nombre" placeholder="Nombre" required>
+        <input class="input-field" name="unidad" placeholder="Unidad (ml, g, pza)" required>
+        <input class="input-field" type="number" step="0.01" min="0" name="stock_actual" placeholder="Stock inicial">
+        <input class="input-field" type="number" step="0.01" min="0" name="stock_minimo" placeholder="Stock mínimo" required>
+        <input class="input-field" type="number" step="0.01" min="0.01" name="costo_unitario" placeholder="Costo unitario" required>
         <div class="flex justify-end gap-2 pt-2">
-          <button type="button" @click="modalAbierto = false" class="px-4 py-2 rounded-lg border border-caramel/40">Cancelar</button>
-          <button type="submit" class="px-4 py-2 rounded-lg bg-espresso text-cream hover:bg-coffee">Guardar</button>
+          <button type="button" @click="modalAbierto = false" class="btn btn-ghost">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
         </div>
       </form>
     </div>
   </div>
 
-  <div x-show="modalStock" x-cloak class="fixed inset-0 bg-espresso/50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm" @click.outside="modalStock = null">
-      <h2 class="text-lg font-serif mb-4">Ajustar stock — <span x-text="modalStock && modalStock.nombre"></span></h2>
+  <div x-show="modalStock" x-cloak class="fixed inset-0 modal-overlay flex items-center justify-center z-50">
+    <div class="modal-panel p-6 w-full max-w-sm" @click.outside="modalStock = null">
+      <h2 class="text-lg font-semibold text-starbucks mb-4">Ajustar stock — <span x-text="modalStock && modalStock.nombre"></span></h2>
       <form :action="modalStock ? `/ingredientes/${modalStock.id}/ajustar-stock` : '#'" method="post" class="space-y-3">
-        <label class="block text-sm text-coffee">Cantidad a sumar (usa negativo para restar)</label>
-        <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" type="number" step="0.01" name="cantidad" required>
+        <label class="block text-sm text-black/58">Cantidad a sumar (usa negativo para restar)</label>
+        <input class="input-field" type="number" step="0.01" name="cantidad" required>
         <div class="flex justify-end gap-2 pt-2">
-          <button type="button" @click="modalStock = null" class="px-4 py-2 rounded-lg border border-caramel/40">Cancelar</button>
-          <button type="submit" class="px-4 py-2 rounded-lg bg-espresso text-cream hover:bg-coffee">Aplicar</button>
+          <button type="button" @click="modalStock = null" class="btn btn-ghost">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Aplicar</button>
         </div>
       </form>
     </div>

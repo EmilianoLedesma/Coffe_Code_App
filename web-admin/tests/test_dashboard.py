@@ -10,12 +10,12 @@ BASE_URL = "http://testserver"
 def _stub_reportes_bp() -> Blueprint:
     bp = Blueprint("reportes", __name__, url_prefix="/reportes")
 
-    @bp.route("/exportar.pdf")
-    def exportar_pdf():
+    @bp.route("/financiero/exportar.<formato>")
+    def exportar_financiero(formato):
         return ""
 
-    @bp.route("/exportar.xlsx")
-    def exportar_xlsx():
+    @bp.route("/inventario/exportar.<formato>")
+    def exportar_inventario(formato):
         return ""
 
     return bp
@@ -41,61 +41,52 @@ def _login_como_admin(client):
         sess["correo"] = "admin@coffeecode.com"
 
 
-def _mock_reporte(desde_iso, hasta_iso, total_ventas="1000.00", total_gastos="400.00"):
-    return {
-        "desde": desde_iso,
-        "hasta": hasta_iso,
-        "total_ventas": total_ventas,
-        "total_gastos": total_gastos,
-        "ganancia_neta": str(float(total_ventas) - float(total_gastos)),
-        "top_productos": [
-            {"producto_id": 1, "nombre": "Latte", "cantidad_vendida": 20, "ingresos": "600.00"}
-        ],
-    }
-
-
 @responses.activate
-def test_dashboard_muestra_margen_y_variacion(client):
+def test_dashboard_muestra_bloque_financiero_e_inventario(client):
     _login_como_admin(client)
     responses.add(
         responses.GET,
-        f"{BASE_URL}/api/reportes",
-        json=_mock_reporte("2026-06-01T00:00:00", "2026-06-30T00:00:00"),
+        f"{BASE_URL}/api/reportes/financiero",
+        json={
+            "desde": "2026-06-01T00:00:00",
+            "hasta": "2026-06-30T00:00:00",
+            "total_ventas": "1000.00",
+            "total_gastos": "400.00",
+            "ganancia_neta": "600.00",
+            "margen_pct": "60.00",
+            "margen_pct_anterior": "50.00",
+            "variacion_ventas_pct": "10.00",
+            "variacion_ganancia_pct": "20.00",
+            "ranking_margen": [
+                {
+                    "producto_id": 1,
+                    "nombre": "Latte",
+                    "ingresos": "550.00",
+                    "costo_total": "40.00",
+                    "margen": "510.00",
+                    "margen_pct": "92.73",
+                }
+            ],
+        },
         status=200,
     )
     responses.add(
         responses.GET,
-        f"{BASE_URL}/producto_ingrediente",
-        json=[
-            {
-                "id_producto": 1,
-                "id_ingrediente": 2,
-                "cantidad_requerida": "200.00",
-                "ingrediente": {"id": 2, "nombre": "Leche entera", "unidad": "ml", "costo_unitario": "0.02"},
-            }
-        ],
-        status=200,
-    )
-    responses.add(
-        responses.GET,
-        f"{BASE_URL}/ingredientes",
-        json=[
-            {
-                "id": 2,
-                "nombre": "Leche entera",
-                "unidad": "ml",
-                "stock_actual": "500",
-                "stock_minimo": "1000",
-                "costo_unitario": "0.02",
-                "activo": True,
-            }
-        ],
-        status=200,
-    )
-    responses.add(
-        responses.GET,
-        f"{BASE_URL}/productos",
-        json=[{"id": 1, "nombre": "Latte", "categoria": {"id": 1, "nombre": "Bebidas calientes"}}],
+        f"{BASE_URL}/api/reportes/inventario",
+        json={
+            "riesgo": [
+                {
+                    "id": 1,
+                    "nombre": "Leche entera",
+                    "unidad": "ml",
+                    "stock_actual": "500",
+                    "stock_minimo": "1000",
+                    "falta": "500",
+                    "costo_reposicion": "10.00",
+                    "productos_afectados": ["Latte"],
+                }
+            ]
+        },
         status=200,
     )
 
@@ -105,6 +96,7 @@ def test_dashboard_muestra_margen_y_variacion(client):
     cuerpo = respuesta.get_data(as_text=True)
     assert "Ganancia neta" in cuerpo
     assert "Leche entera" in cuerpo
+    assert "Latte" in cuerpo
 
 
 def test_dashboard_sin_sesion_redirige_a_login(client):

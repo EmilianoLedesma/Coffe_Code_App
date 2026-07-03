@@ -61,6 +61,7 @@ def test_listar_productos_muestra_categoria(client):
     assert respuesta.status_code == 200
     assert b"Latte" in respuesta.data
     assert b"Bebidas calientes" in respuesta.data
+    assert b'href="/recetas/1"' in respuesta.data
 
 
 @responses.activate

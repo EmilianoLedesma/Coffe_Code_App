@@ -1,7 +1,14 @@
 import pytest
 import responses
 
-from app.api_client import ApiError, listar_productos, login
+from app.api_client import (
+    ApiError,
+    descargar_reporte,
+    listar_productos,
+    login,
+    obtener_reporte_financiero,
+    obtener_reporte_inventario,
+)
 
 BASE_URL = "http://testserver"
 
@@ -49,3 +56,62 @@ def test_listar_productos_envia_bearer_token():
 
     assert resultado == [{"id": 1, "nombre": "Latte"}]
     assert responses.calls[0].request.headers["Authorization"] == "Bearer token-de-prueba"
+
+
+@responses.activate
+def test_obtener_reporte_financiero():
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/api/reportes/financiero",
+        json={"total_ventas": "550.00", "ranking_margen": []},
+        status=200,
+    )
+
+    resultado = obtener_reporte_financiero(BASE_URL, "token", "2026-06-01", "2026-06-30")
+
+    assert resultado["total_ventas"] == "550.00"
+
+
+@responses.activate
+def test_obtener_reporte_inventario():
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/api/reportes/inventario",
+        json={"riesgo": []},
+        status=200,
+    )
+
+    resultado = obtener_reporte_inventario(BASE_URL, "token")
+
+    assert resultado == {"riesgo": []}
+
+
+@responses.activate
+def test_descargar_reporte_devuelve_response_crudo():
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/api/reportes/financiero/pdf",
+        body=b"%PDF-contenido-simulado",
+        status=200,
+        content_type="application/pdf",
+    )
+
+    respuesta = descargar_reporte(BASE_URL, "token", "financiero", "pdf", {"desde": "2026-06-01"})
+
+    assert respuesta.status_code == 200
+    assert respuesta.content == b"%PDF-contenido-simulado"
+
+
+@responses.activate
+def test_descargar_reporte_lanza_apierror_en_4xx():
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/api/reportes/inventario/xlsx",
+        json={"detail": "No autorizado"},
+        status=403,
+    )
+
+    with pytest.raises(ApiError) as exc_info:
+        descargar_reporte(BASE_URL, "token", "inventario", "xlsx")
+
+    assert exc_info.value.status_code == 403
