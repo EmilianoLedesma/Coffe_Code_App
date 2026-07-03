@@ -61,6 +61,14 @@ def listar_categorias(base_url: str, token: str) -> list[dict]:
     return _request("GET", base_url, "/categorias", token=token)
 
 
+def crear_categoria(base_url: str, token: str, payload: dict) -> dict:
+    return _request("POST", base_url, "/categorias", token=token, json=payload)
+
+
+def actualizar_categoria(base_url: str, token: str, categoria_id: int, payload: dict) -> dict:
+    return _request("PUT", base_url, f"/categorias/{categoria_id}", token=token, json=payload)
+
+
 def listar_productos(base_url: str, token: str) -> list[dict]:
     return _request("GET", base_url, "/productos", token=token)
 

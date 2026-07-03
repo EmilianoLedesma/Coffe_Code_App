@@ -247,7 +247,6 @@ coffee-code/
 | | |
 |:--|:--|
 | **Martinez Silvestre Coral** | Desarrollo |
-| **Jimenez Vargas Diego** | Desarrollo |
 | **Ledesma Ledesma Emiliano** | Desarrollo |
 | **ISC Iván Isay Guerra López** | Asesor |
 

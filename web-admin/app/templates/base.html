@@ -37,6 +37,7 @@
       <a href="{{ url_for('dashboard.index') }}" class="nav-link {{ 'active' if request.endpoint == 'dashboard.index' }}">Dashboard</a>
       <a href="{{ url_for('usuarios.listar') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('usuarios.') }}">Usuarios</a>
       <a href="{{ url_for('productos.listar') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('productos.') }}">Productos</a>
+      <a href="{{ url_for('categorias.listar') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('categorias.') }}">Categorías</a>
       <a href="{{ url_for('ingredientes.listar') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('ingredientes.') }}">Ingredientes</a>
       <a href="{{ url_for('recetas.listar') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('recetas.') }}">Recetas</a>
     </nav>

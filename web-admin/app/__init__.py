@@ -21,6 +21,7 @@ def create_app(config_overrides: dict | None = None) -> Flask:
     from app.blueprints.dashboard import bp as dashboard_bp
     from app.blueprints.usuarios import bp as usuarios_bp
     from app.blueprints.productos import bp as productos_bp
+    from app.blueprints.categorias import bp as categorias_bp
     from app.blueprints.ingredientes import bp as ingredientes_bp
     from app.blueprints.recetas import bp as recetas_bp
     from app.blueprints.reportes import bp as reportes_bp
@@ -29,6 +30,7 @@ def create_app(config_overrides: dict | None = None) -> Flask:
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(usuarios_bp)
     app.register_blueprint(productos_bp)
+    app.register_blueprint(categorias_bp)
     app.register_blueprint(ingredientes_bp)
     app.register_blueprint(recetas_bp)
     app.register_blueprint(reportes_bp)
