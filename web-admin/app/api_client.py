@@ -115,3 +115,14 @@ def obtener_reporte_admin(base_url: str, token: str, desde: str, hasta: str) -> 
     return _request(
         "GET", base_url, "/api/reportes", token=token, params={"desde": desde, "hasta": hasta}
     )
+
+
+def generar_corte_diario(base_url: str, token: str, fecha: str | None = None) -> dict:
+    params = {"fecha": fecha} if fecha else {}
+    return _request("POST", base_url, "/api/cortes-diarios", token=token, params=params)
+
+
+def listar_cortes_diarios(base_url: str, token: str, desde: str, hasta: str) -> list[dict]:
+    return _request(
+        "GET", base_url, "/api/cortes-diarios", token=token, params={"desde": desde, "hasta": hasta}
+    )
