@@ -50,6 +50,7 @@ class IngredienteResumenOut(BaseModel):
     id: int
     nombre: str
     unidad: str
+    costo_unitario: Decimal
 
 
 class RecetaOut(BaseModel):

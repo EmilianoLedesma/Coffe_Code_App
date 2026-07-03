@@ -1,15 +1,24 @@
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal
+
+from app.core.config import settings
 from app.core.constants import EstatusCocinaNombre, EstatusMesaNombre, EstatusPedidoNombre, MetodoPagoNombre, RolNombre
 from app.data.categorias import Categoria
 from app.data.db import SessionLocal
+from app.data.detalle_pedidos import DetallePedido
 from app.data.estatus_cocina import EstatusCocina
 from app.data.estatus_mesas import EstatusMesa
 from app.data.estatus_pedidos import EstatusPedido
+from app.data.gastos import Gasto
 from app.data.ingredientes import Ingrediente
 from app.data.mesas import Mesa
 from app.data.metodos_pago import MetodoPago
+from app.data.pagos import Pago
+from app.data.pedidos import Pedido
 from app.data.productos import Producto
 from app.data.recetas import Receta
 from app.data.roles import Rol
+from app.data.tickets import Ticket
 from app.data.usuarios import Usuario
 from app.security.auth import hash_password
 
@@ -144,6 +153,101 @@ def _seed_menu(db) -> None:
             _get_or_create_receta(db, producto.id, ingrediente.id, cantidad)
 
 
+def _seed_ventas(db) -> None:
+    """Genera pedidos/tickets/pagos de ejemplo de los últimos 45 días para que el
+    dashboard de reportes del panel admin no arranque en ceros. No se ejecuta si
+    ya existe algún ticket (idempotente)."""
+    if db.query(Ticket).count() > 0:
+        return
+
+    mesas = db.query(Mesa).order_by(Mesa.numero_mesa).all()
+    productos = db.query(Producto).order_by(Producto.id).all()
+    metodos = db.query(MetodoPago).order_by(MetodoPago.id).all()
+    estatus_entregado = (
+        db.query(EstatusPedido).filter(EstatusPedido.nombre == EstatusPedidoNombre.ENTREGADO).first()
+    )
+    estatus_listo = db.query(EstatusCocina).filter(EstatusCocina.nombre == EstatusCocinaNombre.LISTO).first()
+    mesero = db.query(Usuario).filter(Usuario.correo_electronico == "mesero@coffeecode.com").first()
+    cajero = db.query(Usuario).filter(Usuario.correo_electronico == "cajero@coffeecode.com").first()
+
+    if not (mesas and productos and metodos and estatus_entregado and estatus_listo and mesero and cajero):
+        return
+
+    ahora = datetime.now(timezone.utc)
+    iva_rate = Decimal(str(settings.iva_rate))
+    total_ordenes = 30
+
+    for i in range(total_ordenes):
+        dias_atras = 1 + (i * 44 // total_ordenes)
+        fecha = ahora - timedelta(days=dias_atras, hours=(i * 3) % 12)
+        mesa = mesas[i % len(mesas)]
+
+        pedido = Pedido(fecha=fecha, id_mesa=mesa.id, id_usuario=mesero.id, id_estatus=estatus_entregado.id)
+        db.add(pedido)
+        db.flush()
+
+        cantidad_items = 1 + (i % 3)
+        subtotal = Decimal("0")
+        for j in range(cantidad_items):
+            producto = productos[(i + j) % len(productos)]
+            cantidad = 1 + ((i + j) % 2)
+            precio_unitario = producto.precio_venta
+            subtotal += precio_unitario * cantidad
+            db.add(
+                DetallePedido(
+                    cantidad=cantidad,
+                    precio_unitario=precio_unitario,
+                    id_producto=producto.id,
+                    id_pedido=pedido.id,
+                    id_estatus=estatus_listo.id,
+                )
+            )
+
+        iva = (subtotal * iva_rate).quantize(Decimal("0.01"))
+        total = subtotal + iva
+        pedido.total = total
+
+        ticket = Ticket(
+            subtotal=subtotal,
+            iva=iva,
+            total=total,
+            fecha_emision=fecha,
+            id_pedido=pedido.id,
+            id_usuario=cajero.id,
+        )
+        db.add(ticket)
+        db.flush()
+
+        metodo = metodos[i % len(metodos)]
+        monto_recibido = (total // 10 + 1) * 10
+        db.add(
+            Pago(
+                monto_recibido=monto_recibido,
+                cambio=monto_recibido - total,
+                id_ticket=ticket.id,
+                id_metodo=metodo.id,
+            )
+        )
+
+    gastos_ejemplo = [
+        ("Compra de granos de café", Decimal("850.00"), 40),
+        ("Reposición de leche y lácteos", Decimal("420.00"), 28),
+        ("Servicio de mantenimiento de máquina espresso", Decimal("650.00"), 18),
+        ("Compra de vasos y empaques desechables", Decimal("380.00"), 6),
+    ]
+    for concepto, monto, dias_atras in gastos_ejemplo:
+        db.add(
+            Gasto(
+                monto=monto,
+                concepto=concepto,
+                fecha_gasto=ahora - timedelta(days=dias_atras),
+                id_usuario=cajero.id,
+            )
+        )
+
+    db.commit()
+
+
 def run() -> None:
     db = SessionLocal()
     try:
@@ -218,7 +322,9 @@ def run() -> None:
             )
             db.commit()
 
-        print("Seed completado: catálogos, mesas y usuarios de prueba listos.")
+        _seed_ventas(db)
+
+        print("Seed completado: catálogos, mesas, usuarios y ventas de prueba listos.")
     finally:
         db.close()
 
