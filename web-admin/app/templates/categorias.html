@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Categorías — Coffee Code Admin{% endblock %}
+{% block content %}
+<div x-data="{ modalAbierto: false, editando: null }">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-serif">Categorías de producto</h1>
+    <button @click="modalAbierto = true; editando = null" class="bg-espresso text-cream px-4 py-2 rounded-lg hover:bg-coffee">
+      + Nueva categoría
+    </button>
+  </div>
+
+  <div class="card overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-espresso/5 text-left text-xs uppercase tracking-wide text-coffee">
+        <tr>
+          <th class="px-4 py-3">Nombre</th>
+          <th class="px-4 py-3">Descripción</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for categoria in categorias %}
+        <tr class="border-t border-caramel/20 hover:bg-cream/60">
+          <td class="px-4 py-3">{{ categoria.nombre }}</td>
+          <td class="px-4 py-3">{{ categoria.descripcion or "—" }}</td>
+          <td class="px-4 py-3 text-right">
+            <button
+              @click='modalAbierto = true; editando = {{ {
+                "id": categoria.id,
+                "nombre": categoria.nombre,
+                "descripcion": categoria.descripcion or "",
+              } | tojson }}'
+              class="text-coffee hover:underline">Editar</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div x-show="modalAbierto" x-cloak class="fixed inset-0 bg-espresso/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md" @click.outside="modalAbierto = false">
+      <h2 class="text-lg font-serif mb-4" x-text="editando ? 'Editar categoría' : 'Nueva categoría'"></h2>
+      <form :action="editando ? `/categorias/${editando.id}/editar` : '/categorias/nuevo'" method="post" class="space-y-3">
+        <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" name="nombre" placeholder="Nombre" :value="editando ? editando.nombre : ''" required>
+        <textarea class="w-full rounded-lg border border-caramel/40 px-3 py-2" name="descripcion" placeholder="Descripción (opcional)" x-text="editando ? editando.descripcion : ''"></textarea>
+        <template x-if="editando">
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="activo" :checked="!editando || editando.activo" checked> Activa
+          </label>
+        </template>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" @click="modalAbierto = false" class="px-4 py-2 rounded-lg border border-caramel/40">Cancelar</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-espresso text-cream hover:bg-coffee">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
