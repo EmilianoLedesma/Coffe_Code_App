@@ -37,15 +37,15 @@
           </td>
           <td class="px-4 py-3 text-right">
             <button
-              @click="modalAbierto = true; editando = {{ {
-                'id': usuario.id,
-                'nombre': usuario.nombre,
-                'apellido_paterno': usuario.apellido_paterno,
-                'apellido_materno': usuario.apellido_materno or '',
-                'correo_electronico': usuario.correo_electronico,
-                'id_rol': usuario.rol.id,
-                'activo': usuario.activo,
-              } | tojson }}"
+              @click='modalAbierto = true; editando = {{ {
+                "id": usuario.id,
+                "nombre": usuario.nombre,
+                "apellido_paterno": usuario.apellido_paterno,
+                "apellido_materno": usuario.apellido_materno or "",
+                "correo_electronico": usuario.correo_electronico,
+                "id_rol": usuario.rol.id,
+                "activo": usuario.activo,
+              } | tojson }}'
               class="text-coffee hover:underline">Editar</button>
           </td>
         </tr>

@@ -32,7 +32,7 @@
           <td class="px-4 py-3">{{ ingrediente.stock_minimo }} {{ ingrediente.unidad }}</td>
           <td class="px-4 py-3">${{ "%.2f"|format(ingrediente.costo_unitario|float) }}</td>
           <td class="px-4 py-3 text-right">
-            <button @click="modalStock = {{ {'id': ingrediente.id, 'nombre': ingrediente.nombre} | tojson }}" class="text-coffee hover:underline">Ajustar stock</button>
+            <button @click='modalStock = {{ {"id": ingrediente.id, "nombre": ingrediente.nombre} | tojson }}' class="text-coffee hover:underline">Ajustar stock</button>
           </td>
         </tr>
         {% endfor %}
