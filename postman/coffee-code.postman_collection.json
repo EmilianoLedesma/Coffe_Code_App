@@ -22,6 +22,10 @@
       "value": ""
     },
     {
+      "key": "token_admin",
+      "value": ""
+    },
+    {
       "key": "mesa_id",
       "value": "1"
     },
@@ -439,6 +443,75 @@
               "path": [
                 "productos",
                 "{{producto_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear Categoria",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Postres\",\n  \"descripcion\": \"Panque, pay\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/categorias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Categoria",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activo\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/categorias/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias",
+                "1"
               ]
             }
           }
