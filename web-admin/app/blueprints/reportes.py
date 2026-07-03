@@ -84,8 +84,8 @@ def exportar_xlsx():
     datos = _construir_datos_reporte(desde, hasta)
 
     libro = Workbook()
-    encabezado_relleno = PatternFill(start_color="6F4E37", end_color="6F4E37", fill_type="solid")
-    encabezado_fuente = Font(color="F5E6D3", bold=True)
+    encabezado_relleno = PatternFill(start_color="1E3932", end_color="1E3932", fill_type="solid")
+    encabezado_fuente = Font(color="FFFFFF", bold=True)
 
     hoja_resumen = libro.active
     hoja_resumen.title = "Resumen financiero"

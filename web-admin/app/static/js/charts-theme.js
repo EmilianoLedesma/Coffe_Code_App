@@ -1,10 +1,12 @@
 const coffeeChartPalette = {
-  espresso: '#3B2412',
-  coffee: '#6F4E37',
-  caramel: '#A87C5F',
-  cream: '#F5E6D3',
-  positive: '#3E7C4A',
-  negative: '#B4432D',
+  starbucks: '#006241',
+  accent: '#00754A',
+  house: '#1E3932',
+  uplift: '#2b5148',
+  gold: '#cba258',
+  cream: '#f2f0eb',
+  positive: '#00754A',
+  negative: '#c82014',
 };
 
 window.coffeeChartPalette = coffeeChartPalette;
