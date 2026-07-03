@@ -100,6 +100,33 @@ def generar_pdf_financiero(datos: dict) -> io.BytesIO:
             )
         )
 
+    if datos["ventas_por_categoria"]:
+        story.append(Paragraph("Ventas por categoría", h2))
+        story.append(
+            _tabla(
+                [["Categoría", "Total"]]
+                + [[fila["nombre"], f"${fila['total']:,.2f}"] for fila in datos["ventas_por_categoria"]]
+            )
+        )
+
+    if datos["ventas_por_usuario"]:
+        story.append(Paragraph("Ventas por mesero/cajero", h2))
+        story.append(
+            _tabla(
+                [["Usuario", "Total"]]
+                + [[fila["nombre"], f"${fila['total']:,.2f}"] for fila in datos["ventas_por_usuario"]]
+            )
+        )
+
+    if datos["ventas_por_metodo_pago"]:
+        story.append(Paragraph("Ventas por método de pago", h2))
+        story.append(
+            _tabla(
+                [["Método de pago", "Total"]]
+                + [[fila["metodo_pago"], f"${fila['total']:,.2f}"] for fila in datos["ventas_por_metodo_pago"]]
+            )
+        )
+
     story.append(Spacer(1, 0.8 * cm))
     story.append(Paragraph(f"Generado por Coffee Code API · {datetime.now().strftime('%d/%m/%Y %H:%M')}", ftr))
     doc.build(story)
@@ -133,6 +160,18 @@ def generar_pdf_inventario(datos: dict) -> io.BytesIO:
         )
     else:
         story.append(Paragraph("Sin ingredientes bajo el stock mínimo.", sub))
+
+    if datos["ranking_consumo"]:
+        story.append(Paragraph("Ranking de consumo de ingredientes", h2))
+        story.append(
+            _tabla(
+                [["Ingrediente", "Cantidad consumida"]]
+                + [
+                    [fila["nombre"], f"{fila['cantidad_consumida']} {fila['unidad']}"]
+                    for fila in datos["ranking_consumo"]
+                ]
+            )
+        )
 
     story.append(Spacer(1, 0.8 * cm))
     story.append(Paragraph(f"Generado por Coffee Code API · {datetime.now().strftime('%d/%m/%Y %H:%M')}", ftr))
@@ -170,6 +209,30 @@ def generar_xlsx_financiero(datos: dict) -> io.BytesIO:
             ]
         )
 
+    hoja_categoria = libro.create_sheet("Ventas por categoría")
+    hoja_categoria.append(["Categoría", "Total"])
+    for celda in hoja_categoria[1]:
+        celda.fill = _RELLENO_ENCABEZADO
+        celda.font = _FUENTE_ENCABEZADO
+    for fila in datos["ventas_por_categoria"]:
+        hoja_categoria.append([fila["nombre"], float(fila["total"])])
+
+    hoja_usuario = libro.create_sheet("Ventas por usuario")
+    hoja_usuario.append(["Usuario", "Total"])
+    for celda in hoja_usuario[1]:
+        celda.fill = _RELLENO_ENCABEZADO
+        celda.font = _FUENTE_ENCABEZADO
+    for fila in datos["ventas_por_usuario"]:
+        hoja_usuario.append([fila["nombre"], float(fila["total"])])
+
+    hoja_metodo_pago = libro.create_sheet("Ventas por método de pago")
+    hoja_metodo_pago.append(["Método de pago", "Total"])
+    for celda in hoja_metodo_pago[1]:
+        celda.fill = _RELLENO_ENCABEZADO
+        celda.font = _FUENTE_ENCABEZADO
+    for fila in datos["ventas_por_metodo_pago"]:
+        hoja_metodo_pago.append([fila["metodo_pago"], float(fila["total"])])
+
     buffer = io.BytesIO()
     libro.save(buffer)
     buffer.seek(0)
@@ -194,6 +257,14 @@ def generar_xlsx_inventario(datos: dict) -> io.BytesIO:
                 ", ".join(fila["productos_afectados"]),
             ]
         )
+
+    hoja_consumo = libro.create_sheet("Ranking de consumo")
+    hoja_consumo.append(["Ingrediente", "Unidad", "Cantidad consumida"])
+    for celda in hoja_consumo[1]:
+        celda.fill = _RELLENO_ENCABEZADO
+        celda.font = _FUENTE_ENCABEZADO
+    for fila in datos["ranking_consumo"]:
+        hoja_consumo.append([fila["nombre"], fila["unidad"], float(fila["cantidad_consumida"])])
 
     buffer = io.BytesIO()
     libro.save(buffer)
