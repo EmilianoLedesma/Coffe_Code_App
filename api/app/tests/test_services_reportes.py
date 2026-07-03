@@ -171,7 +171,7 @@ def test_construir_reporte_financiero(db_session, catalogos, mesa_libre, usuario
     hasta = datetime(2026, 6, 30, tzinfo=timezone.utc)
     resultado = construir_reporte_financiero(db_session, desde, hasta)
 
-    assert resultado["total_ventas"] == Decimal("550.00")
+    assert resultado["total_ventas"] == Decimal("638.00")
     assert resultado["margen_pct"] > Decimal("0")
     assert len(resultado["ranking_margen"]) == 1
     assert resultado["variacion_ventas_pct"] is None  # sin ventas en periodo anterior

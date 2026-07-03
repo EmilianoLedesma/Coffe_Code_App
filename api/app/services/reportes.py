@@ -15,7 +15,7 @@ from app.data.tickets import Ticket
 
 def calcular_resumen_caja(db: Session, desde: datetime, hasta: datetime) -> dict:
     total_ventas = (
-        db.query(func.coalesce(func.sum(Ticket.subtotal), 0))
+        db.query(func.coalesce(func.sum(Ticket.total), 0))
         .filter(Ticket.fecha_emision >= desde, Ticket.fecha_emision <= hasta)
         .scalar()
     )
