@@ -115,3 +115,41 @@ def obtener_reporte_admin(base_url: str, token: str, desde: str, hasta: str) -> 
     return _request(
         "GET", base_url, "/api/reportes", token=token, params={"desde": desde, "hasta": hasta}
     )
+
+
+def obtener_reporte_financiero(base_url: str, token: str, desde: str, hasta: str) -> dict:
+    return _request(
+        "GET",
+        base_url,
+        "/api/reportes/financiero",
+        token=token,
+        params={"desde": desde, "hasta": hasta},
+    )
+
+
+def obtener_reporte_inventario(base_url: str, token: str) -> dict:
+    return _request("GET", base_url, "/api/reportes/inventario", token=token)
+
+
+def descargar_reporte(
+    base_url: str, token: str, categoria: str, formato: str, params: dict | None = None
+) -> requests.Response:
+    try:
+        respuesta = requests.request(
+            "GET",
+            f"{base_url}/api/reportes/{categoria}/{formato}",
+            headers=_headers(token),
+            params=params or {},
+            timeout=_TIMEOUT,
+        )
+    except requests.RequestException as exc:
+        raise ApiError(None, f"No se pudo conectar con la API: {exc}") from exc
+
+    if respuesta.status_code >= 400:
+        try:
+            detalle = respuesta.json().get("detail", respuesta.text)
+        except ValueError:
+            detalle = respuesta.text
+        raise ApiError(respuesta.status_code, detalle)
+
+    return respuesta
