@@ -18,3 +18,40 @@ class ReporteAdmin(BaseModel):
     total_gastos: Decimal
     ganancia_neta: Decimal
     top_productos: list[TopProductoOut]
+
+
+class RankingMargenItem(BaseModel):
+    producto_id: int
+    nombre: str
+    ingresos: Decimal
+    costo_total: Decimal
+    margen: Decimal
+    margen_pct: Decimal
+
+
+class ReporteFinancieroOut(BaseModel):
+    desde: datetime
+    hasta: datetime
+    total_ventas: Decimal
+    total_gastos: Decimal
+    ganancia_neta: Decimal
+    margen_pct: Decimal
+    margen_pct_anterior: Decimal
+    variacion_ventas_pct: Decimal | None
+    variacion_ganancia_pct: Decimal | None
+    ranking_margen: list[RankingMargenItem]
+
+
+class RiesgoInventarioItem(BaseModel):
+    id: int
+    nombre: str
+    unidad: str
+    stock_actual: Decimal
+    stock_minimo: Decimal
+    falta: Decimal
+    costo_reposicion: Decimal
+    productos_afectados: list[str]
+
+
+class ReporteInventarioOut(BaseModel):
+    riesgo: list[RiesgoInventarioItem]
