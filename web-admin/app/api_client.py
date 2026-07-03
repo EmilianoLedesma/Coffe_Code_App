@@ -85,6 +85,14 @@ def crear_ingrediente(base_url: str, token: str, payload: dict) -> dict:
     return _request("POST", base_url, "/ingredientes", token=token, json=payload)
 
 
+def actualizar_ingrediente(base_url: str, token: str, ingrediente_id: int, payload: dict) -> dict:
+    return _request("PUT", base_url, f"/ingredientes/{ingrediente_id}", token=token, json=payload)
+
+
+def desactivar_ingrediente(base_url: str, token: str, ingrediente_id: int) -> dict:
+    return _request("PUT", base_url, f"/ingredientes/{ingrediente_id}/desactivar", token=token)
+
+
 def ajustar_stock_ingrediente(base_url: str, token: str, ingrediente_id: int, cantidad: str) -> dict:
     return _request(
         "PUT",
