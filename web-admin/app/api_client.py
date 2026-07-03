@@ -111,12 +111,6 @@ def eliminar_receta(base_url: str, token: str, producto_id: int, ingrediente_id:
     )
 
 
-def obtener_reporte_admin(base_url: str, token: str, desde: str, hasta: str) -> dict:
-    return _request(
-        "GET", base_url, "/api/reportes", token=token, params={"desde": desde, "hasta": hasta}
-    )
-
-
 def obtener_reporte_financiero(base_url: str, token: str, desde: str, hasta: str) -> dict:
     return _request(
         "GET",

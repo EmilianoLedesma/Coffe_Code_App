@@ -1,19 +1,14 @@
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
 from flask import Blueprint, Response, abort, request
 
 from app.api_client import descargar_reporte
 from app.auth import api_base_url, current_token, login_required
+from app.utils import parsear_fecha as _parsear_fecha
 
 bp = Blueprint("reportes", __name__, url_prefix="/reportes")
 
 _FORMATOS_VALIDOS = {"pdf", "xlsx"}
-
-
-def _parsear_fecha(valor: str | None, default: date) -> date:
-    if not valor:
-        return default
-    return datetime.strptime(valor, "%Y-%m-%d").date()
 
 
 def _proxy(categoria: str, formato: str, params: dict) -> Response:

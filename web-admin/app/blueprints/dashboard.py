@@ -1,17 +1,12 @@
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
 from flask import Blueprint, render_template, request
 
 from app.api_client import obtener_reporte_financiero, obtener_reporte_inventario
 from app.auth import api_base_url, current_token, login_required
+from app.utils import parsear_fecha as _parsear_fecha
 
 bp = Blueprint("dashboard", __name__)
-
-
-def _parsear_fecha(valor: str | None, default: date) -> date:
-    if not valor:
-        return default
-    return datetime.strptime(valor, "%Y-%m-%d").date()
 
 
 @bp.route("/")
