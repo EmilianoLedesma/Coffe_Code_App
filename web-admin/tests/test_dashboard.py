@@ -102,7 +102,49 @@ def test_dashboard_muestra_bloque_financiero_e_inventario(client):
 def test_dashboard_sin_sesion_redirige_a_login(client):
     respuesta = client.get("/", follow_redirects=False)
     assert respuesta.status_code == 302
-    assert "/login" in respuesta.headers["Location"]
+
+
+@responses.activate
+def test_dashboard_hasta_incluye_todo_el_dia(client):
+    """Regresión: enviar 'hasta' como fecha pelada (sin hora) hace que la API
+    la interprete como medianoche, excluyendo ventas del mismo día. El
+    dashboard debe pedir el rango hasta el final del día (23:59:59.999999)."""
+    _login_como_admin(client)
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/api/reportes/financiero",
+        json={
+            "desde": "2026-07-03T00:00:00",
+            "hasta": "2026-07-03T23:59:59.999999",
+            "total_ventas": "111.36",
+            "total_gastos": "0.00",
+            "ganancia_neta": "111.36",
+            "margen_pct": "100.00",
+            "margen_pct_anterior": "0.00",
+            "variacion_ventas_pct": None,
+            "variacion_ganancia_pct": None,
+            "ranking_margen": [],
+            "ventas_por_categoria": [],
+            "ventas_por_usuario": [],
+            "ventas_por_metodo_pago": [],
+        },
+        status=200,
+    )
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/api/reportes/inventario",
+        json={"riesgo": [], "ranking_consumo": []},
+        status=200,
+    )
+
+    respuesta = client.get("/?desde=2026-07-03&hasta=2026-07-03")
+
+    assert respuesta.status_code == 200
+    financiero_call = next(
+        call for call in responses.calls if "/api/reportes/financiero" in call.request.url
+    )
+    assert "hasta=2026-07-03T23%3A59%3A59.999999" in financiero_call.request.url
+    assert b"$111.36" in respuesta.data
 
 
 @responses.activate

@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 
 from flask import Blueprint, render_template, request
 
@@ -19,7 +19,9 @@ def index():
     hasta = _parsear_fecha(request.args.get("hasta"), hoy)
     desde = _parsear_fecha(request.args.get("desde"), hoy - timedelta(days=30))
 
-    financiero = obtener_reporte_financiero(base_url, token, desde.isoformat(), hasta.isoformat())
+    desde_dt = datetime.combine(desde, time.min)
+    hasta_dt = datetime.combine(hasta, time.max)
+    financiero = obtener_reporte_financiero(base_url, token, desde_dt.isoformat(), hasta_dt.isoformat())
     inventario = obtener_reporte_inventario(base_url, token)
 
     return render_template(
