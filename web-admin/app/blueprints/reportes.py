@@ -127,3 +127,19 @@ def exportar_xlsx():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename=reporte_{desde}_a_{hasta}.xlsx"},
     )
+
+
+@bp.route("/financiero/exportar.<formato>")
+@login_required
+def exportar_financiero(formato):
+    if formato == "xlsx":
+        return exportar_xlsx()
+    return exportar_pdf()
+
+
+@bp.route("/inventario/exportar.<formato>")
+@login_required
+def exportar_inventario(formato):
+    if formato == "xlsx":
+        return exportar_xlsx()
+    return exportar_pdf()

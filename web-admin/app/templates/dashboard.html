@@ -1,115 +1,130 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — Coffee Code Admin{% endblock %}
 {% block content %}
-<div class="mb-6 flex items-center justify-between">
-  <h1 class="text-2xl font-semibold text-starbucks">Dashboard</h1>
-  <form method="get" class="flex items-center gap-2 text-sm">
-    <input type="date" name="desde" value="{{ desde.isoformat() }}" class="input-field !w-auto py-1.5">
-    <span class="text-black/58">a</span>
-    <input type="date" name="hasta" value="{{ hasta.isoformat() }}" class="input-field !w-auto py-1.5">
-    <button type="submit" class="btn btn-primary">Filtrar</button>
-    <a href="{{ url_for('reportes.exportar_pdf', desde=desde.isoformat(), hasta=hasta.isoformat()) }}" class="btn btn-outline">PDF</a>
-    <a href="{{ url_for('reportes.exportar_xlsx', desde=desde.isoformat(), hasta=hasta.isoformat()) }}" class="btn btn-outline">XLSX</a>
-  </form>
-</div>
-
-<div class="grid grid-cols-4 gap-4 mb-8">
-  <div class="card p-5">
-    <div class="text-xs uppercase tracking-wide text-black/58">Ventas</div>
-    <div class="text-2xl font-semibold mt-1">${{ "%.2f"|format(reporte.total_ventas|float) }}</div>
-    {% if variacion_ventas is not none %}
-    <div class="text-xs mt-1 {{ 'text-starbucks' if variacion_ventas >= 0 else 'text-[#c82014]' }}">
-      {{ "+" if variacion_ventas >= 0 else "" }}{{ variacion_ventas }}% vs. periodo anterior
+<div x-data="{ tab: 'financiero' }">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-semibold text-starbucks">Dashboard</h1>
+    <div class="flex gap-2">
+      <button @click="tab = 'financiero'" class="btn" :class="tab === 'financiero' ? 'btn-primary' : 'btn-ghost'">Financiero</button>
+      <button @click="tab = 'inventario'" class="btn" :class="tab === 'inventario' ? 'btn-primary' : 'btn-ghost'">Inventario</button>
     </div>
-    {% endif %}
   </div>
-  <div class="card p-5">
-    <div class="text-xs uppercase tracking-wide text-black/58">Gastos</div>
-    <div class="text-2xl font-semibold mt-1">${{ "%.2f"|format(reporte.total_gastos|float) }}</div>
-  </div>
-  <div class="card p-5">
-    <div class="text-xs uppercase tracking-wide text-black/58">Ganancia neta</div>
-    <div class="text-2xl font-semibold mt-1">${{ "%.2f"|format(reporte.ganancia_neta|float) }}</div>
-    {% if variacion_ganancia is not none %}
-    <div class="text-xs mt-1 {{ 'text-starbucks' if variacion_ganancia >= 0 else 'text-[#c82014]' }}">
-      {{ "+" if variacion_ganancia >= 0 else "" }}{{ variacion_ganancia }}% vs. periodo anterior
+
+  <div x-show="tab === 'financiero'">
+    <form method="get" class="flex items-center gap-2 text-sm mb-6">
+      <input type="date" name="desde" value="{{ desde.isoformat() }}" class="input-field !w-auto py-1.5">
+      <span class="text-black/58">a</span>
+      <input type="date" name="hasta" value="{{ hasta.isoformat() }}" class="input-field !w-auto py-1.5">
+      <button type="submit" class="btn btn-primary">Filtrar</button>
+      <a href="{{ url_for('reportes.exportar_financiero', formato='pdf', desde=desde.isoformat(), hasta=hasta.isoformat()) }}" class="btn btn-outline">PDF</a>
+      <a href="{{ url_for('reportes.exportar_financiero', formato='xlsx', desde=desde.isoformat(), hasta=hasta.isoformat()) }}" class="btn btn-outline">XLSX</a>
+    </form>
+
+    <div class="grid grid-cols-4 gap-4 mb-8">
+      <div class="card p-5">
+        <div class="text-xs uppercase tracking-wide text-black/58">Ventas</div>
+        <div class="text-2xl font-semibold mt-1">${{ "%.2f"|format(financiero.total_ventas|float) }}</div>
+        {% if financiero.variacion_ventas_pct is not none %}
+        <div class="text-xs mt-1 {{ 'text-starbucks' if financiero.variacion_ventas_pct|float >= 0 else 'text-[#c82014]' }}">
+          {{ "+" if financiero.variacion_ventas_pct|float >= 0 else "" }}{{ financiero.variacion_ventas_pct }}% vs. periodo anterior
+        </div>
+        {% endif %}
+      </div>
+      <div class="card p-5">
+        <div class="text-xs uppercase tracking-wide text-black/58">Gastos</div>
+        <div class="text-2xl font-semibold mt-1">${{ "%.2f"|format(financiero.total_gastos|float) }}</div>
+      </div>
+      <div class="card p-5">
+        <div class="text-xs uppercase tracking-wide text-black/58">Ganancia neta</div>
+        <div class="text-2xl font-semibold mt-1">${{ "%.2f"|format(financiero.ganancia_neta|float) }}</div>
+        {% if financiero.variacion_ganancia_pct is not none %}
+        <div class="text-xs mt-1 {{ 'text-starbucks' if financiero.variacion_ganancia_pct|float >= 0 else 'text-[#c82014]' }}">
+          {{ "+" if financiero.variacion_ganancia_pct|float >= 0 else "" }}{{ financiero.variacion_ganancia_pct }}% vs. periodo anterior
+        </div>
+        {% endif %}
+      </div>
+      <div class="card p-5">
+        <div class="text-xs uppercase tracking-wide text-black/58">Margen</div>
+        <div class="text-2xl font-semibold mt-1">{{ financiero.margen_pct }}%</div>
+        <div class="text-xs mt-1 text-black/58">Periodo anterior: {{ financiero.margen_pct_anterior }}%</div>
+      </div>
     </div>
-    {% endif %}
-  </div>
-  <div class="card p-5">
-    <div class="text-xs uppercase tracking-wide text-black/58">Margen</div>
-    <div class="text-2xl font-semibold mt-1">{{ margen_actual }}%</div>
-    <div class="text-xs mt-1 text-black/58">Periodo anterior: {{ margen_anterior }}%</div>
-  </div>
-</div>
 
-<div class="grid grid-cols-2 gap-6 mb-8">
-  <div class="card p-5">
-    <h2 class="text-lg font-semibold mb-3">Ventas vs. gastos</h2>
-    <canvas id="chartVentasGastos" height="180"></canvas>
-  </div>
-  <div class="card p-5">
-    <h2 class="text-lg font-semibold mb-3">Ranking de margen por producto</h2>
-    <canvas id="chartMargen" height="180"></canvas>
-  </div>
-</div>
+    <div class="grid grid-cols-2 gap-6 mb-8">
+      <div class="card p-5">
+        <h2 class="text-lg font-semibold mb-3">Ventas vs. gastos</h2>
+        <canvas id="chartVentasGastos" height="180"></canvas>
+      </div>
+      <div class="card p-5">
+        <h2 class="text-lg font-semibold mb-3">Ranking de margen por producto</h2>
+        <canvas id="chartMargen" height="180"></canvas>
+      </div>
+    </div>
 
-<div class="card overflow-hidden mb-8">
-  <div class="p-5 pb-0">
-    <h2 class="text-lg font-semibold mb-3">Rendimiento de producto</h2>
+    <div class="card overflow-hidden">
+      <div class="p-5 pb-0">
+        <h2 class="text-lg font-semibold mb-3">Rendimiento de producto</h2>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Ingresos</th>
+            <th>Costo estimado</th>
+            <th>Margen</th>
+            <th>Margen %</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fila in financiero.ranking_margen %}
+          <tr>
+            <td>{{ fila.nombre }}</td>
+            <td>${{ "%.2f"|format(fila.ingresos|float) }}</td>
+            <td>${{ "%.2f"|format(fila.costo_total|float) }}</td>
+            <td>${{ "%.2f"|format(fila.margen|float) }}</td>
+            <td>{{ fila.margen_pct }}%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-  <table class="data-table">
-    <thead>
-      <tr>
-        <th>Producto</th>
-        <th>Ingresos</th>
-        <th>Costo estimado</th>
-        <th>Margen</th>
-        <th>Margen %</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for fila in ranking %}
-      <tr>
-        <td>{{ fila.nombre }}</td>
-        <td>${{ "%.2f"|format(fila.ingresos) }}</td>
-        <td>${{ "%.2f"|format(fila.costo_total) }}</td>
-        <td>${{ "%.2f"|format(fila.margen) }}</td>
-        <td>{{ fila.margen_pct }}%</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
 
-<div class="card overflow-hidden">
-  <div class="p-5 pb-0">
-    <h2 class="text-lg font-semibold mb-3">Riesgo de inventario</h2>
+  <div x-show="tab === 'inventario'">
+    <div class="flex justify-end gap-2 mb-6">
+      <a href="{{ url_for('reportes.exportar_inventario', formato='pdf') }}" class="btn btn-outline">PDF</a>
+      <a href="{{ url_for('reportes.exportar_inventario', formato='xlsx') }}" class="btn btn-outline">XLSX</a>
+    </div>
+    <div class="card overflow-hidden">
+      <div class="p-5 pb-0">
+        <h2 class="text-lg font-semibold mb-3">Riesgo de inventario</h2>
+      </div>
+      {% if inventario.riesgo %}
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Ingrediente</th>
+            <th>Falta</th>
+            <th>Costo de reposición</th>
+            <th>Productos afectados</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fila in inventario.riesgo %}
+          <tr class="row-risk">
+            <td>{{ fila.nombre }}</td>
+            <td>{{ fila.falta }} {{ fila.unidad }}</td>
+            <td>${{ "%.2f"|format(fila.costo_reposicion|float) }}</td>
+            <td>{{ fila.productos_afectados | join(", ") }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="text-starbucks text-sm p-5">Sin ingredientes bajo el stock mínimo.</p>
+      {% endif %}
+    </div>
   </div>
-  {% if riesgo %}
-  <table class="data-table">
-    <thead>
-      <tr>
-        <th>Ingrediente</th>
-        <th>Falta</th>
-        <th>Costo de reposición</th>
-        <th>Productos afectados</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for fila in riesgo %}
-      <tr class="row-risk">
-        <td>{{ fila.nombre }}</td>
-        <td>{{ fila.falta }} {{ fila.unidad }}</td>
-        <td>${{ "%.2f"|format(fila.costo_reposicion) }}</td>
-        <td>{{ fila.productos_afectados | join(", ") }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p class="text-starbucks text-sm p-5">Sin ingredientes bajo el stock mínimo.</p>
-  {% endif %}
 </div>
 {% endblock %}
 
@@ -122,7 +137,7 @@
       labels: ['Ventas', 'Gastos', 'Ganancia neta'],
       datasets: [{
         label: 'Periodo actual',
-        data: [{{ reporte.total_ventas }}, {{ reporte.total_gastos }}, {{ reporte.ganancia_neta }}],
+        data: [{{ financiero.total_ventas }}, {{ financiero.total_gastos }}, {{ financiero.ganancia_neta }}],
         backgroundColor: [coffeeChartPalette.accent, coffeeChartPalette.negative, coffeeChartPalette.positive],
         borderRadius: 6,
       }]
@@ -133,10 +148,10 @@
   new Chart(document.getElementById('chartMargen'), {
     type: 'bar',
     data: {
-      labels: [{% for fila in ranking %}{{ fila.nombre|tojson }},{% endfor %}],
+      labels: [{% for fila in financiero.ranking_margen %}{{ fila.nombre|tojson }},{% endfor %}],
       datasets: [{
         label: 'Margen %',
-        data: [{% for fila in ranking %}{{ fila.margen_pct }},{% endfor %}],
+        data: [{% for fila in financiero.ranking_margen %}{{ fila.margen_pct }},{% endfor %}],
         backgroundColor: coffeeChartPalette.uplift,
         borderRadius: 6,
       }]
