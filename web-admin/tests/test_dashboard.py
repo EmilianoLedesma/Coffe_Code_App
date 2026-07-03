@@ -103,3 +103,34 @@ def test_dashboard_sin_sesion_redirige_a_login(client):
     respuesta = client.get("/", follow_redirects=False)
     assert respuesta.status_code == 302
     assert "/login" in respuesta.headers["Location"]
+
+
+@responses.activate
+def test_dashboard_muestra_ventas_por_metodo_pago(client):
+    _login_como_admin(client)
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/api/reportes/financiero",
+        json={
+            "desde": "2026-01-01T00:00:00", "hasta": "2026-01-31T00:00:00",
+            "total_ventas": "100.00", "total_gastos": "20.00", "ganancia_neta": "80.00",
+            "margen_pct": "80.00", "margen_pct_anterior": "70.00",
+            "variacion_ventas_pct": None, "variacion_ganancia_pct": None,
+            "ranking_margen": [],
+            "ventas_por_categoria": [],
+            "ventas_por_usuario": [],
+            "ventas_por_metodo_pago": [{"metodo_pago": "Efectivo", "total": "100.00"}],
+        },
+        status=200,
+    )
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/api/reportes/inventario",
+        json={"riesgo": [], "ranking_consumo": []},
+        status=200,
+    )
+
+    respuesta = client.get("/")
+
+    assert respuesta.status_code == 200
+    assert b"Efectivo" in respuesta.data
