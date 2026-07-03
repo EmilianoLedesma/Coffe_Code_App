@@ -49,7 +49,7 @@ Una cafetería que opera sin sistema digital integrado pierde tiempo y dinero en
 |:--|:--|:--|
 | **API Central** | `FastAPI` + `Python 3.12` | Única capa que toca PostgreSQL. Toda la lógica de negocio, JWT, WebSockets. |
 | **Cliente Móvil** | `React Native` + `Expo` | App por rol: Mesero, Cocina, Caja. *(próximamente)* |
-| **Panel Admin** | `Flask` | Usuarios/roles, estadísticas, export PDF/XLSX. Consume la API, no toca la BD. *(próximamente)* |
+| **Panel Admin** | `Flask` | Usuarios/roles, catálogo, estadísticas accionables, export PDF/XLSX. Consume la API, no toca la BD. |
 | **Base de datos** | `PostgreSQL 15` | Única fuente de verdad — modelo 2FN, 16 entidades. |
 
 </div>
@@ -168,14 +168,16 @@ cd Coffe_Code_App
 
 cp api/.env.example api/.env        # ajusta JWT_SECRET si lo vas a exponer
 
-docker compose up -d --build        # levanta Postgres + API
+docker compose up -d --build        # levanta Postgres + API + Web Admin
 
 cd api
 python -m alembic upgrade head      # migraciones
-python -m app.seed                  # catálogo + menú de demo
+python -m app.seed                  # catálogo, menú y ventas de demo
 ```
 
 La API queda en **`http://localhost:8010`** · Swagger interactivo en **`/docs`**.
+
+La Web Admin queda en **`http://localhost:8020`** (login solo para rol Administrador).
 
 <div align="center">
 
@@ -194,8 +196,15 @@ La API queda en **`http://localhost:8010`** · Swagger interactivo en **`/docs`*
 
 ```bash
 cd api
-pytest app/tests/ -v          # 15 tests contra PostgreSQL real (transacción + rollback)
+pytest app/tests/ -v          # 20 tests contra PostgreSQL real (transacción + rollback)
 ```
+
+```bash
+cd web-admin
+pytest tests/ -v              # 32 tests (23 con la API mockeada via `responses`, 9 de calculos de reportes)
+```
+
+> El test de exportación a PDF requiere las librerías nativas de WeasyPrint (GTK/Pango). En Windows sin GTK3 Runtime instalado falla localmente; dentro de Docker (`coffee_code_web`) funciona correctamente porque el `Dockerfile` ya las instala.
 
 ```bash
 cd postman
@@ -219,7 +228,12 @@ coffee-code/
 │       ├── websockets/   # ConnectionManager en tiempo real
 │       └── tests/        # pytest
 ├── mobile/               # React Native + Expo (próximamente)
-├── web-admin/            # Flask (próximamente)
+├── web-admin/            # Flask — panel de administración
+│   └── app/
+│       ├── blueprints/   # auth, dashboard, usuarios, productos, ingredientes, recetas, reportes
+│       ├── templates/    # Jinja2 + Tailwind + Alpine.js
+│       ├── api_client.py # cliente HTTP hacia la API central
+│       └── reportes.py   # calculos de reportes accionables (margen, riesgo de inventario)
 ├── postman/              # Colección validada con newman
 └── docs/
 ```
