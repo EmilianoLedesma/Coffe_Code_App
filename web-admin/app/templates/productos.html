@@ -30,6 +30,7 @@
             {% if producto.disponible %}<span class="badge badge-success">Sí</span>{% else %}<span class="badge badge-error">No</span>{% endif %}
           </td>
           <td class="text-right space-x-3">
+            <a href="{{ url_for('recetas.detalle', producto_id=producto.id) }}" class="btn-link">Receta</a>
             <button
               @click='modalAbierto = true; editando = {{ {
                 "id": producto.id,
