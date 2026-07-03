@@ -575,6 +575,70 @@
           }
         },
         {
+          "name": "Actualizar Ingrediente",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Leche entera\",\n  \"unidad\": \"ml\",\n  \"stock_minimo\": 1000,\n  \"costo_unitario\": 0.03\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/ingredientes/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes",
+                "1"
+              ]
+            },
+            "description": "Edita nombre/unidad/stock_minimo/costo_unitario. No modifica stock_actual (usar /stock para eso)."
+          }
+        },
+        {
+          "name": "Desactivar Ingrediente",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ingredientes/1/desactivar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes",
+                "1",
+                "desactivar"
+              ]
+            },
+            "description": "Da de baja logica el ingrediente (activo=False)."
+          }
+        },
+        {
           "name": "Crear Receta (producto_ingrediente)",
           "request": {
             "method": "POST",
