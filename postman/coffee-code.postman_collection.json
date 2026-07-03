@@ -40,6 +40,10 @@
     {
       "key": "ingrediente_id",
       "value": ""
+    },
+    {
+      "key": "token_admin",
+      "value": ""
     }
   ],
   "item": [
@@ -906,6 +910,104 @@
                   "key": "hasta",
                   "value": "2026-12-31T23:59:59Z"
                 }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Admin - Corte Diario",
+      "item": [
+        {
+          "name": "Generar Corte",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/cortes-diarios?fecha=2026-06-15",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cortes-diarios"
+              ],
+              "query": [
+                {
+                  "key": "fecha",
+                  "value": "2026-06-15"
+                }
+              ]
+            },
+            "description": "Genera (o regenera, upsert) el corte del dia indicado. Solo rol Administrador."
+          }
+        },
+        {
+          "name": "Listar Cortes",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/cortes-diarios?desde=2026-06-01&hasta=2026-06-30",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cortes-diarios"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Corte",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/cortes-diarios/2026-06-15",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cortes-diarios",
+                "2026-06-15"
               ]
             }
           }
