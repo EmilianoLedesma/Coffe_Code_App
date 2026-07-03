@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Ingredientes — Coffee Code Admin{% endblock %}
 {% block content %}
-<div x-data="{ modalAbierto: false, modalStock: null }">
+<div x-data="{ modalAbierto: false, modalStock: null, modalEditar: null }">
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-semibold text-starbucks">Inventario de ingredientes</h1>
     <button @click="modalAbierto = true" class="btn btn-primary">
@@ -33,6 +33,18 @@
           <td>${{ "%.2f"|format(ingrediente.costo_unitario|float) }}</td>
           <td class="text-right">
             <button @click='modalStock = {{ {"id": ingrediente.id, "nombre": ingrediente.nombre} | tojson }}' class="btn-link">Ajustar stock</button>
+            <button
+              @click='modalEditar = {{ {
+                "id": ingrediente.id,
+                "nombre": ingrediente.nombre,
+                "unidad": ingrediente.unidad,
+                "stock_minimo": ingrediente.stock_minimo,
+                "costo_unitario": ingrediente.costo_unitario,
+              } | tojson }}'
+              class="btn-link">Editar</button>
+            <form action="{{ url_for('ingredientes.desactivar', ingrediente_id=ingrediente.id) }}" method="post" class="inline" onsubmit="return confirm('¿Desactivar este ingrediente?');">
+              <button type="submit" class="btn-link-danger">Desactivar</button>
+            </form>
           </td>
         </tr>
         {% endfor %}
@@ -68,6 +80,24 @@
           <button type="submit" class="btn btn-primary">Aplicar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div x-show="modalEditar" x-cloak class="fixed inset-0 modal-overlay flex items-center justify-center z-50">
+    <div class="modal-panel p-6 w-full max-w-md" @click.outside="modalEditar = null">
+      <h2 class="text-lg font-semibold text-starbucks mb-4">Editar ingrediente — <span x-text="modalEditar && modalEditar.nombre"></span></h2>
+      <template x-if="modalEditar">
+        <form :action="modalEditar ? `/ingredientes/${modalEditar.id}/editar` : '#'" method="post" class="space-y-3">
+          <input class="input-field" name="nombre" placeholder="Nombre" x-model="modalEditar.nombre" required>
+          <input class="input-field" name="unidad" placeholder="Unidad (ml, g, pza)" x-model="modalEditar.unidad" required>
+          <input class="input-field" type="number" step="0.01" min="0" name="stock_minimo" placeholder="Stock mínimo" x-model="modalEditar.stock_minimo" required>
+          <input class="input-field" type="number" step="0.01" min="0.01" name="costo_unitario" placeholder="Costo unitario" x-model="modalEditar.costo_unitario" required>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" @click="modalEditar = null" class="btn btn-ghost">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+          </div>
+        </form>
+      </template>
     </div>
   </div>
 </div>

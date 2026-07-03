@@ -12,6 +12,13 @@ class IngredienteCreate(BaseModel):
     activo: bool = True
 
 
+class IngredienteUpdate(BaseModel):
+    nombre: str | None = Field(default=None, min_length=2, max_length=150)
+    unidad: str | None = Field(default=None, min_length=1, max_length=20)
+    stock_minimo: Decimal | None = Field(default=None, ge=0)
+    costo_unitario: Decimal | None = Field(default=None, gt=0)
+
+
 class IngredienteOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

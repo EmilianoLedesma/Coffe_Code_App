@@ -80,3 +80,40 @@ def test_ajustar_stock_envia_delta_a_la_api(client):
 
     cuerpo_enviado = json.loads(responses.calls[-1].request.body)
     assert cuerpo_enviado == {"cantidad": "1000"}
+
+
+@responses.activate
+def test_editar_ingrediente(client):
+    _login_como_admin(client)
+    responses.add(
+        responses.PUT,
+        f"{BASE_URL}/ingredientes/1",
+        json={"id": 1, "nombre": "Leche deslactosada"},
+        status=200,
+    )
+
+    respuesta = client.post(
+        "/ingredientes/1/editar",
+        data={"nombre": "Leche deslactosada", "unidad": "ml", "stock_minimo": "1000", "costo_unitario": "0.03"},
+        follow_redirects=False,
+    )
+
+    assert respuesta.status_code == 302
+    assert responses.calls[-1].request.method == "PUT"
+
+
+@responses.activate
+def test_desactivar_ingrediente(client):
+    _login_como_admin(client)
+    responses.add(
+        responses.PUT,
+        f"{BASE_URL}/ingredientes/1/desactivar",
+        json={"id": 1, "activo": False},
+        status=200,
+    )
+
+    respuesta = client.post("/ingredientes/1/desactivar", follow_redirects=False)
+
+    assert respuesta.status_code == 302
+    assert responses.calls[-1].request.method == "PUT"
+    assert responses.calls[-1].request.url.endswith("/ingredientes/1/desactivar")

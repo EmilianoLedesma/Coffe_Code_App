@@ -1,6 +1,13 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from app.api_client import ApiError, ajustar_stock_ingrediente, crear_ingrediente, listar_ingredientes
+from app.api_client import (
+    ApiError,
+    actualizar_ingrediente,
+    ajustar_stock_ingrediente,
+    crear_ingrediente,
+    desactivar_ingrediente,
+    listar_ingredientes,
+)
 from app.auth import api_base_url, current_token, login_required
 
 bp = Blueprint("ingredientes", __name__, url_prefix="/ingredientes")
@@ -41,4 +48,32 @@ def ajustar_stock(ingrediente_id: int):
         flash("Stock actualizado correctamente.", "success")
     except ApiError as error:
         flash(f"No se pudo ajustar el stock: {error.detail}", "error")
+    return redirect(url_for("ingredientes.listar"))
+
+
+@bp.route("/<int:ingrediente_id>/editar", methods=["POST"])
+@login_required
+def editar(ingrediente_id: int):
+    payload = {
+        "nombre": request.form["nombre"],
+        "unidad": request.form["unidad"],
+        "stock_minimo": request.form["stock_minimo"],
+        "costo_unitario": request.form["costo_unitario"],
+    }
+    try:
+        actualizar_ingrediente(api_base_url(), current_token(), ingrediente_id, payload)
+        flash("Ingrediente actualizado correctamente.", "success")
+    except ApiError as error:
+        flash(f"No se pudo actualizar el ingrediente: {error.detail}", "error")
+    return redirect(url_for("ingredientes.listar"))
+
+
+@bp.route("/<int:ingrediente_id>/desactivar", methods=["POST"])
+@login_required
+def desactivar(ingrediente_id: int):
+    try:
+        desactivar_ingrediente(api_base_url(), current_token(), ingrediente_id)
+        flash("Ingrediente desactivado.", "success")
+    except ApiError as error:
+        flash(f"No se pudo desactivar el ingrediente: {error.detail}", "error")
     return redirect(url_for("ingredientes.listar"))
