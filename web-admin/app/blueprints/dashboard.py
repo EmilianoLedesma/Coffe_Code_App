@@ -22,7 +22,7 @@ def index():
     desde_dt = datetime.combine(desde, time.min)
     hasta_dt = datetime.combine(hasta, time.max)
     financiero = obtener_reporte_financiero(base_url, token, desde_dt.isoformat(), hasta_dt.isoformat())
-    inventario = obtener_reporte_inventario(base_url, token)
+    inventario = obtener_reporte_inventario(base_url, token, desde_dt.isoformat(), hasta_dt.isoformat())
 
     return render_template(
         "dashboard.html",

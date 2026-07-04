@@ -148,6 +148,57 @@ def test_dashboard_hasta_incluye_todo_el_dia(client):
 
 
 @responses.activate
+def test_dashboard_envia_rango_de_fechas_al_reporte_de_inventario(client):
+    """Regresión: el dashboard calculaba desde_dt/hasta_dt para el reporte
+    financiero pero llamaba a obtener_reporte_inventario sin pasarlos, por lo
+    que construir_reporte_inventario siempre devolvía ranking_consumo=[]
+    sin importar el consumo real ni el rango seleccionado."""
+    _login_como_admin(client)
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/api/reportes/financiero",
+        json={
+            "desde": "2026-06-01T00:00:00",
+            "hasta": "2026-06-30T23:59:59.999999",
+            "total_ventas": "1000.00",
+            "total_gastos": "400.00",
+            "ganancia_neta": "600.00",
+            "margen_pct": "60.00",
+            "margen_pct_anterior": "50.00",
+            "variacion_ventas_pct": "10.00",
+            "variacion_ganancia_pct": "20.00",
+            "ranking_margen": [],
+            "ventas_por_categoria": [],
+            "ventas_por_usuario": [],
+            "ventas_por_metodo_pago": [],
+        },
+        status=200,
+    )
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/api/reportes/inventario",
+        json={
+            "riesgo": [],
+            "ranking_consumo": [
+                {"ingrediente_id": 1, "nombre": "Leche entera", "unidad": "ml", "cantidad_consumida": "5190.00"}
+            ],
+        },
+        status=200,
+    )
+
+    respuesta = client.get("/?desde=2026-06-01&hasta=2026-06-30")
+
+    assert respuesta.status_code == 200
+    inventario_call = next(
+        call for call in responses.calls if "/api/reportes/inventario" in call.request.url
+    )
+    assert "desde=2026-06-01T00%3A00%3A00" in inventario_call.request.url
+    assert "hasta=2026-06-30T23%3A59%3A59.999999" in inventario_call.request.url
+    assert b"Leche entera" in respuesta.data
+    assert b"5190.00" in respuesta.data
+
+
+@responses.activate
 def test_dashboard_muestra_ventas_por_metodo_pago(client):
     _login_como_admin(client)
     responses.add(

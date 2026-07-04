@@ -151,8 +151,14 @@ def obtener_reporte_financiero(base_url: str, token: str, desde: str, hasta: str
     )
 
 
-def obtener_reporte_inventario(base_url: str, token: str) -> dict:
-    return _request("GET", base_url, "/api/reportes/inventario", token=token)
+def obtener_reporte_inventario(base_url: str, token: str, desde: str | None = None, hasta: str | None = None) -> dict:
+    return _request(
+        "GET",
+        base_url,
+        "/api/reportes/inventario",
+        token=token,
+        params={"desde": desde, "hasta": hasta},
+    )
 
 
 def descargar_reporte(
