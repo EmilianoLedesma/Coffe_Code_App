@@ -83,6 +83,59 @@ def test_ajustar_stock_envia_delta_a_la_api(client):
 
 
 @responses.activate
+def test_registrar_compra_envia_datos_a_la_api(client):
+    _login_como_admin(client)
+    responses.add(
+        responses.POST,
+        f"{BASE_URL}/compras",
+        json={
+            "gasto": {"id": 1, "concepto": "Compra de insumo: Leche entera", "monto": "250.00"},
+            "ingrediente_id": 1,
+            "nuevo_stock": "5500.00",
+        },
+        status=201,
+    )
+
+    respuesta = client.post(
+        "/ingredientes/1/registrar-compra",
+        data={"cantidad": "5000", "monto": "250.00"},
+        follow_redirects=False,
+    )
+
+    assert respuesta.status_code == 302
+    import json
+
+    cuerpo_enviado = json.loads(responses.calls[-1].request.body)
+    assert cuerpo_enviado == {"ingrediente_id": 1, "cantidad": "5000", "monto": "250.00"}
+
+
+@responses.activate
+def test_registrar_compra_ingrediente_no_encontrado(client):
+    _login_como_admin(client)
+    responses.add(
+        responses.POST,
+        f"{BASE_URL}/compras",
+        json={"detail": "Ingrediente no encontrado"},
+        status=404,
+    )
+    responses.add(
+        responses.GET,
+        f"{BASE_URL}/ingredientes",
+        json=[],
+        status=200,
+    )
+
+    respuesta = client.post(
+        "/ingredientes/999/registrar-compra",
+        data={"cantidad": "5000", "monto": "250.00"},
+        follow_redirects=True,
+    )
+
+    assert respuesta.status_code == 200
+    assert "No se pudo registrar la compra".encode() in respuesta.data
+
+
+@responses.activate
 def test_editar_ingrediente(client):
     _login_como_admin(client)
     responses.add(

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Ingredientes — Coffee Code Admin{% endblock %}
 {% block content %}
-<div x-data="{ modalAbierto: false, modalStock: null, modalEditar: null }">
+<div x-data="{ modalAbierto: false, modalStock: null, modalCompra: null, modalEditar: null }">
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-semibold text-starbucks">Inventario de ingredientes</h1>
     <button @click="modalAbierto = true" class="btn btn-primary">
@@ -33,6 +33,7 @@
           <td>${{ "%.2f"|format(ingrediente.costo_unitario|float) }}</td>
           <td class="text-right">
             <button @click='modalStock = {{ {"id": ingrediente.id, "nombre": ingrediente.nombre} | tojson }}' class="btn-link">Ajustar stock</button>
+            <button @click='modalCompra = {{ {"id": ingrediente.id, "nombre": ingrediente.nombre} | tojson }}' class="btn-link">Registrar compra</button>
             <button
               @click='modalEditar = {{ {
                 "id": ingrediente.id,
@@ -78,6 +79,22 @@
         <div class="flex justify-end gap-2 pt-2">
           <button type="button" @click="modalStock = null" class="btn btn-ghost">Cancelar</button>
           <button type="submit" class="btn btn-primary">Aplicar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div x-show="modalCompra" x-cloak class="fixed inset-0 modal-overlay flex items-center justify-center z-50">
+    <div class="modal-panel p-6 w-full max-w-sm" @click.outside="modalCompra = null">
+      <h2 class="text-lg font-semibold text-starbucks mb-4">Registrar compra — <span x-text="modalCompra && modalCompra.nombre"></span></h2>
+      <form :action="modalCompra ? `/ingredientes/${modalCompra.id}/registrar-compra` : '#'" method="post" class="space-y-3">
+        <label class="block text-sm text-black/58">Cantidad comprada</label>
+        <input class="input-field" type="number" step="0.01" min="0.01" name="cantidad" required>
+        <label class="block text-sm text-black/58">Monto pagado</label>
+        <input class="input-field" type="number" step="0.01" min="0.01" name="monto" required>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" @click="modalCompra = null" class="btn btn-ghost">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Registrar</button>
         </div>
       </form>
     </div>

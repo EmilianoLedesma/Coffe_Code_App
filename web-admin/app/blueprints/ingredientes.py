@@ -7,6 +7,7 @@ from app.api_client import (
     crear_ingrediente,
     desactivar_ingrediente,
     listar_ingredientes,
+    registrar_compra,
 )
 from app.auth import api_base_url, current_token, login_required
 
@@ -48,6 +49,19 @@ def ajustar_stock(ingrediente_id: int):
         flash("Stock actualizado correctamente.", "success")
     except ApiError as error:
         flash(f"No se pudo ajustar el stock: {error.detail}", "error")
+    return redirect(url_for("ingredientes.listar"))
+
+
+@bp.route("/<int:ingrediente_id>/registrar-compra", methods=["POST"])
+@login_required
+def comprar(ingrediente_id: int):
+    cantidad = request.form["cantidad"]
+    monto = request.form["monto"]
+    try:
+        resultado = registrar_compra(api_base_url(), current_token(), ingrediente_id, cantidad, monto)
+        flash(f"Compra registrada. Nuevo stock: {resultado['nuevo_stock']}.", "success")
+    except ApiError as error:
+        flash(f"No se pudo registrar la compra: {error.detail}", "error")
     return redirect(url_for("ingredientes.listar"))
 
 

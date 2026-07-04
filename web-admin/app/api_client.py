@@ -115,6 +115,16 @@ def ajustar_stock_ingrediente(base_url: str, token: str, ingrediente_id: int, ca
     )
 
 
+def registrar_compra(base_url: str, token: str, ingrediente_id: int, cantidad: str, monto: str) -> dict:
+    return _request(
+        "POST",
+        base_url,
+        "/compras",
+        token=token,
+        json={"ingrediente_id": ingrediente_id, "cantidad": cantidad, "monto": monto},
+    )
+
+
 def listar_receta_producto(base_url: str, token: str, producto_id: int) -> list[dict]:
     return _request(
         "GET", base_url, "/producto_ingrediente", token=token, params={"producto_id": producto_id}
