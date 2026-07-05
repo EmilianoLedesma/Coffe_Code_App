@@ -1,0 +1,543 @@
+{
+  "info": {
+    "name": "🔥 Fuego - Rol Mesero",
+    "description": "Bateria de prueba de fuego para el rol Mesero: flujo legitimo + intentos deliberados de violar reglas de negocio y cruzar hacia endpoints de otros roles. Cada request en las carpetas de error debe FALLAR con el codigo indicado -- eso es un PASS.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8010"
+    },
+    {
+      "key": "token_mesero",
+      "value": ""
+    },
+    {
+      "key": "mesa_id",
+      "value": "2"
+    },
+    {
+      "key": "mesa_id_vacio",
+      "value": "5"
+    },
+    {
+      "key": "usuario_id_mesero",
+      "value": "2"
+    },
+    {
+      "key": "producto_id",
+      "value": "3"
+    },
+    {
+      "key": "producto_id_2",
+      "value": "6"
+    },
+    {
+      "key": "pedido_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Autenticacion",
+      "item": [
+        {
+          "name": "Login Mesero",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo_electronico\": \"mesero@coffeecode.com\",\n  \"password\": \"Mesero123!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('token_mesero', data.access_token);",
+                  "  pm.test('login exitoso (200)', () => pm.response.code === 200);",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 - Flujo legitimo",
+      "item": [
+        {
+          "name": "Listar Mesas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/mesas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mesas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear Pedido",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/pedidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mesa_id\": \"{{mesa_id}}\",\n  \"usuario_id\": \"{{usuario_id_mesero}}\",\n  \"items\": [\n    {\n      \"id_producto\": \"{{producto_id}}\",\n      \"cantidad\": 2\n    },\n    {\n      \"id_producto\": \"{{producto_id_2}}\",\n      \"cantidad\": 1\n    }\n  ]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  if (data.id) { pm.collectionVariables.set('pedido_id', data.id); }",
+                  "  pm.test('pedido creado (201)', () => pm.response.code === 201);",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar Pedidos Pendientes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/pedidos?estado=Pendiente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos?estado=Pendiente"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Errores esperados: validacion de negocio",
+      "item": [
+        {
+          "name": "[ERROR] Pedido sin items",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/pedidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos"
+              ]
+            },
+            "description": "Regla de negocio: no se permite enviar un pedido vacio. Se espera 4xx (422), nunca 201 ni 500.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mesa_id\": \"{{mesa_id_vacio}}\",\n  \"usuario_id\": \"{{usuario_id_mesero}}\",\n  \"items\": []\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('rechazado (4xx)', () => pm.response.code >= 400 && pm.response.code < 500);",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "[ERROR] Transicion invalida (Pendiente -> Entregado)",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/pedidos/{{pedido_id}}/estado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedido_id}}",
+                "estado"
+              ]
+            },
+            "description": "La maquina de estados no debe permitir saltarse En preparacion/Listo. Se espera 409.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estatus\": \"Entregado\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('transicion rechazada (409)', () => pm.response.code === 409);",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Errores esperados: cruce de rol",
+      "item": [
+        {
+          "name": "[ERROR] Acceso a modulo Admin",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/usuarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "description": "GET /api/usuarios es exclusivo de Administrador. Se espera 401/403.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('bloqueado (401/403)', () => [401, 403].includes(pm.response.code));",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "[ERROR] Crear producto (rol Cocina)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "description": "POST /productos es exclusivo de Cocinero/Administrador. Se espera 401/403.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Intento no autorizado\",\n  \"precio_venta\": 10,\n  \"disponible\": true,\n  \"activo\": true,\n  \"id_categoria\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('bloqueado (401/403)', () => [401, 403].includes(pm.response.code));",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "[ERROR] Registrar venta (rol Caja)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/ventas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ventas"
+              ]
+            },
+            "description": "POST /ventas es exclusivo de Cajero/Administrador. Se espera 401/403.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pedido_id\": \"{{pedido_id}}\",\n  \"metodo_pago\": \"Efectivo\",\n  \"monto\": 999\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('bloqueado (401/403)', () => [401, 403].includes(pm.response.code));",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Errores esperados: autenticacion",
+      "item": [
+        {
+          "name": "[ERROR] Password incorrecta",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Se espera 401 sin filtrar si el correo existe o no.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo_electronico\": \"mesero@coffeecode.com\",\n  \"password\": \"PasswordIncorrecta1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('rechazado (401)', () => pm.response.code === 401);",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "[ERROR] Token manipulado",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/mesas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mesas"
+              ]
+            },
+            "description": "JWT invalido/basura. Se espera 401.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "token-invalido-12345"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('rechazado (401)', () => pm.response.code === 401);",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

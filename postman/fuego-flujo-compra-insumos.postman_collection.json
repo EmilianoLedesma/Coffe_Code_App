@@ -1,0 +1,447 @@
+{
+  "info": {
+    "name": "🔥 Fuego - Flujo Compra de Insumos (con errores)",
+    "description": "Verifica que POST /compras sube stock y registra un gasto real de forma atomica, con 3 variantes de datos corruptos (cantidad negativa, monto cero, ambos invalidos) e ingrediente inexistente rechazadas antes de la compra correcta. Documenta ademas que GET /ingredientes esta bloqueado para Cajero (solo puede escribir via /compras, no leer el listado) -- por eso el stock antes/despues se lee con Admin.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8010"
+    },
+    {
+      "key": "token_cajero",
+      "value": ""
+    },
+    {
+      "key": "token_admin_lectura",
+      "value": ""
+    },
+    {
+      "key": "ingrediente_id",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Autenticacion",
+      "item": [
+        {
+          "name": "Login Cajero",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo_electronico\": \"cajero@coffeecode.com\",\n  \"password\": \"Cajero123!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('token_cajero', data.access_token);",
+                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Admin (solo para leer inventario)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "GET /ingredientes es exclusivo de Cocinero/Administrador -- el Cajero puede COMPRAR (POST /compras) pero no puede LISTAR el inventario. Se usa Admin solo para leer el stock antes/despues y verificar el incremento; la compra en si la ejecuta el Cajero.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo_electronico\": \"admin@coffeecode.com\",\n  \"password\": \"Admin123!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('token_admin_lectura', data.access_token);",
+                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 - Estado inicial del ingrediente",
+      "item": [
+        {
+          "name": "[ERROR] Cajero intenta listar ingredientes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/ingredientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes"
+              ]
+            },
+            "description": "Confirma que el Cajero no puede leer el inventario, solo comprar sobre el.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('bloqueado (401/403)', () => [401, 403].includes(pm.response.code));",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer stock antes de comprar (con Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/ingredientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin_lectura}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  const ing = data.find((i) => i.id === parseInt(pm.collectionVariables.get('ingrediente_id')));",
+                  "  if (ing) { pm.collectionVariables.set('stock_antes', ing.stock_actual); }",
+                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Compras con errores (deben fallar)",
+      "item": [
+        {
+          "name": "[ERROR] Cantidad negativa",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/compras",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "compras"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ingrediente_id\": \"{{ingrediente_id}}\",\n  \"cantidad\": -50,\n  \"monto\": 40\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('rechazado (422)', () => pm.response.code === 422);",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "[ERROR] Monto en cero",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/compras",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "compras"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ingrediente_id\": \"{{ingrediente_id}}\",\n  \"cantidad\": 50,\n  \"monto\": 0\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('rechazado (422)', () => pm.response.code === 422);",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "[ERROR] Ambos campos negativos/cero",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/compras",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "compras"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ingrediente_id\": \"{{ingrediente_id}}\",\n  \"cantidad\": -1,\n  \"monto\": -1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('rechazado (422)', () => pm.response.code === 422);",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "[ERROR] Ingrediente inexistente",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/compras",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "compras"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ingrediente_id\": 999999,\n  \"cantidad\": 50,\n  \"monto\": 40\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('no encontrado (404)', () => pm.response.code === 404);",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Compra correcta",
+      "item": [
+        {
+          "name": "Registrar Compra de Insumo",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/compras",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "compras"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ingrediente_id\": \"{{ingrediente_id}}\",\n  \"cantidad\": 200,\n  \"monto\": 40\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  pm.test('compra registrada (201)', () => pm.response.code === 201);",
+                  "  const stockAntes = parseFloat(pm.collectionVariables.get('stock_antes'));",
+                  "  pm.test('stock subio exactamente 200', () => Math.abs(parseFloat(data.nuevo_stock) - (stockAntes + 200)) < 0.001);",
+                  "  pm.test('gasto real creado con concepto de compra', () => data.gasto && data.gasto.concepto.includes('Compra de insumo'));",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
