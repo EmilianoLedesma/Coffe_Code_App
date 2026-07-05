@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "🔥 Fuego - Rol Administrador",
+    "name": "Fuego - Rol Administrador",
     "description": "Bateria de prueba de fuego para el rol Administrador: alta/baja de usuarios y categorias, reset de password, reportes JSON/PDF/XLSX, corte diario, y verificacion de que otros roles NO pueden tocar estos endpoints exclusivos. Nota: el rechazo del panel web-admin a un no-administrador se prueba manualmente via POST http://127.0.0.1:8020/login (Flask), no via esta coleccion de API.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },

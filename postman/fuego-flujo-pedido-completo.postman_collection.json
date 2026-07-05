@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "🔥 Fuego - Flujo Pedido Completo (con errores)",
+    "name": "Fuego - Flujo Pedido Completo (con errores)",
     "description": "Ciclo de vida real de un pedido de punta a punta -- Mesero crea, Cocina prepara, Caja cobra, Mesero entrega -- con 3 errores deliberados intercalados antes de cada paso correcto (transicion invalida, monto insuficiente, pago duplicado). Ejecutar en orden con el Collection Runner. Verifica ademas que la mesa pasa a Ocupada al crear el pedido y vuelve a Libre al entregarlo.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },

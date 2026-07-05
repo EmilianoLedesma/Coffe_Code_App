@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "🔥 Fuego - Rol Mesero",
+    "name": "Fuego - Rol Mesero",
     "description": "Bateria de prueba de fuego para el rol Mesero: flujo legitimo + intentos deliberados de violar reglas de negocio y cruzar hacia endpoints de otros roles. Cada request en las carpetas de error debe FALLAR con el codigo indicado -- eso es un PASS.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },

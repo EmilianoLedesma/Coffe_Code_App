@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "🔥 Fuego - Rol Cajero",
+    "name": "Fuego - Rol Cajero",
     "description": "Bateria de prueba de fuego para el rol Cajero: gasto y compra reales con incremento atomico de stock, venta valida con bloqueo de pago duplicado, validacion de compras corruptas, y cruces de rol hacia cocina/admin/corte-diario. Incluye un setup con Mesero para tener un pedido que vender.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },

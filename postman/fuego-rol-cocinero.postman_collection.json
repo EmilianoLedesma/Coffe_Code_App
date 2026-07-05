@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "🔥 Fuego - Rol Cocinero",
+    "name": "Fuego - Rol Cocinero",
     "description": "Bateria de prueba de fuego para el rol Cocinero: CRUD de catalogo/inventario, validacion en 3 capas del ajuste de stock (esquema, regla de negocio, existencia) y cruces de rol hacia compras/admin/reportes. DELETE /productos ahora elimina permanentemente si el producto no tiene pedidos asociados, o lo desactiva si si los tiene -- el producto de prueba de esta coleccion siempre se borra por completo. Incluye limpieza final para no dejar residuos.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },

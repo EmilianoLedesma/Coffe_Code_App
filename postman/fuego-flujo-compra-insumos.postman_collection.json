@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "🔥 Fuego - Flujo Compra de Insumos (con errores)",
+    "name": "Fuego - Flujo Compra de Insumos (con errores)",
     "description": "Verifica que POST /compras sube stock y registra un gasto real de forma atomica, con 3 variantes de datos corruptos (cantidad negativa, monto cero, ambos invalidos) e ingrediente inexistente rechazadas antes de la compra correcta. Documenta ademas que GET /ingredientes esta bloqueado para Cajero (solo puede escribir via /compras, no leer el listado) -- por eso el stock antes/despues se lee con Admin.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
