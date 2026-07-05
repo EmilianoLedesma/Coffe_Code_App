@@ -29,7 +29,6 @@ def _payload_desde_formulario() -> dict:
         "descripcion": request.form.get("descripcion") or None,
         "precio_venta": request.form["precio_venta"],
         "disponible": request.form.get("disponible") == "on",
-        "activo": request.form.get("activo") == "on",
         "id_categoria": int(request.form["id_categoria"]),
     }
 
@@ -60,8 +59,8 @@ def editar(producto_id: int):
 @login_required
 def eliminar(producto_id: int):
     try:
-        eliminar_producto(api_base_url(), current_token(), producto_id)
-        flash("Producto desactivado.", "success")
+        resultado = eliminar_producto(api_base_url(), current_token(), producto_id)
+        flash(resultado["mensaje"], "success")
     except ApiError as error:
-        flash(f"No se pudo desactivar el producto: {error.detail}", "error")
+        flash(f"No se pudo eliminar el producto: {error.detail}", "error")
     return redirect(url_for("productos.listar"))

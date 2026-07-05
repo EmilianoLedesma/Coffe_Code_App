@@ -67,7 +67,12 @@ def test_listar_productos_muestra_categoria(client):
 @responses.activate
 def test_eliminar_producto_hace_soft_delete(client):
     _login_como_admin(client)
-    responses.add(responses.DELETE, f"{BASE_URL}/productos/1", status=204)
+    responses.add(
+        responses.DELETE,
+        f"{BASE_URL}/productos/1",
+        json={"eliminado": False, "mensaje": "El producto tiene pedidos asociados; se desactivó en lugar de eliminarse."},
+        status=200,
+    )
 
     respuesta = client.post("/productos/1/eliminar", follow_redirects=False)
 

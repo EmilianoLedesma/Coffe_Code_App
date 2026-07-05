@@ -3,10 +3,17 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class EliminacionOut(BaseModel):
+    eliminado: bool
+    mensaje: str
+
+
 class CategoriaOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     nombre: str
+    descripcion: str | None
+    activo: bool
 
 
 class CategoriaCreate(BaseModel):
@@ -53,6 +60,10 @@ class ProductoOut(BaseModel):
 class RecetaCreate(BaseModel):
     producto_id: int
     ingrediente_id: int
+    cantidad: Decimal = Field(gt=0)
+
+
+class RecetaUpdate(BaseModel):
     cantidad: Decimal = Field(gt=0)
 
 

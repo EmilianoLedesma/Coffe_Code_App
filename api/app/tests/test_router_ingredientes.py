@@ -71,3 +71,61 @@ def test_desactivar_ingrediente(client, db_session, catalogos):
 
     assert respuesta.status_code == 200
     assert respuesta.json()["activo"] is False
+
+
+def test_crear_ingrediente_nombre_duplicado_exacto_409(client, db_session, catalogos):
+    db_session.add(Ingrediente(nombre="Leche", unidad="ml", stock_actual=500, stock_minimo=100, costo_unitario="0.02", activo=True))
+    db_session.flush()
+
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+    respuesta = client.post(
+        "/ingredientes",
+        json={"nombre": "Leche", "unidad": "ml", "stock_minimo": "100", "costo_unitario": "0.02"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 409
+
+
+def test_crear_ingrediente_nombre_duplicado_mayusculas_y_espacios_409(client, db_session, catalogos):
+    db_session.add(Ingrediente(nombre="Leche", unidad="ml", stock_actual=500, stock_minimo=100, costo_unitario="0.02", activo=True))
+    db_session.flush()
+
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+    respuesta = client.post(
+        "/ingredientes",
+        json={"nombre": " LECHE ", "unidad": "ml", "stock_minimo": "100", "costo_unitario": "0.02"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 409
+
+
+def test_crear_ingrediente_nombre_duplicado_contra_inactivo_409(client, db_session, catalogos):
+    db_session.add(Ingrediente(nombre="Leche", unidad="ml", stock_actual=0, stock_minimo=0, costo_unitario="0.02", activo=False))
+    db_session.flush()
+
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+    respuesta = client.post(
+        "/ingredientes",
+        json={"nombre": "Leche", "unidad": "ml", "stock_minimo": "100", "costo_unitario": "0.02"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 409
+
+
+def test_actualizar_ingrediente_renombrar_a_nombre_existente_409(client, db_session, catalogos):
+    db_session.add_all(
+        [
+            Ingrediente(nombre="Leche", unidad="ml", stock_actual=500, stock_minimo=100, costo_unitario="0.02", activo=True),
+            Ingrediente(nombre="Azucar", unidad="g", stock_actual=500, stock_minimo=100, costo_unitario="0.01", activo=True),
+        ]
+    )
+    db_session.flush()
+    azucar = db_session.query(Ingrediente).filter(Ingrediente.nombre == "Azucar").first()
+
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+    respuesta = client.put(
+        f"/ingredientes/{azucar.id}",
+        json={"nombre": "Leche"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 409

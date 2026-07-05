@@ -38,12 +38,11 @@
                 "descripcion": producto.descripcion or "",
                 "precio_venta": producto.precio_venta,
                 "disponible": producto.disponible,
-                "activo": producto.activo,
                 "id_categoria": producto.categoria.id,
               } | tojson }}'
               class="btn-link">Editar</button>
-            <form action="{{ url_for('productos.eliminar', producto_id=producto.id) }}" method="post" class="inline" onsubmit="return confirm('¿Desactivar este producto?');">
-              <button type="submit" class="btn-link-danger">Desactivar</button>
+            <form action="{{ url_for('productos.eliminar', producto_id=producto.id) }}" method="post" class="inline" onsubmit="return confirm('¿Eliminar este producto? Si tiene pedidos asociados, se desactivará en su lugar.');">
+              <button type="submit" class="btn-link-danger">Eliminar</button>
             </form>
           </td>
         </tr>
@@ -66,9 +65,6 @@
         </select>
         <label class="flex items-center gap-2 text-sm">
           <input type="checkbox" name="disponible" :checked="!editando || editando.disponible" checked> Disponible
-        </label>
-        <label class="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="activo" :checked="!editando || editando.activo" checked> Activo
         </label>
         <div class="flex justify-end gap-2 pt-2">
           <button type="button" @click="modalAbierto = false" class="btn btn-ghost">Cancelar</button>

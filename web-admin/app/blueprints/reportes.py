@@ -36,10 +36,36 @@ def exportar_financiero(formato: str):
     hoy = date.today()
     hasta = _parsear_fecha(request.args.get("hasta"), hoy)
     desde = _parsear_fecha(request.args.get("desde"), hoy - timedelta(days=30))
-    return _proxy("financiero", formato, {"desde": desde.isoformat(), "hasta": hasta.isoformat()})
+    params = {"desde": desde.isoformat(), "hasta": hasta.isoformat()}
+    secciones = request.args.getlist("secciones")
+    if secciones:
+        params["secciones"] = secciones
+    return _proxy("financiero", formato, params)
 
 
 @bp.route("/inventario/exportar.<formato>")
 @login_required
 def exportar_inventario(formato: str):
-    return _proxy("inventario", formato, {})
+    params = {}
+    secciones = request.args.getlist("secciones")
+    if secciones:
+        params["secciones"] = secciones
+    return _proxy("inventario", formato, params)
+
+
+@bp.route("/productos/exportar.<formato>")
+@login_required
+def exportar_productos(formato: str):
+    hoy = date.today()
+    hasta = _parsear_fecha(request.args.get("hasta"), hoy)
+    desde = _parsear_fecha(request.args.get("desde"), hoy - timedelta(days=30))
+    return _proxy("productos", formato, {"desde": desde.isoformat(), "hasta": hasta.isoformat()})
+
+
+@bp.route("/pedidos/exportar.<formato>")
+@login_required
+def exportar_pedidos(formato: str):
+    hoy = date.today()
+    hasta = _parsear_fecha(request.args.get("hasta"), hoy)
+    desde = _parsear_fecha(request.args.get("desde"), hoy - timedelta(days=30))
+    return _proxy("pedidos", formato, {"desde": desde.isoformat(), "hasta": hasta.isoformat()})

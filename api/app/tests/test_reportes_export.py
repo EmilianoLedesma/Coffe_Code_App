@@ -4,9 +4,48 @@ from decimal import Decimal
 from app.services.reportes_export import (
     generar_pdf_financiero,
     generar_pdf_inventario,
+    generar_pdf_pedidos,
+    generar_pdf_productos,
     generar_xlsx_financiero,
     generar_xlsx_inventario,
+    generar_xlsx_pedidos,
+    generar_xlsx_productos,
 )
+
+_DATOS_PRODUCTOS = {
+    "desde": datetime(2026, 6, 1, tzinfo=timezone.utc),
+    "hasta": datetime(2026, 6, 30, tzinfo=timezone.utc),
+    "productos": [
+        {
+            "producto_id": 1,
+            "nombre": "Latte",
+            "categoria": "Bebidas calientes",
+            "disponible": True,
+            "cantidad_vendida": 10,
+            "ingresos": Decimal("550.00"),
+            "costo_total": Decimal("40.00"),
+            "margen": Decimal("510.00"),
+            "margen_pct": Decimal("92.73"),
+        }
+    ],
+}
+
+_DATOS_PEDIDOS = {
+    "desde": datetime(2026, 6, 1, tzinfo=timezone.utc),
+    "hasta": datetime(2026, 6, 30, tzinfo=timezone.utc),
+    "total_pedidos": 1,
+    "total_ventas": Decimal("638.00"),
+    "pedidos": [
+        {
+            "pedido_id": 1,
+            "fecha": datetime(2026, 6, 15, tzinfo=timezone.utc),
+            "mesa": 1,
+            "mesero": "Test Mesero",
+            "estatus": "Entregado",
+            "total": Decimal("638.00"),
+        }
+    ],
+}
 
 _DATOS_FINANCIERO = {
     "desde": datetime(2026, 6, 1, tzinfo=timezone.utc),
@@ -31,6 +70,35 @@ _DATOS_FINANCIERO = {
     "ventas_por_categoria": [],
     "ventas_por_usuario": [],
     "ventas_por_metodo_pago": [],
+    "detalle_ventas": [
+        {
+            "fecha": datetime(2026, 6, 15, tzinfo=timezone.utc),
+            "pedido_id": 1,
+            "mesa": 1,
+            "mesero": "Test Mesero",
+            "producto": "Latte",
+            "cantidad": 2,
+            "precio_unitario": Decimal("55.00"),
+            "subtotal": Decimal("110.00"),
+        }
+    ],
+    "detalle_gastos": [
+        {
+            "id": 1,
+            "concepto": "Compra de insumo: Leche",
+            "monto": Decimal("400.00"),
+            "fecha_gasto": datetime(2026, 6, 10, tzinfo=timezone.utc),
+            "usuario": "Test Cajero",
+        }
+    ],
+    "gastos_por_tipo": [
+        {"tipo": "Compras de insumos", "total": Decimal("400.00")},
+        {"tipo": "Gastos fijos", "total": Decimal("0")},
+        {"tipo": "Otros gastos", "total": Decimal("0")},
+    ],
+    "gastos_por_usuario": [
+        {"usuario_id": 1, "nombre": "Test Cajero", "total": Decimal("400.00")},
+    ],
 }
 
 _DATOS_INVENTARIO = {
@@ -92,6 +160,10 @@ def test_generar_pdf_financiero_incluye_metodo_pago():
         "ventas_por_categoria": [],
         "ventas_por_usuario": [],
         "ventas_por_metodo_pago": [{"metodo_pago": "Efectivo", "total": Decimal("100.00")}],
+        "detalle_ventas": [],
+        "detalle_gastos": [],
+        "gastos_por_tipo": [],
+        "gastos_por_usuario": [],
     }
     buffer = generar_pdf_financiero(datos)
     assert buffer.getbuffer().nbytes > 0
@@ -109,6 +181,10 @@ def test_generar_xlsx_financiero_incluye_hoja_metodo_pago():
         "ventas_por_categoria": [],
         "ventas_por_usuario": [],
         "ventas_por_metodo_pago": [{"metodo_pago": "Efectivo", "total": Decimal("100.00")}],
+        "detalle_ventas": [],
+        "detalle_gastos": [],
+        "gastos_por_tipo": [],
+        "gastos_por_usuario": [],
     }
     from openpyxl import load_workbook
 
@@ -124,3 +200,40 @@ def test_generar_pdf_inventario_incluye_ranking_consumo():
     }
     buffer = generar_pdf_inventario(datos)
     assert buffer.getbuffer().nbytes > 0
+
+
+def test_generar_pdf_productos_produce_pdf_valido():
+    buffer = generar_pdf_productos(_DATOS_PRODUCTOS)
+    contenido = buffer.read()
+    assert contenido[:4] == b"%PDF"
+
+
+def test_generar_pdf_productos_sin_productos_no_falla():
+    buffer = generar_pdf_productos({"desde": _DATOS_PRODUCTOS["desde"], "hasta": _DATOS_PRODUCTOS["hasta"], "productos": []})
+    contenido = buffer.read()
+    assert contenido[:4] == b"%PDF"
+
+
+def test_generar_xlsx_productos_produce_zip_valido():
+    buffer = generar_xlsx_productos(_DATOS_PRODUCTOS)
+    contenido = buffer.read()
+    assert contenido[:2] == b"PK"
+
+
+def test_generar_pdf_pedidos_produce_pdf_valido():
+    buffer = generar_pdf_pedidos(_DATOS_PEDIDOS)
+    contenido = buffer.read()
+    assert contenido[:4] == b"%PDF"
+
+
+def test_generar_pdf_pedidos_sin_pedidos_no_falla():
+    datos = {**_DATOS_PEDIDOS, "total_pedidos": 0, "total_ventas": Decimal("0"), "pedidos": []}
+    buffer = generar_pdf_pedidos(datos)
+    contenido = buffer.read()
+    assert contenido[:4] == b"%PDF"
+
+
+def test_generar_xlsx_pedidos_produce_zip_valido():
+    buffer = generar_xlsx_pedidos(_DATOS_PEDIDOS)
+    contenido = buffer.read()
+    assert contenido[:2] == b"PK"

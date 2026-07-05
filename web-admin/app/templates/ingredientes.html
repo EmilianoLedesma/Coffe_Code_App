@@ -17,6 +17,7 @@
           <th>Stock actual</th>
           <th>Stock mínimo</th>
           <th>Costo unitario</th>
+          <th>Estado</th>
           <th></th>
         </tr>
       </thead>
@@ -31,6 +32,13 @@
           <td>{{ ingrediente.stock_actual }} {{ ingrediente.unidad }}</td>
           <td>{{ ingrediente.stock_minimo }} {{ ingrediente.unidad }}</td>
           <td>${{ "%.2f"|format(ingrediente.costo_unitario|float) }}</td>
+          <td>
+            {% if ingrediente.activo %}
+              <span class="badge badge-success">Activo</span>
+            {% else %}
+              <span class="badge badge-error">Inactivo</span>
+            {% endif %}
+          </td>
           <td class="text-right">
             <button @click='modalStock = {{ {"id": ingrediente.id, "nombre": ingrediente.nombre} | tojson }}' class="btn-link">Ajustar stock</button>
             <button @click='modalCompra = {{ {"id": ingrediente.id, "nombre": ingrediente.nombre} | tojson }}' class="btn-link">Registrar compra</button>
@@ -41,10 +49,11 @@
                 "unidad": ingrediente.unidad,
                 "stock_minimo": ingrediente.stock_minimo,
                 "costo_unitario": ingrediente.costo_unitario,
+                "activo": ingrediente.activo,
               } | tojson }}'
               class="btn-link">Editar</button>
-            <form action="{{ url_for('ingredientes.desactivar', ingrediente_id=ingrediente.id) }}" method="post" class="inline" onsubmit="return confirm('¿Desactivar este ingrediente?');">
-              <button type="submit" class="btn-link-danger">Desactivar</button>
+            <form action="{{ url_for('ingredientes.eliminar', ingrediente_id=ingrediente.id) }}" method="post" class="inline" onsubmit="return confirm('¿Eliminar este ingrediente? Si forma parte de alguna receta, se desactivará en su lugar.');">
+              <button type="submit" class="btn-link-danger">Eliminar</button>
             </form>
           </td>
         </tr>
@@ -109,6 +118,9 @@
           <input class="input-field" name="unidad" placeholder="Unidad (ml, g, pza)" x-model="modalEditar.unidad" required>
           <input class="input-field" type="number" step="0.01" min="0" name="stock_minimo" placeholder="Stock mínimo" x-model="modalEditar.stock_minimo" required>
           <input class="input-field" type="number" step="0.01" min="0.01" name="costo_unitario" placeholder="Costo unitario" x-model="modalEditar.costo_unitario" required>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="activo" x-model="modalEditar.activo"> Activo
+          </label>
           <div class="flex justify-end gap-2 pt-2">
             <button type="button" @click="modalEditar = null" class="btn btn-ghost">Cancelar</button>
             <button type="submit" class="btn btn-primary">Guardar</button>

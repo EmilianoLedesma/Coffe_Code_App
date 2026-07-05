@@ -19,7 +19,12 @@
 
   <div class="card p-4 col-span-2">
     {% if producto_seleccionado %}
-    <h2 class="text-lg font-semibold mb-3">Receta de {{ producto_seleccionado.nombre }}</h2>
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-lg font-semibold">Receta de {{ producto_seleccionado.nombre }}</h2>
+      <form action="{{ url_for('recetas.eliminar_todo', producto_id=producto_seleccionado.id) }}" method="post" onsubmit="return confirm('¿Eliminar toda la receta de este producto? Esta acción no se puede deshacer.');">
+        <button type="submit" class="btn-link-danger">Eliminar receta completa</button>
+      </form>
+    </div>
     <table class="data-table mb-6">
       <thead>
         <tr>

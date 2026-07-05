@@ -4,6 +4,7 @@ from app.api_client import (
     ApiError,
     crear_receta,
     eliminar_receta,
+    eliminar_receta_completa,
     listar_ingredientes,
     listar_productos,
     listar_receta_producto,
@@ -62,4 +63,15 @@ def eliminar(producto_id: int, ingrediente_id: int):
         flash("Ingrediente quitado de la receta.", "success")
     except ApiError as error:
         flash(f"No se pudo quitar el ingrediente: {error.detail}", "error")
+    return redirect(url_for("recetas.detalle", producto_id=producto_id))
+
+
+@bp.route("/<int:producto_id>/eliminar-todo", methods=["POST"])
+@login_required
+def eliminar_todo(producto_id: int):
+    try:
+        eliminar_receta_completa(api_base_url(), current_token(), producto_id)
+        flash("Receta eliminada por completo.", "success")
+    except ApiError as error:
+        flash(f"No se pudo eliminar la receta: {error.detail}", "error")
     return redirect(url_for("recetas.detalle", producto_id=producto_id))

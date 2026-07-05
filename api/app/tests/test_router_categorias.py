@@ -78,3 +78,75 @@ def test_actualizar_categoria_inexistente_404(client, db_session, catalogos):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert respuesta.status_code == 404
+
+
+def test_crear_categoria_nombre_duplicado_exacto_409(client, db_session, catalogos):
+    db_session.add(Categoria(nombre="Postres", activo=True))
+    db_session.flush()
+
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+    respuesta = client.post(
+        "/categorias",
+        json={"nombre": "Postres"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 409
+
+
+def test_crear_categoria_nombre_duplicado_mayusculas_y_espacios_409(client, db_session, catalogos):
+    db_session.add(Categoria(nombre="Postres", activo=True))
+    db_session.flush()
+
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+    respuesta = client.post(
+        "/categorias",
+        json={"nombre": " POSTRES "},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 409
+
+
+def test_crear_categoria_nombre_duplicado_contra_inactiva_409(client, db_session, catalogos):
+    db_session.add(Categoria(nombre="Descontinuada", activo=False))
+    db_session.flush()
+
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+    respuesta = client.post(
+        "/categorias",
+        json={"nombre": "Descontinuada"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 409
+
+
+def test_actualizar_categoria_renombrar_a_nombre_existente_409(client, db_session, catalogos):
+    db_session.add_all(
+        [
+            Categoria(nombre="Bebidas", activo=True),
+            Categoria(nombre="Postres", activo=True),
+        ]
+    )
+    db_session.flush()
+    postres = db_session.query(Categoria).filter(Categoria.nombre == "Postres").first()
+
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+    respuesta = client.put(
+        f"/categorias/{postres.id}",
+        json={"nombre": "Bebidas"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 409
+
+
+def test_actualizar_categoria_sin_cambiar_nombre_no_dispara_verificacion(client, db_session, catalogos):
+    categoria = Categoria(nombre="Postres", activo=True)
+    db_session.add(categoria)
+    db_session.flush()
+
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+    respuesta = client.put(
+        f"/categorias/{categoria.id}",
+        json={"descripcion": "Nueva descripción"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 200

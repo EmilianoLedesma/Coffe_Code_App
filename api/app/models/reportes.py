@@ -53,6 +53,36 @@ class RankingConsumoItem(BaseModel):
     cantidad_consumida: Decimal
 
 
+class VentaDetalleItem(BaseModel):
+    fecha: datetime
+    pedido_id: int
+    mesa: int
+    mesero: str
+    producto: str
+    cantidad: int
+    precio_unitario: Decimal
+    subtotal: Decimal
+
+
+class GastoPorTipoItem(BaseModel):
+    tipo: str
+    total: Decimal
+
+
+class GastoPorUsuarioItem(BaseModel):
+    usuario_id: int
+    nombre: str
+    total: Decimal
+
+
+class GastoDetalleItem(BaseModel):
+    id: int
+    concepto: str
+    monto: Decimal
+    fecha_gasto: datetime
+    usuario: str
+
+
 class ReporteFinancieroOut(BaseModel):
     desde: datetime
     hasta: datetime
@@ -67,6 +97,10 @@ class ReporteFinancieroOut(BaseModel):
     ventas_por_categoria: list[VentaPorCategoriaItem]
     ventas_por_usuario: list[VentaPorUsuarioItem]
     ventas_por_metodo_pago: list[VentaPorMetodoPagoItem]
+    detalle_ventas: list[VentaDetalleItem]
+    gastos_por_tipo: list[GastoPorTipoItem]
+    gastos_por_usuario: list[GastoPorUsuarioItem]
+    detalle_gastos: list[GastoDetalleItem]
 
 
 class RiesgoInventarioItem(BaseModel):
@@ -83,3 +117,38 @@ class RiesgoInventarioItem(BaseModel):
 class ReporteInventarioOut(BaseModel):
     riesgo: list[RiesgoInventarioItem]
     ranking_consumo: list[RankingConsumoItem]
+
+
+class ProductoReporteItem(BaseModel):
+    producto_id: int
+    nombre: str
+    categoria: str
+    disponible: bool
+    cantidad_vendida: int
+    ingresos: Decimal
+    costo_total: Decimal
+    margen: Decimal
+    margen_pct: Decimal
+
+
+class ReporteProductosOut(BaseModel):
+    desde: datetime
+    hasta: datetime
+    productos: list[ProductoReporteItem]
+
+
+class PedidoReporteItem(BaseModel):
+    pedido_id: int
+    fecha: datetime
+    mesa: int
+    mesero: str
+    estatus: str
+    total: Decimal
+
+
+class ReportePedidosOut(BaseModel):
+    desde: datetime
+    hasta: datetime
+    total_pedidos: int
+    total_ventas: Decimal
+    pedidos: list[PedidoReporteItem]

@@ -1,6 +1,13 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from app.api_client import ApiError, actualizar_usuario, crear_usuario, listar_roles, listar_usuarios
+from app.api_client import (
+    ApiError,
+    actualizar_usuario,
+    crear_usuario,
+    eliminar_usuario,
+    listar_roles,
+    listar_usuarios,
+)
 from app.auth import api_base_url, current_token, login_required
 
 bp = Blueprint("usuarios", __name__, url_prefix="/usuarios")
@@ -54,4 +61,15 @@ def editar(usuario_id: int):
         flash("Usuario actualizado correctamente.", "success")
     except ApiError as error:
         flash(f"No se pudo actualizar el usuario: {error.detail}", "error")
+    return redirect(url_for("usuarios.listar"))
+
+
+@bp.route("/<int:usuario_id>/eliminar", methods=["POST"])
+@login_required
+def eliminar(usuario_id: int):
+    try:
+        resultado = eliminar_usuario(api_base_url(), current_token(), usuario_id)
+        flash(resultado["mensaje"], "success")
+    except ApiError as error:
+        flash(f"No se pudo eliminar el usuario: {error.detail}", "error")
     return redirect(url_for("usuarios.listar"))

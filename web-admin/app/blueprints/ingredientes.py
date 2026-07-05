@@ -6,6 +6,7 @@ from app.api_client import (
     ajustar_stock_ingrediente,
     crear_ingrediente,
     desactivar_ingrediente,
+    eliminar_ingrediente,
     listar_ingredientes,
     registrar_compra,
 )
@@ -17,7 +18,7 @@ bp = Blueprint("ingredientes", __name__, url_prefix="/ingredientes")
 @bp.route("")
 @login_required
 def listar():
-    ingredientes = listar_ingredientes(api_base_url(), current_token())
+    ingredientes = listar_ingredientes(api_base_url(), current_token(), incluir_inactivos=True)
     return render_template("ingredientes.html", ingredientes=ingredientes)
 
 
@@ -73,6 +74,7 @@ def editar(ingrediente_id: int):
         "unidad": request.form["unidad"],
         "stock_minimo": request.form["stock_minimo"],
         "costo_unitario": request.form["costo_unitario"],
+        "activo": request.form.get("activo") == "on",
     }
     try:
         actualizar_ingrediente(api_base_url(), current_token(), ingrediente_id, payload)
@@ -90,4 +92,15 @@ def desactivar(ingrediente_id: int):
         flash("Ingrediente desactivado.", "success")
     except ApiError as error:
         flash(f"No se pudo desactivar el ingrediente: {error.detail}", "error")
+    return redirect(url_for("ingredientes.listar"))
+
+
+@bp.route("/<int:ingrediente_id>/eliminar", methods=["POST"])
+@login_required
+def eliminar(ingrediente_id: int):
+    try:
+        resultado = eliminar_ingrediente(api_base_url(), current_token(), ingrediente_id)
+        flash(resultado["mensaje"], "success")
+    except ApiError as error:
+        flash(f"No se pudo eliminar el ingrediente: {error.detail}", "error")
     return redirect(url_for("ingredientes.listar"))

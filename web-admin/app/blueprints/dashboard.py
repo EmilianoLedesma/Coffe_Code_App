@@ -9,6 +9,11 @@ from app.utils import parsear_fecha as _parsear_fecha
 bp = Blueprint("dashboard", __name__)
 
 
+def _parsear_fechas_detalle(filas: list[dict], campo: str) -> None:
+    for fila in filas:
+        fila[campo] = datetime.fromisoformat(fila[campo])
+
+
 @bp.route("/")
 @login_required
 def index():
@@ -23,6 +28,9 @@ def index():
     hasta_dt = datetime.combine(hasta, time.max)
     financiero = obtener_reporte_financiero(base_url, token, desde_dt.isoformat(), hasta_dt.isoformat())
     inventario = obtener_reporte_inventario(base_url, token, desde_dt.isoformat(), hasta_dt.isoformat())
+
+    _parsear_fechas_detalle(financiero.get("detalle_gastos", []), "fecha_gasto")
+    _parsear_fechas_detalle(financiero.get("detalle_ventas", []), "fecha")
 
     return render_template(
         "dashboard.html",

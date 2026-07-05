@@ -192,3 +192,101 @@ def test_inventario_acepta_rango_de_fechas(client, db_session, catalogos):
     )
     assert respuesta.status_code == 200
     assert "ranking_consumo" in respuesta.json()
+
+
+def test_productos_json_devuelve_catalogo(client, catalogos, venta_de_junio):
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+
+    respuesta = client.get(
+        "/api/reportes/productos?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert respuesta.status_code == 200
+    cuerpo = respuesta.json()
+    assert len(cuerpo["productos"]) == 1
+    assert cuerpo["productos"][0]["nombre"] == "Latte"
+    assert cuerpo["productos"][0]["disponible"] is True
+
+
+def test_productos_json_rechaza_rol_no_administrador(client, catalogos, venta_de_junio):
+    token = _token(catalogos, RolNombre.MESERO)
+
+    respuesta = client.get(
+        "/api/reportes/productos",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert respuesta.status_code == 403
+
+
+def test_productos_pdf_devuelve_pdf_valido(client, catalogos, venta_de_junio):
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+
+    respuesta = client.get("/api/reportes/productos/pdf", headers={"Authorization": f"Bearer {token}"})
+
+    assert respuesta.status_code == 200
+    assert respuesta.headers["content-type"] == "application/pdf"
+    assert respuesta.content[:4] == b"%PDF"
+
+
+def test_productos_xlsx_devuelve_xlsx_valido(client, catalogos, venta_de_junio):
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+
+    respuesta = client.get("/api/reportes/productos/xlsx", headers={"Authorization": f"Bearer {token}"})
+
+    assert respuesta.status_code == 200
+    assert (
+        respuesta.headers["content-type"]
+        == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    assert respuesta.content[:2] == b"PK"
+
+
+def test_pedidos_json_devuelve_listado(client, catalogos, venta_de_junio):
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+
+    respuesta = client.get(
+        "/api/reportes/pedidos?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert respuesta.status_code == 200
+    cuerpo = respuesta.json()
+    assert cuerpo["total_pedidos"] == 1
+    assert len(cuerpo["pedidos"]) == 1
+    assert cuerpo["pedidos"][0]["estatus"] == EstatusPedidoNombre.ENTREGADO
+
+
+def test_pedidos_json_rechaza_rol_no_administrador(client, catalogos, venta_de_junio):
+    token = _token(catalogos, RolNombre.MESERO)
+
+    respuesta = client.get(
+        "/api/reportes/pedidos",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert respuesta.status_code == 403
+
+
+def test_pedidos_pdf_devuelve_pdf_valido(client, catalogos, venta_de_junio):
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+
+    respuesta = client.get("/api/reportes/pedidos/pdf", headers={"Authorization": f"Bearer {token}"})
+
+    assert respuesta.status_code == 200
+    assert respuesta.headers["content-type"] == "application/pdf"
+    assert respuesta.content[:4] == b"%PDF"
+
+
+def test_pedidos_xlsx_devuelve_xlsx_valido(client, catalogos, venta_de_junio):
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+
+    respuesta = client.get("/api/reportes/pedidos/xlsx", headers={"Authorization": f"Bearer {token}"})
+
+    assert respuesta.status_code == 200
+    assert (
+        respuesta.headers["content-type"]
+        == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    assert respuesta.content[:2] == b"PK"

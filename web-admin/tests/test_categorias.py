@@ -36,7 +36,7 @@ def test_listar_categorias(client):
     responses.add(
         responses.GET,
         f"{BASE_URL}/categorias",
-        json=[{"id": 1, "nombre": "Bebidas calientes"}],
+        json=[{"id": 1, "nombre": "Bebidas calientes", "descripcion": None, "activo": True}],
         status=200,
     )
     respuesta = client.get("/categorias")

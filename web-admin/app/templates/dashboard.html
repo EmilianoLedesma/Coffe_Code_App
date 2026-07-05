@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — Coffee Code Admin{% endblock %}
 {% block content %}
-<div x-data="{ tab: 'financiero' }">
+<div x-data="{ tab: 'financiero', exportarFinancieroAbierto: false, exportarInventarioAbierto: false }">
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-semibold text-starbucks">Dashboard</h1>
     <div class="flex gap-2">
@@ -16,8 +16,7 @@
       <span class="text-black/58">a</span>
       <input type="date" name="hasta" value="{{ hasta.isoformat() }}" class="input-field !w-auto py-1.5">
       <button type="submit" class="btn btn-primary">Filtrar</button>
-      <a href="{{ url_for('reportes.exportar_financiero', formato='pdf', desde=desde.isoformat(), hasta=hasta.isoformat()) }}" class="btn btn-outline">PDF</a>
-      <a href="{{ url_for('reportes.exportar_financiero', formato='xlsx', desde=desde.isoformat(), hasta=hasta.isoformat()) }}" class="btn btn-outline">XLSX</a>
+      <button type="button" @click="exportarFinancieroAbierto = true" class="btn btn-outline">Exportar</button>
     </form>
 
     <div class="grid grid-cols-4 gap-4 mb-8">
@@ -89,6 +88,44 @@
       </table>
     </div>
 
+    <div class="card overflow-hidden mt-8">
+      <div class="p-5 pb-0">
+        <h2 class="text-lg font-semibold mb-3">Detalle de ventas</h2>
+      </div>
+      <div style="max-height: 320px; overflow-y: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Pedido</th>
+              <th>Mesa</th>
+              <th>Mesero/cajero</th>
+              <th>Producto</th>
+              <th>Cant.</th>
+              <th>Precio unitario</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for fila in financiero.detalle_ventas %}
+            <tr>
+              <td>{{ fila.fecha.strftime("%d/%m/%Y %H:%M") }}</td>
+              <td>#{{ fila.pedido_id }}</td>
+              <td>{{ fila.mesa }}</td>
+              <td>{{ fila.mesero }}</td>
+              <td>{{ fila.producto }}</td>
+              <td>{{ fila.cantidad }}</td>
+              <td>${{ "%.2f"|format(fila.precio_unitario|float) }}</td>
+              <td>${{ "%.2f"|format(fila.subtotal|float) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="text-sm" style="color: rgba(0,0,0,0.58);">Sin ventas en el periodo seleccionado.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="grid grid-cols-3 gap-6 mt-8">
       <div class="card overflow-hidden">
         <div class="p-5 pb-0"><h2 class="text-lg font-semibold mb-3">Por categoría</h2></div>
@@ -124,12 +161,63 @@
         </table>
       </div>
     </div>
+
+    <div class="card overflow-hidden mt-8">
+      <div class="p-5 pb-0">
+        <h2 class="text-lg font-semibold mb-3">Detalle de gastos</h2>
+      </div>
+      <div class="grid grid-cols-2 gap-6 p-5 pt-0">
+        <div>
+          <h3 class="text-sm font-semibold uppercase tracking-wide text-black/58 mb-2">Por tipo</h3>
+          <table class="data-table">
+            <thead><tr><th>Tipo</th><th>Total</th></tr></thead>
+            <tbody>
+              {% for fila in financiero.gastos_por_tipo %}
+              <tr><td>{{ fila.tipo }}</td><td>${{ "%.2f"|format(fila.total|float) }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold uppercase tracking-wide text-black/58 mb-2">Por usuario</h3>
+          <table class="data-table">
+            <thead><tr><th>Usuario</th><th>Total</th></tr></thead>
+            <tbody>
+              {% for fila in financiero.gastos_por_usuario %}
+              <tr><td>{{ fila.nombre }}</td><td>${{ "%.2f"|format(fila.total|float) }}</td></tr>
+              {% else %}
+              <tr><td colspan="2" class="text-sm" style="color: rgba(0,0,0,0.58);">Sin gastos en el periodo.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="px-5 pb-5">
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-black/58 mb-2">Detalle</h3>
+        <div style="max-height: 320px; overflow-y: auto;">
+        <table class="data-table">
+          <thead><tr><th>Fecha</th><th>Concepto</th><th>Usuario</th><th>Monto</th></tr></thead>
+          <tbody>
+            {% for fila in financiero.detalle_gastos %}
+            <tr>
+              <td>{{ fila.fecha_gasto.strftime("%d/%m/%Y %H:%M") }}</td>
+              <td>{{ fila.concepto }}</td>
+              <td>{{ fila.usuario }}</td>
+              <td>${{ "%.2f"|format(fila.monto|float) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-sm" style="color: rgba(0,0,0,0.58);">Sin gastos en el periodo.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div x-show="tab === 'inventario'">
     <div class="flex justify-end gap-2 mb-6">
-      <a href="{{ url_for('reportes.exportar_inventario', formato='pdf') }}" class="btn btn-outline">PDF</a>
-      <a href="{{ url_for('reportes.exportar_inventario', formato='xlsx') }}" class="btn btn-outline">XLSX</a>
+      <button type="button" @click="exportarInventarioAbierto = true" class="btn btn-outline">Exportar</button>
     </div>
     <div class="card overflow-hidden">
       <div class="p-5 pb-0">
@@ -175,6 +263,69 @@
       {% else %}
       <p class="text-black/58 text-sm p-5">Sin datos de consumo en el periodo seleccionado.</p>
       {% endif %}
+    </div>
+  </div>
+
+  <div x-show="exportarFinancieroAbierto" x-cloak class="fixed inset-0 modal-overlay flex items-center justify-center z-50">
+    <div class="modal-panel p-6 w-full max-w-md" @click.outside="exportarFinancieroAbierto = false">
+      <h2 class="text-lg font-semibold text-starbucks mb-4">Exportar reporte financiero</h2>
+      <form method="get" class="space-y-3">
+        <input type="hidden" name="desde" value="{{ desde.isoformat() }}">
+        <input type="hidden" name="hasta" value="{{ hasta.isoformat() }}">
+        <p class="text-sm font-semibold text-black/70">Secciones a incluir</p>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="secciones" value="resumen" checked> Resumen general
+        </label>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="secciones" value="rendimiento" checked> Rendimiento de producto
+        </label>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="secciones" value="categoria" checked> Ventas por categoría
+        </label>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="secciones" value="usuario" checked> Ventas por mesero/cajero
+        </label>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="secciones" value="metodo_pago" checked> Ventas por método de pago
+        </label>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="secciones" value="detalle_ventas"> Detalle de ventas
+        </label>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="secciones" value="gastos_tipo" checked> Gastos por tipo
+        </label>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="secciones" value="gastos_usuario" checked> Gastos por usuario
+        </label>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="secciones" value="detalle_gastos"> Detalle de gastos
+        </label>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" @click="exportarFinancieroAbierto = false" class="btn btn-ghost">Cancelar</button>
+          <button type="submit" formaction="{{ url_for('reportes.exportar_financiero', formato='pdf') }}" class="btn btn-outline">PDF</button>
+          <button type="submit" formaction="{{ url_for('reportes.exportar_financiero', formato='xlsx') }}" class="btn btn-primary">XLSX</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div x-show="exportarInventarioAbierto" x-cloak class="fixed inset-0 modal-overlay flex items-center justify-center z-50">
+    <div class="modal-panel p-6 w-full max-w-md" @click.outside="exportarInventarioAbierto = false">
+      <h2 class="text-lg font-semibold text-starbucks mb-4">Exportar reporte de inventario</h2>
+      <form method="get" class="space-y-3">
+        <p class="text-sm font-semibold text-black/70">Secciones a incluir</p>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="secciones" value="riesgo" checked> Riesgo de inventario
+        </label>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="secciones" value="consumo" checked> Ranking de consumo de ingredientes
+        </label>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" @click="exportarInventarioAbierto = false" class="btn btn-ghost">Cancelar</button>
+          <button type="submit" formaction="{{ url_for('reportes.exportar_inventario', formato='pdf') }}" class="btn btn-outline">PDF</button>
+          <button type="submit" formaction="{{ url_for('reportes.exportar_inventario', formato='xlsx') }}" class="btn btn-primary">XLSX</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

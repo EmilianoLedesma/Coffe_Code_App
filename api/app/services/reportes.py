@@ -2,12 +2,14 @@ from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.data.categorias import Categoria
 from app.data.detalle_pedidos import DetallePedido
+from app.data.estatus_pedidos import EstatusPedido
 from app.data.gastos import Gasto
 from app.data.ingredientes import Ingrediente
+from app.data.mesas import Mesa
 from app.data.metodos_pago import MetodoPago
 from app.data.pagos import Pago
 from app.data.pedidos import Pedido
@@ -126,6 +128,108 @@ def calcular_ventas_por_metodo_pago(db: Session, desde: datetime, hasta: datetim
         .all()
     )
     return [{"metodo_pago": fila.metodo_pago, "total": Decimal(fila.total)} for fila in filas]
+
+
+def calcular_detalle_ventas(db: Session, desde: datetime, hasta: datetime) -> list[dict]:
+    filas = (
+        db.query(
+            Ticket.fecha_emision.label("fecha"),
+            Pedido.id.label("pedido_id"),
+            Mesa.numero_mesa.label("mesa"),
+            Usuario.nombre.label("mesero"),
+            Producto.nombre.label("producto"),
+            DetallePedido.cantidad.label("cantidad"),
+            DetallePedido.precio_unitario.label("precio_unitario"),
+        )
+        .join(Pedido, Pedido.id == DetallePedido.id_pedido)
+        .join(Ticket, Ticket.id_pedido == Pedido.id)
+        .join(Mesa, Mesa.id == Pedido.id_mesa)
+        .join(Usuario, Usuario.id == Pedido.id_usuario)
+        .join(Producto, Producto.id == DetallePedido.id_producto)
+        .filter(Ticket.fecha_emision >= desde, Ticket.fecha_emision <= hasta)
+        .order_by(Ticket.fecha_emision.desc())
+        .all()
+    )
+    return [
+        {
+            "fecha": fila.fecha,
+            "pedido_id": fila.pedido_id,
+            "mesa": fila.mesa,
+            "mesero": fila.mesero,
+            "producto": fila.producto,
+            "cantidad": fila.cantidad,
+            "precio_unitario": fila.precio_unitario,
+            "subtotal": (_dec(fila.precio_unitario) * fila.cantidad).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            ),
+        }
+        for fila in filas
+    ]
+
+
+_PREFIJO_COMPRA_INSUMO = "Compra de insumo:"
+_PREFIJO_GASTO_FIJO = "Gasto fijo:"
+
+
+def calcular_gastos_por_tipo(db: Session, desde: datetime, hasta: datetime) -> list[dict]:
+    filas = (
+        db.query(Gasto.concepto, Gasto.monto)
+        .filter(Gasto.fecha_gasto >= desde, Gasto.fecha_gasto <= hasta)
+        .all()
+    )
+    totales = {
+        "Compras de insumos": Decimal("0"),
+        "Gastos fijos": Decimal("0"),
+        "Otros gastos": Decimal("0"),
+    }
+    for concepto, monto in filas:
+        if concepto.startswith(_PREFIJO_COMPRA_INSUMO):
+            clave = "Compras de insumos"
+        elif concepto.startswith(_PREFIJO_GASTO_FIJO):
+            clave = "Gastos fijos"
+        else:
+            clave = "Otros gastos"
+        totales[clave] += _dec(monto)
+    return [{"tipo": tipo, "total": total} for tipo, total in totales.items()]
+
+
+def calcular_gastos_por_usuario(db: Session, desde: datetime, hasta: datetime) -> list[dict]:
+    filas = (
+        db.query(
+            Usuario.id.label("usuario_id"),
+            Usuario.nombre.label("nombre"),
+            func.coalesce(func.sum(Gasto.monto), 0).label("total"),
+        )
+        .join(Gasto, Gasto.id_usuario == Usuario.id)
+        .filter(Gasto.fecha_gasto >= desde, Gasto.fecha_gasto <= hasta)
+        .group_by(Usuario.id, Usuario.nombre)
+        .order_by(func.sum(Gasto.monto).desc())
+        .all()
+    )
+    return [
+        {"usuario_id": fila.usuario_id, "nombre": fila.nombre, "total": Decimal(fila.total)}
+        for fila in filas
+    ]
+
+
+def calcular_detalle_gastos(db: Session, desde: datetime, hasta: datetime) -> list[dict]:
+    filas = (
+        db.query(Gasto)
+        .options(joinedload(Gasto.usuario))
+        .filter(Gasto.fecha_gasto >= desde, Gasto.fecha_gasto <= hasta)
+        .order_by(Gasto.fecha_gasto.desc())
+        .all()
+    )
+    return [
+        {
+            "id": gasto.id,
+            "concepto": gasto.concepto,
+            "monto": gasto.monto,
+            "fecha_gasto": gasto.fecha_gasto,
+            "usuario": gasto.usuario.nombre,
+        }
+        for gasto in filas
+    ]
 
 
 def calcular_ranking_consumo(db: Session, desde: datetime, hasta: datetime) -> list[dict]:
@@ -300,6 +404,10 @@ def construir_reporte_financiero(
         "ventas_por_categoria": calcular_ventas_por_categoria(db, desde, hasta),
         "ventas_por_usuario": ventas_por_usuario,
         "ventas_por_metodo_pago": calcular_ventas_por_metodo_pago(db, desde, hasta),
+        "detalle_ventas": calcular_detalle_ventas(db, desde, hasta),
+        "gastos_por_tipo": calcular_gastos_por_tipo(db, desde, hasta),
+        "gastos_por_usuario": calcular_gastos_por_usuario(db, desde, hasta),
+        "detalle_gastos": calcular_detalle_gastos(db, desde, hasta),
     }
 
 
@@ -312,3 +420,113 @@ def construir_reporte_inventario(
     else:
         resultado["ranking_consumo"] = []
     return resultado
+
+
+def calcular_catalogo_productos(db: Session, desde: datetime, hasta: datetime) -> list[dict]:
+    ventas = (
+        db.query(
+            DetallePedido.id_producto.label("producto_id"),
+            func.coalesce(func.sum(DetallePedido.cantidad), 0).label("cantidad_vendida"),
+            func.coalesce(func.sum(DetallePedido.cantidad * DetallePedido.precio_unitario), 0).label("ingresos"),
+        )
+        .join(Pedido, Pedido.id == DetallePedido.id_pedido)
+        .join(Ticket, Ticket.id_pedido == Pedido.id)
+        .filter(Ticket.fecha_emision >= desde, Ticket.fecha_emision <= hasta)
+        .group_by(DetallePedido.id_producto)
+        .subquery()
+    )
+
+    filas = (
+        db.query(
+            Producto.id,
+            Producto.nombre,
+            Producto.disponible,
+            Categoria.nombre.label("categoria"),
+            func.coalesce(ventas.c.cantidad_vendida, 0).label("cantidad_vendida"),
+            func.coalesce(ventas.c.ingresos, 0).label("ingresos"),
+        )
+        .join(Categoria, Categoria.id == Producto.id_categoria)
+        .outerjoin(ventas, ventas.c.producto_id == Producto.id)
+        .filter(Producto.activo.is_(True))
+        .order_by(func.coalesce(ventas.c.cantidad_vendida, 0).desc())
+        .all()
+    )
+
+    resultado = []
+    for fila in filas:
+        cantidad_vendida = int(fila.cantidad_vendida)
+        ingresos = Decimal(fila.ingresos)
+        costo_unitario_total = costo_receta_producto(db, fila.id)
+        costo_total = (costo_unitario_total * cantidad_vendida).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        margen = ingresos - costo_total
+        margen_pct = calcular_margen_pct(ingresos, margen)
+        resultado.append(
+            {
+                "producto_id": fila.id,
+                "nombre": fila.nombre,
+                "categoria": fila.categoria,
+                "disponible": fila.disponible,
+                "cantidad_vendida": cantidad_vendida,
+                "ingresos": ingresos,
+                "costo_total": costo_total,
+                "margen": margen,
+                "margen_pct": margen_pct,
+            }
+        )
+    return resultado
+
+
+def construir_reporte_productos(db: Session, desde: datetime, hasta: datetime) -> dict:
+    return {
+        "desde": desde,
+        "hasta": hasta,
+        "productos": calcular_catalogo_productos(db, desde, hasta),
+    }
+
+
+def calcular_listado_pedidos(db: Session, desde: datetime, hasta: datetime) -> list[dict]:
+    filas = (
+        db.query(
+            Pedido.id,
+            Pedido.fecha,
+            Pedido.total,
+            Ticket.total.label("total_ticket"),
+            Mesa.numero_mesa,
+            Usuario.nombre,
+            Usuario.apellido_paterno,
+            EstatusPedido.nombre.label("estatus"),
+        )
+        .join(Mesa, Mesa.id == Pedido.id_mesa)
+        .join(Usuario, Usuario.id == Pedido.id_usuario)
+        .join(EstatusPedido, EstatusPedido.id == Pedido.id_estatus)
+        .outerjoin(Ticket, Ticket.id_pedido == Pedido.id)
+        .filter(Pedido.fecha >= desde, Pedido.fecha <= hasta)
+        .order_by(Pedido.fecha)
+        .all()
+    )
+    resultado = []
+    for fila in filas:
+        total = fila.total_ticket if fila.total_ticket is not None else fila.total
+        resultado.append(
+            {
+                "pedido_id": fila.id,
+                "fecha": fila.fecha,
+                "mesa": fila.numero_mesa,
+                "mesero": f"{fila.nombre} {fila.apellido_paterno}",
+                "estatus": fila.estatus,
+                "total": Decimal(total) if total is not None else Decimal("0"),
+            }
+        )
+    return resultado
+
+
+def construir_reporte_pedidos(db: Session, desde: datetime, hasta: datetime) -> dict:
+    pedidos = calcular_listado_pedidos(db, desde, hasta)
+    total_ventas = sum((fila["total"] for fila in pedidos), Decimal("0"))
+    return {
+        "desde": desde,
+        "hasta": hasta,
+        "total_pedidos": len(pedidos),
+        "total_ventas": total_ventas,
+        "pedidos": pedidos,
+    }

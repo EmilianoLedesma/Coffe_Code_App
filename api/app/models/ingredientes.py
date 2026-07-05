@@ -17,6 +17,7 @@ class IngredienteUpdate(BaseModel):
     unidad: str | None = Field(default=None, min_length=1, max_length=20)
     stock_minimo: Decimal | None = Field(default=None, ge=0)
     costo_unitario: Decimal | None = Field(default=None, gt=0)
+    activo: bool | None = None
 
 
 class IngredienteOut(BaseModel):

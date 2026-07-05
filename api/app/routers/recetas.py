@@ -6,7 +6,7 @@ from app.data.db import get_db
 from app.data.ingredientes import Ingrediente
 from app.data.productos import Producto
 from app.data.recetas import Receta
-from app.models.productos import RecetaCreate, RecetaOut
+from app.models.productos import RecetaCreate, RecetaOut, RecetaUpdate
 from app.security.auth import require_rol
 
 router = APIRouter(prefix="/producto_ingrediente", tags=["recetas"])
@@ -41,21 +41,23 @@ def crear_receta(
     if not ingrediente:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ingrediente no encontrado")
 
-    receta = (
+    receta_existente = (
         db.query(Receta)
         .filter(Receta.id_producto == datos.producto_id, Receta.id_ingrediente == datos.ingrediente_id)
         .first()
     )
-    if receta:
-        receta.cantidad_requerida = datos.cantidad
-    else:
-        receta = Receta(
-            id_producto=datos.producto_id,
-            id_ingrediente=datos.ingrediente_id,
-            cantidad_requerida=datos.cantidad,
+    if receta_existente:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ya existe una receta para este producto e ingrediente",
         )
-        db.add(receta)
 
+    receta = Receta(
+        id_producto=datos.producto_id,
+        id_ingrediente=datos.ingrediente_id,
+        cantidad_requerida=datos.cantidad,
+    )
+    db.add(receta)
     db.commit()
     return (
         db.query(Receta)
@@ -63,6 +65,45 @@ def crear_receta(
         .filter(Receta.id_producto == datos.producto_id, Receta.id_ingrediente == datos.ingrediente_id)
         .first()
     )
+
+
+@router.put("/{producto_id}/{ingrediente_id}", response_model=RecetaOut)
+def actualizar_receta(
+    producto_id: int,
+    ingrediente_id: int,
+    datos: RecetaUpdate,
+    db: Session = Depends(get_db),
+    _=Depends(_escritura),
+) -> Receta:
+    receta = (
+        db.query(Receta)
+        .filter(Receta.id_producto == producto_id, Receta.id_ingrediente == ingrediente_id)
+        .first()
+    )
+    if not receta:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receta no encontrada")
+
+    receta.cantidad_requerida = datos.cantidad
+    db.commit()
+    return (
+        db.query(Receta)
+        .options(joinedload(Receta.ingrediente))
+        .filter(Receta.id_producto == producto_id, Receta.id_ingrediente == ingrediente_id)
+        .first()
+    )
+
+
+@router.delete("/producto/{producto_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_receta_completa(
+    producto_id: int,
+    db: Session = Depends(get_db),
+    _=Depends(_escritura),
+) -> None:
+    producto = db.query(Producto).filter(Producto.id == producto_id).first()
+    if not producto:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
+    db.query(Receta).filter(Receta.id_producto == producto_id).delete()
+    db.commit()
 
 
 @router.delete("/{producto_id}/{ingrediente_id}", status_code=status.HTTP_204_NO_CONTENT)

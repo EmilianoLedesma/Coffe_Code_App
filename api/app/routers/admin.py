@@ -4,8 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.constants import RolNombre
+from app.data.cortes_diarios import CorteDiario
 from app.data.db import get_db
+from app.data.gastos import Gasto
+from app.data.pedidos import Pedido
+from app.data.tickets import Ticket
 from app.data.usuarios import Usuario
+from app.models.productos import EliminacionOut
 from app.models.reportes import ReporteAdmin
 from app.models.usuarios import UsuarioCreate, UsuarioOut, UsuarioUpdate
 from app.security.auth import require_rol
@@ -40,6 +45,11 @@ def crear(datos: UsuarioCreate, db: Session = Depends(get_db), _=Depends(_solo_a
     return _get_usuario_o_404(db, usuario.id)
 
 
+@router.get("/usuarios/{usuario_id}", response_model=UsuarioOut)
+def obtener(usuario_id: int, db: Session = Depends(get_db), _=Depends(_solo_admin)) -> Usuario:
+    return _get_usuario_o_404(db, usuario_id)
+
+
 @router.put("/usuarios/{usuario_id}", response_model=UsuarioOut)
 def actualizar(
     usuario_id: int,
@@ -50,6 +60,28 @@ def actualizar(
     usuario = _get_usuario_o_404(db, usuario_id)
     usuario = actualizar_usuario(db, usuario, datos)
     return _get_usuario_o_404(db, usuario.id)
+
+
+@router.delete("/usuarios/{usuario_id}", response_model=EliminacionOut)
+def eliminar(usuario_id: int, db: Session = Depends(get_db), _=Depends(_solo_admin)) -> EliminacionOut:
+    usuario = _get_usuario_o_404(db, usuario_id)
+    tiene_historial = (
+        db.query(Pedido).filter(Pedido.id_usuario == usuario_id).first() is not None
+        or db.query(Ticket).filter(Ticket.id_usuario == usuario_id).first() is not None
+        or db.query(Gasto).filter(Gasto.id_usuario == usuario_id).first() is not None
+        or db.query(CorteDiario).filter(CorteDiario.id_usuario == usuario_id).first() is not None
+    )
+    if tiene_historial:
+        usuario.activo = False
+        db.commit()
+        return EliminacionOut(
+            eliminado=False,
+            mensaje="El usuario tiene actividad registrada; se desactivó en lugar de eliminarse.",
+        )
+
+    db.delete(usuario)
+    db.commit()
+    return EliminacionOut(eliminado=True, mensaje="Usuario eliminado permanentemente.")
 
 
 @router.get("/reportes", response_model=ReporteAdmin)

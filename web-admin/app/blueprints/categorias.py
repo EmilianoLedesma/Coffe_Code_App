@@ -1,6 +1,12 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from app.api_client import ApiError, actualizar_categoria, crear_categoria, listar_categorias
+from app.api_client import (
+    ApiError,
+    actualizar_categoria,
+    crear_categoria,
+    eliminar_categoria,
+    listar_categorias,
+)
 from app.auth import api_base_url, current_token, login_required
 
 bp = Blueprint("categorias", __name__, url_prefix="/categorias")
@@ -9,7 +15,7 @@ bp = Blueprint("categorias", __name__, url_prefix="/categorias")
 @bp.route("")
 @login_required
 def listar():
-    categorias = listar_categorias(api_base_url(), current_token())
+    categorias = listar_categorias(api_base_url(), current_token(), incluir_inactivas=True)
     return render_template("categorias.html", categorias=categorias)
 
 
@@ -41,4 +47,15 @@ def editar(categoria_id: int):
         flash("Categoría actualizada correctamente.", "success")
     except ApiError as error:
         flash(f"No se pudo actualizar la categoría: {error.detail}", "error")
+    return redirect(url_for("categorias.listar"))
+
+
+@bp.route("/<int:categoria_id>/eliminar", methods=["POST"])
+@login_required
+def eliminar(categoria_id: int):
+    try:
+        resultado = eliminar_categoria(api_base_url(), current_token(), categoria_id)
+        flash(resultado["mensaje"], "success")
+    except ApiError as error:
+        flash(f"No se pudo eliminar la categoría: {error.detail}", "error")
     return redirect(url_for("categorias.listar"))

@@ -15,6 +15,8 @@ from app.data.tickets import Ticket
 from app.data.usuarios import Usuario
 from app.security.auth import hash_password
 from app.services.reportes import (
+    calcular_catalogo_productos,
+    calcular_listado_pedidos,
     calcular_margen_pct,
     calcular_ranking_consumo,
     calcular_riesgo_inventario,
@@ -24,6 +26,8 @@ from app.services.reportes import (
     calcular_ventas_por_usuario,
     construir_reporte_financiero,
     construir_reporte_inventario,
+    construir_reporte_pedidos,
+    construir_reporte_productos,
     costo_receta_producto,
     periodo_anterior,
     variacion_pct,
@@ -379,3 +383,97 @@ def test_construir_reporte_inventario_acepta_rango_opcional(db_session, catalogo
     reporte = construir_reporte_inventario(db_session)
     assert "ranking_consumo" in reporte
     assert reporte["ranking_consumo"] == []
+
+
+def test_calcular_catalogo_productos_incluye_disponibilidad_y_categoria(
+    db_session, catalogos, mesa_libre, usuario_mesero, producto_con_receta
+):
+    producto, _ = producto_con_receta
+    fecha = datetime(2026, 6, 15, tzinfo=timezone.utc)
+    _crear_venta(db_session, catalogos, mesa_libre, usuario_mesero, producto, cantidad=10, precio_unitario=Decimal("55.00"), fecha=fecha)
+
+    desde = datetime(2026, 6, 1, tzinfo=timezone.utc)
+    hasta = datetime(2026, 6, 30, tzinfo=timezone.utc)
+    resultado = calcular_catalogo_productos(db_session, desde, hasta)
+
+    assert len(resultado) == 1
+    fila = resultado[0]
+    assert fila["nombre"] == "Latte"
+    assert fila["categoria"] == "Bebidas calientes"
+    assert fila["disponible"] is True
+    assert fila["cantidad_vendida"] == 10
+    assert fila["ingresos"] == Decimal("550.00")
+
+
+def test_calcular_catalogo_productos_incluye_producto_sin_ventas(db_session, categoria):
+    producto = Producto(
+        nombre="Agua embotellada",
+        precio_venta=Decimal("15.00"),
+        disponible=True,
+        activo=True,
+        id_categoria=categoria.id,
+    )
+    db_session.add(producto)
+    db_session.flush()
+
+    desde = datetime(2026, 6, 1, tzinfo=timezone.utc)
+    hasta = datetime(2026, 6, 30, tzinfo=timezone.utc)
+    resultado = calcular_catalogo_productos(db_session, desde, hasta)
+
+    assert len(resultado) == 1
+    assert resultado[0]["cantidad_vendida"] == 0
+    assert resultado[0]["ingresos"] == Decimal("0")
+
+
+def test_construir_reporte_productos(db_session, catalogos, mesa_libre, usuario_mesero, producto_con_receta):
+    producto, _ = producto_con_receta
+    fecha = datetime(2026, 6, 15, tzinfo=timezone.utc)
+    _crear_venta(db_session, catalogos, mesa_libre, usuario_mesero, producto, cantidad=10, precio_unitario=Decimal("55.00"), fecha=fecha)
+
+    desde = datetime(2026, 6, 1, tzinfo=timezone.utc)
+    hasta = datetime(2026, 6, 30, tzinfo=timezone.utc)
+    resultado = construir_reporte_productos(db_session, desde, hasta)
+
+    assert resultado["desde"] == desde
+    assert resultado["hasta"] == hasta
+    assert len(resultado["productos"]) == 1
+
+
+def test_calcular_listado_pedidos(db_session, catalogos, mesa_libre, usuario_mesero, producto_con_receta):
+    producto, _ = producto_con_receta
+    fecha = datetime(2026, 6, 15, tzinfo=timezone.utc)
+    _crear_venta(db_session, catalogos, mesa_libre, usuario_mesero, producto, cantidad=2, precio_unitario=Decimal("55.00"), fecha=fecha)
+
+    desde = datetime(2026, 6, 1, tzinfo=timezone.utc)
+    hasta = datetime(2026, 6, 30, tzinfo=timezone.utc)
+    resultado = calcular_listado_pedidos(db_session, desde, hasta)
+
+    assert len(resultado) == 1
+    fila = resultado[0]
+    assert fila["mesa"] == mesa_libre.numero_mesa
+    assert fila["mesero"] == "Test Mesero"
+    assert fila["estatus"] == EstatusPedidoNombre.ENTREGADO
+
+
+def test_construir_reporte_pedidos(db_session, catalogos, mesa_libre, usuario_mesero, producto_con_receta):
+    producto, _ = producto_con_receta
+    fecha = datetime(2026, 6, 15, tzinfo=timezone.utc)
+    _crear_venta(db_session, catalogos, mesa_libre, usuario_mesero, producto, cantidad=2, precio_unitario=Decimal("55.00"), fecha=fecha)
+
+    desde = datetime(2026, 6, 1, tzinfo=timezone.utc)
+    hasta = datetime(2026, 6, 30, tzinfo=timezone.utc)
+    resultado = construir_reporte_pedidos(db_session, desde, hasta)
+
+    assert resultado["total_pedidos"] == 1
+    assert resultado["total_ventas"] > Decimal("0")
+    assert len(resultado["pedidos"]) == 1
+
+
+def test_construir_reporte_pedidos_vacio_fuera_de_rango(db_session, catalogos):
+    desde = datetime(2026, 6, 1, tzinfo=timezone.utc)
+    hasta = datetime(2026, 6, 30, tzinfo=timezone.utc)
+    resultado = construir_reporte_pedidos(db_session, desde, hasta)
+
+    assert resultado["total_pedidos"] == 0
+    assert resultado["total_ventas"] == Decimal("0")
+    assert resultado["pedidos"] == []

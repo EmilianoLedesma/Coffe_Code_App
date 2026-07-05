@@ -84,3 +84,40 @@ def test_eliminar_receta_inexistente_da_404(client, db_session, catalogos):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert respuesta.status_code == 404
+
+
+def test_crear_receta_duplicada_da_409(client, db_session, catalogos):
+    producto, ingrediente = _crear_producto_con_receta(db_session)
+    token = _token(catalogos, RolNombre.COCINERO)
+
+    respuesta = client.post(
+        "/producto_ingrediente",
+        json={"producto_id": producto.id, "ingrediente_id": ingrediente.id, "cantidad": "300"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 409
+
+
+def test_actualizar_receta_cambia_cantidad(client, db_session, catalogos):
+    producto, ingrediente = _crear_producto_con_receta(db_session)
+    token = _token(catalogos, RolNombre.COCINERO)
+
+    respuesta = client.put(
+        f"/producto_ingrediente/{producto.id}/{ingrediente.id}",
+        json={"cantidad": "350"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 200
+    assert float(respuesta.json()["cantidad_requerida"]) == 350.0
+
+
+def test_actualizar_receta_inexistente_da_404(client, db_session, catalogos):
+    producto, ingrediente = _crear_producto_con_receta(db_session)
+    token = _token(catalogos, RolNombre.COCINERO)
+
+    respuesta = client.put(
+        f"/producto_ingrediente/{producto.id}/9999",
+        json={"cantidad": "10"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 404

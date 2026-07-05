@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Gastos fijos — Coffee Code Admin{% endblock %}
+{% block content %}
+<div x-data="{ modalAbierto: false, editando: null }">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-semibold text-starbucks">Gastos fijos del local</h1>
+    <div class="flex gap-2">
+      <form action="{{ url_for('gastos_fijos.aplicar_todos') }}" method="post" onsubmit="return confirm('¿Aplicar todos los gastos fijos activos como gastos del día de hoy?');">
+        <button type="submit" class="btn btn-outline">Aplicar todos hoy</button>
+      </form>
+      <button @click="modalAbierto = true; editando = null" class="btn btn-primary">
+        + Nuevo gasto fijo
+      </button>
+    </div>
+  </div>
+
+  <p class="text-sm text-black/58 mb-4">
+    Catálogo de gastos recurrentes (nómina, servicios, renta). "Aplicar" registra ese monto como un gasto real
+    con fecha de hoy, sumándose al total de gastos del dashboard y a los reportes financieros.
+  </p>
+
+  <div class="card overflow-hidden">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Concepto</th>
+          <th>Categoría</th>
+          <th>Monto</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for gasto_fijo in gastos_fijos %}
+        <tr>
+          <td>{{ gasto_fijo.concepto }}</td>
+          <td><span class="badge badge-neutral">{{ gasto_fijo.categoria }}</span></td>
+          <td>${{ "%.2f"|format(gasto_fijo.monto|float) }}</td>
+          <td>
+            {% if gasto_fijo.activo %}
+              <span class="badge badge-success">Activo</span>
+            {% else %}
+              <span class="badge badge-error">Inactivo</span>
+            {% endif %}
+          </td>
+          <td class="text-right space-x-3">
+            {% if gasto_fijo.activo %}
+            <form action="{{ url_for('gastos_fijos.aplicar', gasto_fijo_id=gasto_fijo.id) }}" method="post" class="inline" onsubmit="return confirm('¿Registrar este gasto fijo como gasto de hoy?');">
+              <button type="submit" class="btn-link">Aplicar hoy</button>
+            </form>
+            {% endif %}
+            <button
+              @click='modalAbierto = true; editando = {{ {
+                "id": gasto_fijo.id,
+                "concepto": gasto_fijo.concepto,
+                "monto": gasto_fijo.monto,
+                "categoria": gasto_fijo.categoria,
+                "activo": gasto_fijo.activo,
+              } | tojson }}'
+              class="btn-link">Editar</button>
+            <form action="{{ url_for('gastos_fijos.eliminar', gasto_fijo_id=gasto_fijo.id) }}" method="post" class="inline" onsubmit="return confirm('¿Eliminar este gasto fijo del catálogo? No afecta gastos ya aplicados anteriormente.');">
+              <button type="submit" class="btn-link-danger">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-sm p-5" style="color: rgba(0,0,0,0.58);">Sin gastos fijos registrados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div x-show="modalAbierto" x-cloak class="fixed inset-0 modal-overlay flex items-center justify-center z-50">
+    <div class="modal-panel p-6 w-full max-w-md" @click.outside="modalAbierto = false">
+      <h2 class="text-lg font-semibold text-starbucks mb-4" x-text="editando ? 'Editar gasto fijo' : 'Nuevo gasto fijo'"></h2>
+      <form :action="editando ? `/gastos-fijos/${editando.id}/editar` : '/gastos-fijos/nuevo'" method="post" class="space-y-3">
+        <input class="input-field" name="concepto" placeholder="Concepto (ej. Pago de internet)" :value="editando ? editando.concepto : ''" required>
+        <input class="input-field" type="number" step="0.01" min="0.01" name="monto" placeholder="Monto" :value="editando ? editando.monto : ''" required>
+        <select class="input-field" name="categoria" required>
+          {% for categoria in categorias %}
+          <option value="{{ categoria }}" x-bind:selected="editando && editando.categoria === {{ categoria|tojson }}">{{ categoria }}</option>
+          {% endfor %}
+        </select>
+        <template x-if="editando">
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="activo" :checked="!editando || editando.activo"> Activo
+          </label>
+        </template>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" @click="modalAbierto = false" class="btn btn-ghost">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

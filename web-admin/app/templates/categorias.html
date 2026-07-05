@@ -3,34 +3,46 @@
 {% block content %}
 <div x-data="{ modalAbierto: false, editando: null }">
   <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-serif">Categorías de producto</h1>
-    <button @click="modalAbierto = true; editando = null" class="bg-espresso text-cream px-4 py-2 rounded-lg hover:bg-coffee">
+    <h1 class="text-2xl font-semibold text-starbucks">Categorías de producto</h1>
+    <button @click="modalAbierto = true; editando = null" class="btn btn-primary">
       + Nueva categoría
     </button>
   </div>
 
   <div class="card overflow-hidden">
-    <table class="w-full text-sm">
-      <thead class="bg-espresso/5 text-left text-xs uppercase tracking-wide text-coffee">
+    <table class="data-table">
+      <thead>
         <tr>
-          <th class="px-4 py-3">Nombre</th>
-          <th class="px-4 py-3">Descripción</th>
-          <th class="px-4 py-3"></th>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Estado</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
         {% for categoria in categorias %}
-        <tr class="border-t border-caramel/20 hover:bg-cream/60">
-          <td class="px-4 py-3">{{ categoria.nombre }}</td>
-          <td class="px-4 py-3">{{ categoria.descripcion or "—" }}</td>
-          <td class="px-4 py-3 text-right">
+        <tr>
+          <td>{{ categoria.nombre }}</td>
+          <td>{{ categoria.descripcion or "—" }}</td>
+          <td>
+            {% if categoria.activo %}
+              <span class="badge badge-success">Activa</span>
+            {% else %}
+              <span class="badge badge-error">Inactiva</span>
+            {% endif %}
+          </td>
+          <td class="text-right space-x-3">
             <button
               @click='modalAbierto = true; editando = {{ {
                 "id": categoria.id,
                 "nombre": categoria.nombre,
                 "descripcion": categoria.descripcion or "",
+                "activo": categoria.activo,
               } | tojson }}'
-              class="text-coffee hover:underline">Editar</button>
+              class="btn-link">Editar</button>
+            <form action="{{ url_for('categorias.eliminar', categoria_id=categoria.id) }}" method="post" class="inline" onsubmit="return confirm('¿Eliminar esta categoría? Si tiene productos asociados, se desactivará en su lugar.');">
+              <button type="submit" class="btn-link-danger">Eliminar</button>
+            </form>
           </td>
         </tr>
         {% endfor %}
@@ -38,20 +50,20 @@
     </table>
   </div>
 
-  <div x-show="modalAbierto" x-cloak class="fixed inset-0 bg-espresso/50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md" @click.outside="modalAbierto = false">
-      <h2 class="text-lg font-serif mb-4" x-text="editando ? 'Editar categoría' : 'Nueva categoría'"></h2>
+  <div x-show="modalAbierto" x-cloak class="fixed inset-0 modal-overlay flex items-center justify-center z-50">
+    <div class="modal-panel p-6 w-full max-w-md" @click.outside="modalAbierto = false">
+      <h2 class="text-lg font-semibold text-starbucks mb-4" x-text="editando ? 'Editar categoría' : 'Nueva categoría'"></h2>
       <form :action="editando ? `/categorias/${editando.id}/editar` : '/categorias/nuevo'" method="post" class="space-y-3">
-        <input class="w-full rounded-lg border border-caramel/40 px-3 py-2" name="nombre" placeholder="Nombre" :value="editando ? editando.nombre : ''" required>
-        <textarea class="w-full rounded-lg border border-caramel/40 px-3 py-2" name="descripcion" placeholder="Descripción (opcional)" x-text="editando ? editando.descripcion : ''"></textarea>
+        <input class="input-field" name="nombre" placeholder="Nombre" :value="editando ? editando.nombre : ''" required>
+        <textarea class="input-field" name="descripcion" placeholder="Descripción (opcional)" x-text="editando ? editando.descripcion : ''"></textarea>
         <template x-if="editando">
           <label class="flex items-center gap-2 text-sm">
             <input type="checkbox" name="activo" :checked="!editando || editando.activo" checked> Activa
           </label>
         </template>
         <div class="flex justify-end gap-2 pt-2">
-          <button type="button" @click="modalAbierto = false" class="px-4 py-2 rounded-lg border border-caramel/40">Cancelar</button>
-          <button type="submit" class="px-4 py-2 rounded-lg bg-espresso text-cream hover:bg-coffee">Guardar</button>
+          <button type="button" @click="modalAbierto = false" class="btn btn-ghost">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
         </div>
       </form>
     </div>

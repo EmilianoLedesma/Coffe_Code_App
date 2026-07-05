@@ -57,12 +57,17 @@ def actualizar_usuario(base_url: str, token: str, usuario_id: int, payload: dict
     return _request("PUT", base_url, f"/api/usuarios/{usuario_id}", token=token, json=payload)
 
 
+def eliminar_usuario(base_url: str, token: str, usuario_id: int) -> dict:
+    return _request("DELETE", base_url, f"/api/usuarios/{usuario_id}", token=token)
+
+
 def listar_roles(base_url: str, token: str) -> list[dict]:
     return _request("GET", base_url, "/api/roles", token=token)
 
 
-def listar_categorias(base_url: str, token: str) -> list[dict]:
-    return _request("GET", base_url, "/categorias", token=token)
+def listar_categorias(base_url: str, token: str, incluir_inactivas: bool = False) -> list[dict]:
+    params = {"incluir_inactivas": "true"} if incluir_inactivas else {}
+    return _request("GET", base_url, "/categorias", token=token, params=params)
 
 
 def crear_categoria(base_url: str, token: str, payload: dict) -> dict:
@@ -71,6 +76,10 @@ def crear_categoria(base_url: str, token: str, payload: dict) -> dict:
 
 def actualizar_categoria(base_url: str, token: str, categoria_id: int, payload: dict) -> dict:
     return _request("PUT", base_url, f"/categorias/{categoria_id}", token=token, json=payload)
+
+
+def eliminar_categoria(base_url: str, token: str, categoria_id: int) -> dict:
+    return _request("DELETE", base_url, f"/categorias/{categoria_id}", token=token)
 
 
 def listar_productos(base_url: str, token: str) -> list[dict]:
@@ -89,8 +98,9 @@ def eliminar_producto(base_url: str, token: str, producto_id: int) -> None:
     return _request("DELETE", base_url, f"/productos/{producto_id}", token=token)
 
 
-def listar_ingredientes(base_url: str, token: str) -> list[dict]:
-    return _request("GET", base_url, "/ingredientes", token=token)
+def listar_ingredientes(base_url: str, token: str, incluir_inactivos: bool = False) -> list[dict]:
+    params = {"incluir_inactivos": "true"} if incluir_inactivos else {}
+    return _request("GET", base_url, "/ingredientes", token=token, params=params)
 
 
 def crear_ingrediente(base_url: str, token: str, payload: dict) -> dict:
@@ -103,6 +113,10 @@ def actualizar_ingrediente(base_url: str, token: str, ingrediente_id: int, paylo
 
 def desactivar_ingrediente(base_url: str, token: str, ingrediente_id: int) -> dict:
     return _request("PUT", base_url, f"/ingredientes/{ingrediente_id}/desactivar", token=token)
+
+
+def eliminar_ingrediente(base_url: str, token: str, ingrediente_id: int) -> dict:
+    return _request("DELETE", base_url, f"/ingredientes/{ingrediente_id}", token=token)
 
 
 def ajustar_stock_ingrediente(base_url: str, token: str, ingrediente_id: int, cantidad: str) -> dict:
@@ -125,6 +139,31 @@ def registrar_compra(base_url: str, token: str, ingrediente_id: int, cantidad: s
     )
 
 
+def listar_gastos_fijos(base_url: str, token: str, incluir_inactivos: bool = False) -> list[dict]:
+    params = {"incluir_inactivos": "true"} if incluir_inactivos else {}
+    return _request("GET", base_url, "/api/gastos-fijos", token=token, params=params)
+
+
+def crear_gasto_fijo(base_url: str, token: str, payload: dict) -> dict:
+    return _request("POST", base_url, "/api/gastos-fijos", token=token, json=payload)
+
+
+def actualizar_gasto_fijo(base_url: str, token: str, gasto_fijo_id: int, payload: dict) -> dict:
+    return _request("PUT", base_url, f"/api/gastos-fijos/{gasto_fijo_id}", token=token, json=payload)
+
+
+def eliminar_gasto_fijo(base_url: str, token: str, gasto_fijo_id: int) -> None:
+    return _request("DELETE", base_url, f"/api/gastos-fijos/{gasto_fijo_id}", token=token)
+
+
+def aplicar_gasto_fijo(base_url: str, token: str, gasto_fijo_id: int) -> dict:
+    return _request("POST", base_url, f"/api/gastos-fijos/{gasto_fijo_id}/aplicar", token=token)
+
+
+def aplicar_todos_gastos_fijos(base_url: str, token: str) -> list[dict]:
+    return _request("POST", base_url, "/api/gastos-fijos/aplicar-todos", token=token)
+
+
 def listar_receta_producto(base_url: str, token: str, producto_id: int) -> list[dict]:
     return _request(
         "GET", base_url, "/producto_ingrediente", token=token, params={"producto_id": producto_id}
@@ -139,6 +178,10 @@ def eliminar_receta(base_url: str, token: str, producto_id: int, ingrediente_id:
     return _request(
         "DELETE", base_url, f"/producto_ingrediente/{producto_id}/{ingrediente_id}", token=token
     )
+
+
+def eliminar_receta_completa(base_url: str, token: str, producto_id: int) -> None:
+    return _request("DELETE", base_url, f"/producto_ingrediente/producto/{producto_id}", token=token)
 
 
 def obtener_reporte_financiero(base_url: str, token: str, desde: str, hasta: str) -> dict:
