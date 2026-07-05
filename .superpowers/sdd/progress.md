@@ -86,3 +86,53 @@ Flujo probado contra el stack Docker real (no solo pytest): login mesero → `PO
 - `coffee_code_web`: reiniciado con el fix del Bug #1 (dashboard), YA verificado en vivo mostrando `$111.36`.
 - `coffee_code_api`: **el fix del Bug #2 (mesa no se libera) está en el código y pasa pytest, pero el contenedor de la API AÚN NO se reinició con ese fix** — hay que hacer `docker compose build coffee_code_api && docker compose up -d coffee_code_api` y re-probar la liberación de mesa antes de dar el Bug #2 por cerrado en producción.
 - Datos de prueba en la base de datos real (no seed, se crearon en vivo durante la verificación E2E): pedido #31 (mesa 1, 2× Latte Vainilla, Entregado, con ticket/pago), categoría "Test Postres" (id 5, ya desactivada). No se hizo limpieza adicional de estos datos de prueba — quedan en la DB de desarrollo real como parte del historial de ventas.
+
+---
+
+# Sesión 2026-07-04 — Rebuild + Registrar compra + fix dashboard inventario + prueba de fuego multiagente + bloqueo de duplicados + reconciliación con sesión paralela
+
+Specs: `docs/superpowers/specs/2026-07-04-{registrar-compra,bloqueo-nombres-duplicados}-design.md`
+Sesión guardada: `~/.claude/session-data/2026-07-04-fuego-y-duplicados-session.tmp`
+
+## Parte 1 — continuación de los pendientes de la sesión anterior
+
+- **Bug #2 (mesa no se libera) reconfirmado en vivo** tras `docker compose build coffee_code_api && up -d`: flujo mesero→cocina→caja→entregado completo por curl, mesa Ocupada→Libre correctamente.
+- **Feature nueva "Registrar compra"** en web-admin (brainstormeada y aprobada con el usuario): botón+modal en la página de Ingredientes que llama a `POST /compras` (ya existente en la API), separado de "Ajustar stock" (sin costo). Resuelve la duda pendiente de la sesión anterior sobre "los gastos no suben al ajustar stock". `costo_unitario` sigue siendo manual, sin recálculo automático (decisión explícita del usuario, fuera de alcance).
+- **Bug real encontrado y fijado:** el dashboard de web-admin mostraba "sin datos de consumo" en la pestaña Inventario sin importar el rango de fechas — `obtener_reporte_inventario` se llamaba sin `desde`/`hasta`, y `construir_reporte_inventario` siempre devuelve `ranking_consumo: []` si faltan. Fix de una línea + su selector de fechas. Test de regresión agregado.
+
+## Parte 2 — Prueba de fuego multiagente (los 4 roles)
+
+Se orquestaron 3 agentes en background (agente-mesero, agente-cocinero, agente-cajero), cada uno con credenciales de un solo rol, ejecutando una batería fija de acciones legítimas + intentos deliberados de violar reglas de negocio y cruzar hacia endpoints de otros roles. La sesión principal actuó como Administrador/supervisor: rechazo del panel a un no-admin, flujo de pedido completo con 3 errores intercalados (transición inválida, monto insuficiente, pago duplicado), CRUD de usuarios/categorías, reportes JSON/PDF/XLSX, corte diario, y resolución de 2 pedidos huérfanos dejados a medio camino por los agentes.
+
+**Resultado: 65/65 acciones (39 de agentes + 26 de supervisor) se comportaron como se esperaba, 0 bugs.** Reporte completo publicado como Artifact HTML. Hallazgos menores (no bugs): `GET /productos` no filtraba inactivos (después resuelto por la sesión paralela con `incluir_inactivos`), `GET /ingredientes` (lista completa, no solo detalle) bloqueado para Cajero.
+
+Se construyeron 6 colecciones de Postman nuevas mirando la prueba de fuego (`fuego-rol-{mesero,cocinero,cajero,admin}`, `fuego-flujo-{pedido-completo,compra-insumos}`), generadas con un script Node (`gen_postman.js` en el scratchpad de la sesión) y verificadas con `newman` contra la API en vivo. Se encontraron y corrigieron 2 bugs reales en las colecciones mismas (no en la API): scripts de test compartiendo scope de JS entre requests en el sandbox de Newman, y un supuesto incorrecto de que Cajero puede leer `GET /ingredientes`. Se quitaron los emojis de los títulos a pedido del usuario.
+
+## Parte 3 — Trabajo de una sesión paralela (compartido por el usuario, verificado por esta sesión)
+
+Mientras esta sesión trabajaba, **otra sesión de Claude trabajó en paralelo sobre el mismo repositorio**. Resumen de su trabajo (tal cual lo compartió el usuario):
+
+1. **Auditoría contra `docs/Rubrica.md`** con 6 agentes de revisión en paralelo. Score inicial 84/100 (gaps: Usuarios sin `GET /api/usuarios/{id}` ni eliminación real; Reportes sin reportes dedicados de Productos/Pedidos). Cerrados ambos gaps → 100/100. Documentado en `docs/PLAN_ATAQUE_RUBRICA.md`.
+2. **3 bugs de idempotencia corregidos** en la colección Postman general (orden de login, "Crear Producto" no capturaba su ID, "Marcar Entregado" se disparaba antes de que Cocina marcara "Listo", email fijo chocando en reruns).
+3. **Bug de CSS:** `corte_diario.html` y `categorias.html` usaban clases de Tailwind inexistentes en la paleta (`bg-espresso`, `text-coffee`, `border-caramel`) — texto claro sobre fondo claro, invisible. Migradas al sistema de diseño real.
+4. **Eliminación real con fallback** para Recetas, Productos, Categorías, Usuarios, Ingredientes: borra de verdad si no hay historial de uso, si no, desactiva automáticamente. Todos devuelven `{eliminado, mensaje}`. Se agregó `incluir_inactivos` + badges de Estado + reactivación donde antes un elemento desactivado por el fallback quedaba invisible/inalcanzable.
+5. **Dashboard:** modal de exportación granular por secciones (checkboxes) para Financiero e Inventario, PDF y XLSX. Nuevas tarjetas de detalle de gastos (por tipo/usuario) y detalle de ventas línea por línea.
+6. **Feature nueva: Gastos Fijos** del local (nómina/servicios/renta/otro), CRUD + "Aplicar" (genera un Gasto real) + "Aplicar todos" en lote, exclusivo de Administrador, nueva vista `/gastos-fijos`.
+7. Colección general actualizada a 64 requests / 10 assertions; `fuego-rol-admin` (la propia colección de esta sesión) extendida por ellos a 34 requests / 40 assertions cubriendo Usuarios/Categorías eliminar, Ingredientes CRUD, Recetas CRUD+eliminar-completa, Gastos Fijos, filtro de secciones y cruces de rol.
+8. Migraciones: `a1f9c3d7e5b2` (soft-delete recetas) → `c7a4e8f01d33` (revertida a hard-delete) → `f3b8c1a9d4e6` (tabla gastos_fijos).
+
+## Parte 4 — Bloqueo de nombres duplicados (tarea final de esta sesión)
+
+El usuario reportó que las pruebas automatizadas de Postman crean ingredientes duplicados (ej. múltiples "Leche") porque no había validación de nombre único. Brainstorming con el usuario → spec aprobada → implementado:
+
+- **Ingredientes/Productos/Categorías:** nueva verificación `_verificar_nombre_no_duplicado()` en cada router, 409 si el nombre (normalizado a minúsculas y sin espacios) ya existe en cualquier fila (activa o inactiva). Se aplica al crear y al renombrar vía `PUT` (excluyendo la propia fila). Mismo patrón que `usuarios.py` ya usaba por correo.
+- **Recetas:** `POST /producto_ingrediente` deja de hacer upsert silencioso → 409 si la pareja producto+ingrediente ya existe. Nuevo `PUT /producto_ingrediente/{producto_id}/{ingrediente_id}` para editar `cantidad_requerida` sin duplicar.
+- 18 tests nuevos (incluyendo `test_router_productos.py`, que no existía antes). Verificado en vivo: crear "Leche" o " LECHE " de nuevo ahora da 409.
+
+## Parte 5 — Reconciliación final (ambas sesiones juntas)
+
+Al terminar la Parte 4, se descubrió que el índice de git tenía mezclado (staged, sin commitear) todo el trabajo de la Parte 3, incluyendo cambios en los mismos archivos que esta sesión edita (`productos.py`, `categorias.py`, `recetas.py`, `models/productos.py`) — y los cambios de esta sesión en `ingredientes.py` ya habían quedado horneados dentro de ese staging sin forma de separarlos limpiamente. El usuario confirmó que el trabajo de la otra sesión estaba terminado y pidió comitear todo junto.
+
+Antes de comitear se hizo una verificación completa: rebuild de contenedores, `alembic upgrade head` (hasta `f3b8c1a9d4e6`), y se encontraron **6 fallas de test preexistentes** (4 en `api/app/tests/test_reportes_export.py`, 2 en `web-admin/tests/`) causadas por fixtures desactualizados de la Parte 3 (faltaban las claves `detalle_ventas`/`detalle_gastos`/`gastos_por_tipo`/`gastos_por_usuario` en los dicts de prueba del reporte financiero, y dos mocks de `DELETE` seguían esperando `204` sin body en vez del nuevo `200 {eliminado, mensaje}`). Se corrigieron todas — la API/servicio real ya funcionaba bien, solo los fixtures de prueba estaban desactualizados.
+
+**Estado final verificado:** API 110/110 tests, web-admin 44/44 tests, las 7 colecciones de Postman en verde contra el stack Docker real reconstruido (general 64/64 requests, fuego-rol-admin 34/34 requests/40/40 assertions — coincide exacto con lo reportado por la otra sesión), migraciones al día, 8/8 mesas Libre. Todo comiteado en un solo commit combinado: `352a0b7`.
