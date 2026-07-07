@@ -110,3 +110,35 @@ def test_actualizar_producto_sin_cambiar_nombre_no_dispara_verificacion(client, 
     )
     assert respuesta.status_code == 200
     assert float(respuesta.json()["precio_venta"]) == 58.0
+
+
+def test_listar_productos_oculta_inactivos_por_defecto(client, db_session, catalogos):
+    categoria = _crear_categoria(db_session)
+    db_session.add(
+        Producto(nombre="Activo", precio_venta=Decimal("10.00"), disponible=True, activo=True, id_categoria=categoria.id)
+    )
+    db_session.add(
+        Producto(nombre="Inactivo", precio_venta=Decimal("10.00"), disponible=False, activo=False, id_categoria=categoria.id)
+    )
+    db_session.flush()
+
+    token = _token(catalogos, RolNombre.COCINERO)
+    respuesta = client.get("/productos", headers={"Authorization": f"Bearer {token}"})
+    nombres = {p["nombre"] for p in respuesta.json()}
+    assert "Activo" in nombres
+    assert "Inactivo" not in nombres
+
+
+def test_listar_productos_incluir_inactivos_true_los_muestra(client, db_session, catalogos):
+    categoria = _crear_categoria(db_session)
+    db_session.add(
+        Producto(nombre="Inactivo", precio_venta=Decimal("10.00"), disponible=False, activo=False, id_categoria=categoria.id)
+    )
+    db_session.flush()
+
+    token = _token(catalogos, RolNombre.COCINERO)
+    respuesta = client.get(
+        "/productos", params={"incluir_inactivos": "true"}, headers={"Authorization": f"Bearer {token}"}
+    )
+    nombres = {p["nombre"] for p in respuesta.json()}
+    assert "Inactivo" in nombres

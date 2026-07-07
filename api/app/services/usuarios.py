@@ -1,4 +1,5 @@
 from fastapi import HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.data.roles import Rol
@@ -14,8 +15,12 @@ def _get_rol_o_404(db: Session, id_rol: int) -> Rol:
     return rol
 
 
+def _correo_normalizado(correo: str):
+    return func.lower(func.trim(Usuario.correo_electronico)) == correo.strip().lower()
+
+
 def crear_usuario(db: Session, datos: UsuarioCreate) -> Usuario:
-    existe = db.query(Usuario).filter(Usuario.correo_electronico == datos.correo_electronico).first()
+    existe = db.query(Usuario).filter(_correo_normalizado(datos.correo_electronico)).first()
     if existe:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -43,7 +48,7 @@ def actualizar_usuario(db: Session, usuario: Usuario, datos: UsuarioUpdate) -> U
     if "correo_electronico" in cambios:
         duplicado = (
             db.query(Usuario)
-            .filter(Usuario.correo_electronico == cambios["correo_electronico"], Usuario.id != usuario.id)
+            .filter(_correo_normalizado(cambios["correo_electronico"]), Usuario.id != usuario.id)
             .first()
         )
         if duplicado:

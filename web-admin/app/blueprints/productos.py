@@ -18,7 +18,7 @@ bp = Blueprint("productos", __name__, url_prefix="/productos")
 def listar():
     token = current_token()
     base_url = api_base_url()
-    productos = listar_productos(base_url, token)
+    productos = listar_productos(base_url, token, incluir_inactivos=True)
     categorias = listar_categorias(base_url, token)
     return render_template("productos.html", productos=productos, categorias=categorias)
 

@@ -82,8 +82,9 @@ def eliminar_categoria(base_url: str, token: str, categoria_id: int) -> dict:
     return _request("DELETE", base_url, f"/categorias/{categoria_id}", token=token)
 
 
-def listar_productos(base_url: str, token: str) -> list[dict]:
-    return _request("GET", base_url, "/productos", token=token)
+def listar_productos(base_url: str, token: str, incluir_inactivos: bool = False) -> list[dict]:
+    params = {"incluir_inactivos": "true"} if incluir_inactivos else {}
+    return _request("GET", base_url, "/productos", token=token, params=params)
 
 
 def crear_producto(base_url: str, token: str, payload: dict) -> dict:

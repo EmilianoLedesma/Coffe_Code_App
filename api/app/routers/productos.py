@@ -43,8 +43,15 @@ def _verificar_nombre_no_duplicado(db: Session, nombre: str, excluir_id: int | N
 
 
 @router.get("", response_model=list[ProductoOut])
-def listar(db: Session = Depends(get_db), _=Depends(_lectura)) -> list[Producto]:
-    return db.query(Producto).options(joinedload(Producto.categoria)).order_by(Producto.nombre).all()
+def listar(
+    incluir_inactivos: bool = False,
+    db: Session = Depends(get_db),
+    _=Depends(_lectura),
+) -> list[Producto]:
+    consulta = db.query(Producto).options(joinedload(Producto.categoria))
+    if not incluir_inactivos:
+        consulta = consulta.filter(Producto.activo.is_(True))
+    return consulta.order_by(Producto.nombre).all()
 
 
 @router.post("", response_model=ProductoOut, status_code=status.HTTP_201_CREATED)

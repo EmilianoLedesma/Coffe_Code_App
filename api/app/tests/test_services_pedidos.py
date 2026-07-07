@@ -252,3 +252,25 @@ def test_entregado_libera_mesa_con_autoflush_desactivado(
 
     db_session.refresh(mesa_libre)
     assert mesa_libre.estatus.nombre == EstatusMesaNombre.LIBRE
+
+
+def test_cancelado_libera_mesa_cuando_no_hay_mas_pedidos_activos(
+    db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta
+):
+    pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.CANCELADO)
+
+    db_session.refresh(mesa_libre)
+    assert mesa_libre.estatus.nombre == EstatusMesaNombre.LIBRE
+
+
+def test_cancelado_no_libera_mesa_si_hay_otro_pedido_activo(
+    db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta
+):
+    pedido_1 = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
+    _pedido_2 = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
+
+    cambiar_estado_pedido(db_session, pedido_1, EstatusPedidoNombre.CANCELADO)
+
+    db_session.refresh(mesa_libre)
+    assert mesa_libre.estatus.nombre == EstatusMesaNombre.OCUPADA
