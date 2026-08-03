@@ -1,2350 +1,2350 @@
 {
-	"info": {
-		"name": "Coffee Code API",
-		"description": "Coleccion de pruebas para el API Central de Coffee Code (Mesero, Caja, Cocina). El modulo de Admin se prueba via la web Flask, no aqui.",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-	},
-	"variable": [
-		{
-			"key": "base_url",
-			"value": "http://127.0.0.1:8010"
-		},
-		{
-			"key": "token_mesero",
-			"value": ""
-		},
-		{
-			"key": "token_cajero",
-			"value": ""
-		},
-		{
-			"key": "token_cocinero",
-			"value": ""
-		},
-		{
-			"key": "token_admin",
-			"value": ""
-		},
-		{
-			"key": "mesa_id",
-			"value": "1"
-		},
-		{
-			"key": "usuario_id_mesero",
-			"value": "4"
-		},
-		{
-			"key": "producto_id",
-			"value": "1"
-		},
-		{
-			"key": "pedido_id",
-			"value": ""
-		},
-		{
-			"key": "ingrediente_id",
-			"value": ""
-		},
-		{
-			"key": "rol_id_mesero",
-			"value": ""
-		},
-		{
-			"key": "usuario_id_nuevo",
-			"value": ""
-		},
-		{
-			"key": "producto_id_creado",
-			"value": ""
-		},
-		{
-			"key": "gasto_fijo_id",
-			"value": ""
-		}
-	],
-	"item": [
-		{
-			"name": "01 - Login",
-			"item": [
-				{
-					"name": "Login Admin",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const data_login_admin = pm.response.json();",
-									"pm.collectionVariables.set('token_admin', data_login_admin.access_token);",
-									"pm.test('login exitoso', () => pm.response.code === 200);"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"correo_electronico\": \"admin@coffeecode.com\",\n  \"password\": \"Admin123!\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/auth/login",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"auth",
-								"login"
-							]
-						}
-					}
-				},
-				{
-					"name": "Login Mesero",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const data_login_mesero = pm.response.json();",
-									"pm.collectionVariables.set('token_mesero', data_login_mesero.access_token);",
-									"pm.test('login exitoso', () => pm.response.code === 200);"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"correo_electronico\": \"mesero@coffeecode.com\",\n  \"password\": \"Mesero123!\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/auth/login",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"auth",
-								"login"
-							]
-						}
-					}
-				},
-				{
-					"name": "Login Cajero",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const data_login_cajero = pm.response.json();",
-									"pm.collectionVariables.set('token_cajero', data_login_cajero.access_token);",
-									"pm.test('login exitoso', () => pm.response.code === 200);"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"correo_electronico\": \"cajero@coffeecode.com\",\n  \"password\": \"Cajero123!\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/auth/login",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"auth",
-								"login"
-							]
-						}
-					}
-				},
-				{
-					"name": "Login Cocinero",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const data_login_cocinero = pm.response.json();",
-									"pm.collectionVariables.set('token_cocinero', data_login_cocinero.access_token);",
-									"pm.test('login exitoso', () => pm.response.code === 200);"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"correo_electronico\": \"cocinero@coffeecode.com\",\n  \"password\": \"Cocinero123!\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/auth/login",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"auth",
-								"login"
-							]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "02 - Mesero",
-			"item": [
-				{
-					"name": "Listar Mesas",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_mesero}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/mesas",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"mesas"
-							]
-						}
-					}
-				},
-				{
-					"name": "Crear Pedido",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const data_crear_pedido = pm.response.json();",
-									"if (data_crear_pedido.id) { pm.collectionVariables.set('pedido_id', data_crear_pedido.id); }",
-									"pm.test('pedido creado (201)', () => pm.response.code === 201);"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_mesero}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"mesa_id\": {{mesa_id}},\n  \"usuario_id\": {{usuario_id_mesero}},\n  \"items\": [\n    { \"id_producto\": {{producto_id}}, \"cantidad\": 2, \"especificaciones\": \"sin azucar\" }\n  ]\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/pedidos",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"pedidos"
-							]
-						}
-					}
-				},
-				{
-					"name": "Listar Pedidos (todos)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_mesero}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/pedidos",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"pedidos"
-							]
-						}
-					}
-				},
-				{
-					"name": "Obtener Pedido por ID",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_mesero}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/pedidos/{{pedido_id}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"pedidos",
-								"{{pedido_id}}"
-							]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "03 - Cocina",
-			"item": [
-				{
-					"name": "Listar Productos",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/productos",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"productos"
-							]
-						}
-					}
-				},
-				{
-					"name": "Listar Categorias",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/categorias",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"categorias"
-							]
-						}
-					}
-				},
-				{
-					"name": "Crear Producto",
-					"request": {
-						"method": "POST",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Te Chai\",\n  \"descripcion\": \"Te especiado con leche\",\n  \"precio_venta\": 40.00,\n  \"disponible\": true,\n  \"activo\": true,\n  \"id_categoria\": 1\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/productos",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"productos"
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const data_producto_creado = pm.response.json();",
-									"pm.collectionVariables.set('producto_id_creado', data_producto_creado.id);",
-									"pm.test('producto creado (201)', () => pm.response.code === 201);"
-								]
-							}
-						}
-					]
-				},
-				{
-					"name": "Actualizar Producto",
-					"request": {
-						"method": "PUT",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"precio_venta\": 42.00\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/productos/{{producto_id_creado}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"productos",
-								"{{producto_id_creado}}"
-							]
-						}
-					}
-				},
-				{
-					"name": "Crear Categoria",
-					"request": {
-						"method": "POST",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Postres\",\n  \"descripcion\": \"Panque, pay\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/categorias",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"categorias"
-							]
-						}
-					}
-				},
-				{
-					"name": "Actualizar Categoria",
-					"request": {
-						"method": "PUT",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"activo\": false\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/categorias/1",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"categorias",
-								"1"
-							]
-						}
-					}
-				},
-				{
-					"name": "Desactivar Producto (soft delete)",
-					"request": {
-						"method": "DELETE",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/productos/{{producto_id_creado}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"productos",
-								"{{producto_id_creado}}"
-							]
-						}
-					}
-				},
-				{
-					"name": "Listar Ingredientes",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/ingredientes",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"ingredientes"
-							]
-						}
-					}
-				},
-				{
-					"name": "Crear Ingrediente",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const data_crear_ingrediente = pm.response.json();",
-									"if (data_crear_ingrediente.id) { pm.collectionVariables.set('ingrediente_id', data_crear_ingrediente.id); }"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Leche\",\n  \"unidad\": \"ml\",\n  \"stock_actual\": 1000,\n  \"stock_minimo\": 200,\n  \"costo_unitario\": 0.05\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/ingredientes",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"ingredientes"
-							]
-						}
-					}
-				},
-				{
-					"name": "Ajustar Stock de Ingrediente",
-					"request": {
-						"method": "PUT",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"cantidad\": -150\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/ingredientes/{{ingrediente_id}}/stock",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"ingredientes",
-								"{{ingrediente_id}}",
-								"stock"
-							]
-						},
-						"description": "Cantidad es un delta: positivo suma stock (ej. compra), negativo resta (ej. merma)."
-					}
-				},
-				{
-					"name": "Actualizar Ingrediente",
-					"request": {
-						"method": "PUT",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Leche entera\",\n  \"unidad\": \"ml\",\n  \"stock_minimo\": 1000,\n  \"costo_unitario\": 0.03\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/ingredientes/1",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"ingredientes",
-								"1"
-							]
-						},
-						"description": "Edita nombre/unidad/stock_minimo/costo_unitario. No modifica stock_actual (usar /stock para eso)."
-					}
-				},
-				{
-					"name": "Desactivar Ingrediente",
-					"request": {
-						"method": "PUT",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/ingredientes/1/desactivar",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"ingredientes",
-								"1",
-								"desactivar"
-							]
-						},
-						"description": "Da de baja logica el ingrediente (activo=False)."
-					}
-				},
-				{
-					"name": "Crear Receta (producto_ingrediente)",
-					"request": {
-						"method": "POST",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"producto_id\": {{producto_id}},\n  \"ingrediente_id\": {{ingrediente_id}},\n  \"cantidad\": 150\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/producto_ingrediente",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"producto_ingrediente"
-							]
-						}
-					}
-				},
-				{
-					"name": "Listar Receta de un Producto",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/producto_ingrediente?producto_id={{producto_id}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"producto_ingrediente"
-							],
-							"query": [
-								{
-									"key": "producto_id",
-									"value": "{{producto_id}}"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Eliminar Ingrediente de Receta",
-					"request": {
-						"method": "DELETE",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/producto_ingrediente/{{producto_id}}/{{ingrediente_id}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"producto_ingrediente",
-								"{{producto_id}}",
-								"{{ingrediente_id}}"
-							]
-						}
-					}
-				},
-				{
-					"name": "Cola de Cocina (estado=Pendiente)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/pedidos?estado=Pendiente",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"pedidos"
-							],
-							"query": [
-								{
-									"key": "estado",
-									"value": "Pendiente"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Pedido -> En preparacion",
-					"request": {
-						"method": "PUT",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json; charset=utf-8"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"estatus\": \"En preparación\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/pedidos/{{pedido_id}}/estado",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"pedidos",
-								"{{pedido_id}}",
-								"estado"
-							]
-						}
-					}
-				},
-				{
-					"name": "Pedido -> Listo (descuenta inventario)",
-					"request": {
-						"method": "PUT",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cocinero}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"estatus\": \"Listo\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/pedidos/{{pedido_id}}/estado",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"pedidos",
-								"{{pedido_id}}",
-								"estado"
-							]
-						}
-					}
-				},
-				{
-					"name": "Marcar Pedido como Entregado",
-					"request": {
-						"method": "PUT",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_mesero}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json; charset=utf-8"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"estatus\": \"Entregado\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/pedidos/{{pedido_id}}/estado",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"pedidos",
-								"{{pedido_id}}",
-								"estado"
-							]
-						},
-						"description": "IMPORTANTE: si corres la coleccion completa de una sola pasada, este request fallara con 409 porque se ejecuta antes de la carpeta 03 - Cocina (el pedido aun esta en Pendiente, no en Listo). Eso es la maquina de estados rechazando una transicion invalida correctamente, no un bug. Para probarlo de verdad: corre primero 01 - Login, 02 - Mesero (menos este request), toda la carpeta 03 - Cocina, y al final vuelve a este request."
-					}
-				}
-			]
-		},
-		{
-			"name": "04 - Caja",
-			"item": [
-				{
-					"name": "Registrar Venta",
-					"request": {
-						"method": "POST",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cajero}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"pedido_id\": {{pedido_id}},\n  \"metodo_pago\": \"Efectivo\",\n  \"monto\": 100\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/ventas",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"ventas"
-							]
-						},
-						"description": "El pedido debe existir y no tener ya un pago registrado (devuelve 409 si se repite)."
-					}
-				},
-				{
-					"name": "Registrar Gasto",
-					"request": {
-						"method": "POST",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cajero}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"concepto\": \"Pago de servicio de internet\",\n  \"monto\": 350.00\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/gastos",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"gastos"
-							]
-						}
-					}
-				},
-				{
-					"name": "Registrar Compra de Insumo",
-					"request": {
-						"method": "POST",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cajero}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"ingrediente_id\": {{ingrediente_id}},\n  \"cantidad\": 5000,\n  \"monto\": 250.00\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/compras",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"compras"
-							]
-						},
-						"description": "Registra un gasto y suma 'cantidad' al stock_actual del ingrediente."
-					}
-				},
-				{
-					"name": "Resumen de Caja",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cajero}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/caja/resumen?desde=2026-01-01T00:00:00Z&hasta=2026-12-31T23:59:59Z",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"caja",
-								"resumen"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-01-01T00:00:00Z"
-								},
-								{
-									"key": "hasta",
-									"value": "2026-12-31T23:59:59Z"
-								}
-							]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "05 - Admin - Reportes",
-			"item": [
-				{
-					"name": "Reporte Financiero (JSON)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/financiero?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"financiero"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00"
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59"
-								},
-								{
-									"key": "categoria_id",
-									"value": "1",
-									"description": "Filtra ranking_margen y el reporte por categoria de producto (opcional)",
-									"disabled": true
-								},
-								{
-									"key": "usuario_id",
-									"value": "1",
-									"description": "Filtra ventas_por_usuario por usuario/mesero/cajero (opcional)",
-									"disabled": true
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Reporte Inventario (JSON)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/inventario",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"inventario"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00Z",
-									"description": "Inicio del rango para ranking_consumo (opcional)",
-									"disabled": true
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59Z",
-									"description": "Fin del rango para ranking_consumo (opcional)",
-									"disabled": true
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Reporte Financiero (PDF)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/financiero/pdf?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"financiero",
-								"pdf"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00"
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59"
-								},
-								{
-									"key": "categoria_id",
-									"value": "1",
-									"description": "Filtra ranking_margen y el reporte por categoria de producto (opcional)",
-									"disabled": true
-								},
-								{
-									"key": "usuario_id",
-									"value": "1",
-									"description": "Filtra ventas_por_usuario por usuario/mesero/cajero (opcional)",
-									"disabled": true
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Reporte Financiero (XLSX)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/financiero/xlsx?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"financiero",
-								"xlsx"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00"
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59"
-								},
-								{
-									"key": "categoria_id",
-									"value": "1",
-									"description": "Filtra ranking_margen y el reporte por categoria de producto (opcional)",
-									"disabled": true
-								},
-								{
-									"key": "usuario_id",
-									"value": "1",
-									"description": "Filtra ventas_por_usuario por usuario/mesero/cajero (opcional)",
-									"disabled": true
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Reporte Inventario (PDF)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/inventario/pdf",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"inventario",
-								"pdf"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00Z",
-									"description": "Inicio del rango para ranking_consumo (opcional)",
-									"disabled": true
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59Z",
-									"description": "Fin del rango para ranking_consumo (opcional)",
-									"disabled": true
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Reporte Inventario (XLSX)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/inventario/xlsx",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"inventario",
-								"xlsx"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00Z",
-									"description": "Inicio del rango para ranking_consumo (opcional)",
-									"disabled": true
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59Z",
-									"description": "Fin del rango para ranking_consumo (opcional)",
-									"disabled": true
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Reporte Productos (JSON)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/productos?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"productos"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00"
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Reporte Productos (PDF)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/productos/pdf?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"productos",
-								"pdf"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00"
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Reporte Productos (XLSX)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/productos/xlsx?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"productos",
-								"xlsx"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00"
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Reporte Pedidos (JSON)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/pedidos?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"pedidos"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00"
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Reporte Pedidos (PDF)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/pedidos/pdf?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"pedidos",
-								"pdf"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00"
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Reporte Pedidos (XLSX)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/pedidos/xlsx?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"pedidos",
-								"xlsx"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00"
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Reporte Financiero - Solo Detalle de Gastos (JSON)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/financiero?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59&secciones=gastos_tipo",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"financiero"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00"
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59"
-								},
-								{
-									"key": "secciones",
-									"value": "gastos_tipo",
-									"description": "Filtra las secciones exportadas en PDF/XLSX; el JSON siempre incluye todo el detalle (gastos_por_tipo, gastos_por_usuario, detalle_gastos, detalle_ventas)"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Reporte Financiero - Solo Detalle de Gastos (PDF)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/financiero/pdf?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59&secciones=gastos_tipo&secciones=gastos_usuario&secciones=detalle_gastos",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"financiero",
-								"pdf"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00"
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59"
-								},
-								{
-									"key": "secciones",
-									"value": "gastos_tipo"
-								},
-								{
-									"key": "secciones",
-									"value": "gastos_usuario"
-								},
-								{
-									"key": "secciones",
-									"value": "detalle_gastos"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Reporte Financiero - Solo Detalle de Gastos (XLSX)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/financiero/xlsx?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59&secciones=gastos_tipo&secciones=gastos_usuario&secciones=detalle_gastos",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"financiero",
-								"xlsx"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00"
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59"
-								},
-								{
-									"key": "secciones",
-									"value": "gastos_tipo"
-								},
-								{
-									"key": "secciones",
-									"value": "gastos_usuario"
-								},
-								{
-									"key": "secciones",
-									"value": "detalle_gastos"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Reporte Financiero - Solo Detalle de Ventas (XLSX)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/reportes/financiero/xlsx?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59&secciones=detalle_ventas",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"financiero",
-								"xlsx"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01T00:00:00"
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30T23:59:59"
-								},
-								{
-									"key": "secciones",
-									"value": "detalle_ventas"
-								}
-							]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "06 - Roles",
-			"item": [
-				{
-					"name": "Listar Roles",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_mesero}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/roles",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"roles"
-							]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "07 - Admin - Corte Diario",
-			"item": [
-				{
-					"name": "Generar Corte",
-					"request": {
-						"method": "POST",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/cortes-diarios?fecha=2026-06-15",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"cortes-diarios"
-							],
-							"query": [
-								{
-									"key": "fecha",
-									"value": "2026-06-15"
-								}
-							]
-						},
-						"description": "Genera (o regenera, upsert) el corte del dia indicado. Solo rol Administrador."
-					}
-				},
-				{
-					"name": "Listar Cortes",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/cortes-diarios?desde=2026-06-01&hasta=2026-06-30",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"cortes-diarios"
-							],
-							"query": [
-								{
-									"key": "desde",
-									"value": "2026-06-01"
-								},
-								{
-									"key": "hasta",
-									"value": "2026-06-30"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Obtener Corte",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/cortes-diarios/2026-06-15",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"cortes-diarios",
-								"2026-06-15"
-							]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "08 - Admin - Usuarios",
-			"item": [
-				{
-					"name": "Obtener id_rol Mesero",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const data_roles = pm.response.json();",
-									"const rol_mesero = data_roles.find(r => r.nombre === 'Mesero');",
-									"if (rol_mesero) { pm.collectionVariables.set('rol_id_mesero', rol_mesero.id); }",
-									"pm.test('roles obtenidos', () => pm.response.code === 200);"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/roles",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"roles"
-							]
-						}
-					}
-				},
-				{
-					"name": "Crear Usuario",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const data_crear_usuario = pm.response.json();",
-									"if (data_crear_usuario.id) { pm.collectionVariables.set('usuario_id_nuevo', data_crear_usuario.id); }",
-									"pm.test('usuario creado', () => pm.response.code === 201);"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Usuario\",\n  \"apellido_paterno\": \"Prueba\",\n  \"apellido_materno\": \"Postman\",\n  \"correo_electronico\": \"usuario.prueba.{{$timestamp}}@coffeecode.com\",\n  \"password\": \"Prueba123!\",\n  \"id_rol\": {{rol_id_mesero}}\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/usuarios",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"usuarios"
-							]
-						}
-					}
-				},
-				{
-					"name": "Listar Usuarios",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/usuarios",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"usuarios"
-							]
-						}
-					}
-				},
-				{
-					"name": "Obtener Usuario por ID",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/usuarios/{{usuario_id_nuevo}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"usuarios",
-								"{{usuario_id_nuevo}}"
-							]
-						}
-					}
-				},
-				{
-					"name": "Actualizar Usuario",
-					"request": {
-						"method": "PUT",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Usuario Editado\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/usuarios/{{usuario_id_nuevo}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"usuarios",
-								"{{usuario_id_nuevo}}"
-							]
-						}
-					}
-				},
-				{
-					"name": "Eliminar/Desactivar Usuario",
-					"request": {
-						"method": "DELETE",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/usuarios/{{usuario_id_nuevo}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"usuarios",
-								"{{usuario_id_nuevo}}"
-							]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "09 - Admin - Gastos Fijos",
-			"item": [
-				{
-					"name": "Crear Gasto Fijo",
-					"request": {
-						"method": "POST",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/gastos-fijos",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"gastos-fijos"
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"concepto\": \"Pago de internet\",\n  \"monto\": 800,\n  \"categoria\": \"Servicios\"\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const data_gasto_fijo = pm.response.json();",
-									"pm.collectionVariables.set('gasto_fijo_id', data_gasto_fijo.id);",
-									"pm.test('gasto fijo creado (201)', () => pm.response.code === 201);"
-								]
-							}
-						}
-					]
-				},
-				{
-					"name": "Listar Gastos Fijos",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/gastos-fijos",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"gastos-fijos"
-							]
-						}
-					}
-				},
-				{
-					"name": "Actualizar Gasto Fijo",
-					"request": {
-						"method": "PUT",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/gastos-fijos/{{gasto_fijo_id}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"gastos-fijos",
-								"{{gasto_fijo_id}}"
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"monto\": 850\n}"
-						}
-					}
-				},
-				{
-					"name": "Aplicar Gasto Fijo (genera gasto real)",
-					"request": {
-						"method": "POST",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/gastos-fijos/{{gasto_fijo_id}}/aplicar",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"gastos-fijos",
-								"{{gasto_fijo_id}}",
-								"aplicar"
-							]
-						}
-					}
-				},
-				{
-					"name": "Aplicar Todos los Gastos Fijos",
-					"request": {
-						"method": "POST",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/gastos-fijos/aplicar-todos",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"gastos-fijos",
-								"aplicar-todos"
-							]
-						}
-					}
-				},
-				{
-					"name": "Eliminar Gasto Fijo",
-					"request": {
-						"method": "DELETE",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/gastos-fijos/{{gasto_fijo_id}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"gastos-fijos",
-								"{{gasto_fijo_id}}"
-							]
-						}
-					}
-				},
-				{
-					"name": "Listar Gastos Fijos (Cajero -> 403 esperado)",
-					"request": {
-						"method": "GET",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cajero}}"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{base_url}}/api/gastos-fijos",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"gastos-fijos"
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('cajero recibe 403 (solo admin puede gestionar gastos fijos)', () => pm.response.code === 403);"
-								]
-							}
-						}
-					]
-				}
-			]
-		}
-	]
+  "info": {
+    "name": "Coffee Code API",
+    "description": "Coleccion de pruebas para el API Central de Coffee Code (Mesero, Caja, Cocina). El modulo de Admin se prueba via la web Flask, no aqui.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8010"
+    },
+    {
+      "key": "token_mesero",
+      "value": ""
+    },
+    {
+      "key": "token_cajero",
+      "value": ""
+    },
+    {
+      "key": "token_cocinero",
+      "value": ""
+    },
+    {
+      "key": "token_admin",
+      "value": ""
+    },
+    {
+      "key": "mesa_id",
+      "value": "1"
+    },
+    {
+      "key": "usuario_id_mesero",
+      "value": "4"
+    },
+    {
+      "key": "producto_id",
+      "value": "1"
+    },
+    {
+      "key": "pedido_id",
+      "value": ""
+    },
+    {
+      "key": "ingrediente_id",
+      "value": ""
+    },
+    {
+      "key": "rol_id_mesero",
+      "value": ""
+    },
+    {
+      "key": "usuario_id_nuevo",
+      "value": ""
+    },
+    {
+      "key": "producto_id_creado",
+      "value": ""
+    },
+    {
+      "key": "gasto_fijo_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Login",
+      "item": [
+        {
+          "name": "Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data_login_admin = pm.response.json();",
+                  "pm.collectionVariables.set('token_admin', data_login_admin.access_token);",
+                  "pm.test('login exitoso', () => { if (!(pm.response.code === 200)) { throw new Error('login exitoso -- assertion failed (status ' + pm.response.code + ')'); } });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo_electronico\": \"admin@coffeecode.com\",\n  \"password\": \"Admin123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login Mesero",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data_login_mesero = pm.response.json();",
+                  "pm.collectionVariables.set('token_mesero', data_login_mesero.access_token);",
+                  "pm.test('login exitoso', () => { if (!(pm.response.code === 200)) { throw new Error('login exitoso -- assertion failed (status ' + pm.response.code + ')'); } });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo_electronico\": \"mesero@coffeecode.com\",\n  \"password\": \"Mesero123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login Cajero",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data_login_cajero = pm.response.json();",
+                  "pm.collectionVariables.set('token_cajero', data_login_cajero.access_token);",
+                  "pm.test('login exitoso', () => { if (!(pm.response.code === 200)) { throw new Error('login exitoso -- assertion failed (status ' + pm.response.code + ')'); } });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo_electronico\": \"cajero@coffeecode.com\",\n  \"password\": \"Cajero123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login Cocinero",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data_login_cocinero = pm.response.json();",
+                  "pm.collectionVariables.set('token_cocinero', data_login_cocinero.access_token);",
+                  "pm.test('login exitoso', () => { if (!(pm.response.code === 200)) { throw new Error('login exitoso -- assertion failed (status ' + pm.response.code + ')'); } });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo_electronico\": \"cocinero@coffeecode.com\",\n  \"password\": \"Cocinero123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Mesero",
+      "item": [
+        {
+          "name": "Listar Mesas",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/mesas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mesas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear Pedido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data_crear_pedido = pm.response.json();",
+                  "if (data_crear_pedido.id) { pm.collectionVariables.set('pedido_id', data_crear_pedido.id); }",
+                  "pm.test('pedido creado (201)', () => { if (!(pm.response.code === 201)) { throw new Error('pedido creado (201) -- assertion failed (status ' + pm.response.code + ')'); } });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mesa_id\": {{mesa_id}},\n  \"usuario_id\": {{usuario_id_mesero}},\n  \"items\": [\n    { \"id_producto\": {{producto_id}}, \"cantidad\": 2, \"especificaciones\": \"sin azucar\" }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/pedidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar Pedidos (todos)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/pedidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Pedido por ID",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/pedidos/{{pedido_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedido_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Cocina",
+      "item": [
+        {
+          "name": "Listar Productos",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar Categorias",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/categorias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear Producto",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Te Chai\",\n  \"descripcion\": \"Te especiado con leche\",\n  \"precio_venta\": 40.00,\n  \"disponible\": true,\n  \"activo\": true,\n  \"id_categoria\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data_producto_creado = pm.response.json();",
+                  "pm.collectionVariables.set('producto_id_creado', data_producto_creado.id);",
+                  "pm.test('producto creado (201)', () => { if (!(pm.response.code === 201)) { throw new Error('producto creado (201) -- assertion failed (status ' + pm.response.code + ')'); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Actualizar Producto",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"precio_venta\": 42.00\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/productos/{{producto_id_creado}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos",
+                "{{producto_id_creado}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear Categoria",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Postres\",\n  \"descripcion\": \"Panque, pay\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/categorias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Categoria",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activo\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/categorias/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Desactivar Producto (soft delete)",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/productos/{{producto_id_creado}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos",
+                "{{producto_id_creado}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar Ingredientes",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/ingredientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear Ingrediente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data_crear_ingrediente = pm.response.json();",
+                  "if (data_crear_ingrediente.id) { pm.collectionVariables.set('ingrediente_id', data_crear_ingrediente.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ingrediente de prueba Postman\",\n  \"unidad\": \"ml\",\n  \"stock_actual\": 1000,\n  \"stock_minimo\": 200,\n  \"costo_unitario\": 0.05\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/ingredientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Ajustar Stock de Ingrediente",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": -150\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/ingredientes/{{ingrediente_id}}/stock",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes",
+                "{{ingrediente_id}}",
+                "stock"
+              ]
+            },
+            "description": "Cantidad es un delta: positivo suma stock (ej. compra), negativo resta (ej. merma)."
+          }
+        },
+        {
+          "name": "Actualizar Ingrediente",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Leche entera\",\n  \"unidad\": \"ml\",\n  \"stock_minimo\": 1000,\n  \"costo_unitario\": 0.03\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/ingredientes/{{ingrediente_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes",
+                "{{ingrediente_id}}"
+              ]
+            },
+            "description": "Edita nombre/unidad/stock_minimo/costo_unitario. No modifica stock_actual (usar /stock para eso)."
+          }
+        },
+        {
+          "name": "Desactivar Ingrediente",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ingredientes/{{ingrediente_id}}/desactivar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes",
+                "{{ingrediente_id}}",
+                "desactivar"
+              ]
+            },
+            "description": "Da de baja logica el ingrediente (activo=False)."
+          }
+        },
+        {
+          "name": "Crear Receta (producto_ingrediente)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto_id\": {{producto_id}},\n  \"ingrediente_id\": {{ingrediente_id}},\n  \"cantidad\": 150\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/producto_ingrediente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "producto_ingrediente"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar Receta de un Producto",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/producto_ingrediente?producto_id={{producto_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "producto_ingrediente"
+              ],
+              "query": [
+                {
+                  "key": "producto_id",
+                  "value": "{{producto_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Ingrediente de Receta",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/producto_ingrediente/{{producto_id}}/{{ingrediente_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "producto_ingrediente",
+                "{{producto_id}}",
+                "{{ingrediente_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cola de Cocina (estado=Pendiente)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/pedidos?estado=Pendiente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "Pendiente"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Pedido -> En preparacion",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estatus\": \"En preparación\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/pedidos/{{pedido_id}}/estado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedido_id}}",
+                "estado"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Pedido -> Listo (descuenta inventario)",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estatus\": \"Listo\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/pedidos/{{pedido_id}}/estado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedido_id}}",
+                "estado"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Marcar Pedido como Entregado",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estatus\": \"Entregado\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/pedidos/{{pedido_id}}/estado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedido_id}}",
+                "estado"
+              ]
+            },
+            "description": "IMPORTANTE: si corres la coleccion completa de una sola pasada, este request fallara con 409 porque se ejecuta antes de la carpeta 03 - Cocina (el pedido aun esta en Pendiente, no en Listo). Eso es la maquina de estados rechazando una transicion invalida correctamente, no un bug. Para probarlo de verdad: corre primero 01 - Login, 02 - Mesero (menos este request), toda la carpeta 03 - Cocina, y al final vuelve a este request."
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Caja",
+      "item": [
+        {
+          "name": "Registrar Venta",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pedido_id\": {{pedido_id}},\n  \"metodo_pago\": \"Efectivo\",\n  \"monto\": 100\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/ventas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ventas"
+              ]
+            },
+            "description": "El pedido debe existir y no tener ya un pago registrado (devuelve 409 si se repite)."
+          }
+        },
+        {
+          "name": "Registrar Gasto",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"concepto\": \"Pago de servicio de internet\",\n  \"monto\": 350.00\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/gastos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "gastos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Registrar Compra de Insumo",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ingrediente_id\": {{ingrediente_id}},\n  \"cantidad\": 5000,\n  \"monto\": 250.00\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/compras",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "compras"
+              ]
+            },
+            "description": "Registra un gasto y suma 'cantidad' al stock_actual del ingrediente."
+          }
+        },
+        {
+          "name": "Resumen de Caja",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/caja/resumen?desde=2026-01-01T00:00:00Z&hasta=2026-12-31T23:59:59Z",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "caja",
+                "resumen"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-01-01T00:00:00Z"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-12-31T23:59:59Z"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Admin - Reportes",
+      "item": [
+        {
+          "name": "Reporte Financiero (JSON)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/financiero?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "financiero"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59"
+                },
+                {
+                  "key": "categoria_id",
+                  "value": "1",
+                  "description": "Filtra ranking_margen y el reporte por categoria de producto (opcional)",
+                  "disabled": true
+                },
+                {
+                  "key": "usuario_id",
+                  "value": "1",
+                  "description": "Filtra ventas_por_usuario por usuario/mesero/cajero (opcional)",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Inventario (JSON)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/inventario",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "inventario"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00Z",
+                  "description": "Inicio del rango para ranking_consumo (opcional)",
+                  "disabled": true
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59Z",
+                  "description": "Fin del rango para ranking_consumo (opcional)",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Financiero (PDF)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/financiero/pdf?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "financiero",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59"
+                },
+                {
+                  "key": "categoria_id",
+                  "value": "1",
+                  "description": "Filtra ranking_margen y el reporte por categoria de producto (opcional)",
+                  "disabled": true
+                },
+                {
+                  "key": "usuario_id",
+                  "value": "1",
+                  "description": "Filtra ventas_por_usuario por usuario/mesero/cajero (opcional)",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Financiero (XLSX)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/financiero/xlsx?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "financiero",
+                "xlsx"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59"
+                },
+                {
+                  "key": "categoria_id",
+                  "value": "1",
+                  "description": "Filtra ranking_margen y el reporte por categoria de producto (opcional)",
+                  "disabled": true
+                },
+                {
+                  "key": "usuario_id",
+                  "value": "1",
+                  "description": "Filtra ventas_por_usuario por usuario/mesero/cajero (opcional)",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Inventario (PDF)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/inventario/pdf",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "inventario",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00Z",
+                  "description": "Inicio del rango para ranking_consumo (opcional)",
+                  "disabled": true
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59Z",
+                  "description": "Fin del rango para ranking_consumo (opcional)",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Inventario (XLSX)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/inventario/xlsx",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "inventario",
+                "xlsx"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00Z",
+                  "description": "Inicio del rango para ranking_consumo (opcional)",
+                  "disabled": true
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59Z",
+                  "description": "Fin del rango para ranking_consumo (opcional)",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Productos (JSON)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/productos?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "productos"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Productos (PDF)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/productos/pdf?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "productos",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Productos (XLSX)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/productos/xlsx?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "productos",
+                "xlsx"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Pedidos (JSON)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/pedidos?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "pedidos"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Pedidos (PDF)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/pedidos/pdf?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "pedidos",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Pedidos (XLSX)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/pedidos/xlsx?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "pedidos",
+                "xlsx"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Financiero - Solo Detalle de Gastos (JSON)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/financiero?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59&secciones=gastos_tipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "financiero"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59"
+                },
+                {
+                  "key": "secciones",
+                  "value": "gastos_tipo",
+                  "description": "Filtra las secciones exportadas en PDF/XLSX; el JSON siempre incluye todo el detalle (gastos_por_tipo, gastos_por_usuario, detalle_gastos, detalle_ventas)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Financiero - Solo Detalle de Gastos (PDF)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/financiero/pdf?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59&secciones=gastos_tipo&secciones=gastos_usuario&secciones=detalle_gastos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "financiero",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59"
+                },
+                {
+                  "key": "secciones",
+                  "value": "gastos_tipo"
+                },
+                {
+                  "key": "secciones",
+                  "value": "gastos_usuario"
+                },
+                {
+                  "key": "secciones",
+                  "value": "detalle_gastos"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Financiero - Solo Detalle de Gastos (XLSX)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/financiero/xlsx?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59&secciones=gastos_tipo&secciones=gastos_usuario&secciones=detalle_gastos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "financiero",
+                "xlsx"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59"
+                },
+                {
+                  "key": "secciones",
+                  "value": "gastos_tipo"
+                },
+                {
+                  "key": "secciones",
+                  "value": "gastos_usuario"
+                },
+                {
+                  "key": "secciones",
+                  "value": "detalle_gastos"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Financiero - Solo Detalle de Ventas (XLSX)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reportes/financiero/xlsx?desde=2026-06-01T00:00:00&hasta=2026-06-30T23:59:59&secciones=detalle_ventas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "financiero",
+                "xlsx"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01T00:00:00"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30T23:59:59"
+                },
+                {
+                  "key": "secciones",
+                  "value": "detalle_ventas"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Roles",
+      "item": [
+        {
+          "name": "Listar Roles",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/roles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "roles"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Admin - Corte Diario",
+      "item": [
+        {
+          "name": "Generar Corte",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/cortes-diarios?fecha=2026-06-15",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cortes-diarios"
+              ],
+              "query": [
+                {
+                  "key": "fecha",
+                  "value": "2026-06-15"
+                }
+              ]
+            },
+            "description": "Genera (o regenera, upsert) el corte del dia indicado. Solo rol Administrador."
+          }
+        },
+        {
+          "name": "Listar Cortes",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/cortes-diarios?desde=2026-06-01&hasta=2026-06-30",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cortes-diarios"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-06-01"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-06-30"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Corte",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/cortes-diarios/2026-06-15",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cortes-diarios",
+                "2026-06-15"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Admin - Usuarios",
+      "item": [
+        {
+          "name": "Obtener id_rol Mesero",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data_roles = pm.response.json();",
+                  "const rol_mesero = data_roles.find(r => r.nombre === 'Mesero');",
+                  "if (rol_mesero) { pm.collectionVariables.set('rol_id_mesero', rol_mesero.id); }",
+                  "pm.test('roles obtenidos', () => { if (!(pm.response.code === 200)) { throw new Error('roles obtenidos -- assertion failed (status ' + pm.response.code + ')'); } });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/roles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "roles"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear Usuario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data_crear_usuario = pm.response.json();",
+                  "if (data_crear_usuario.id) { pm.collectionVariables.set('usuario_id_nuevo', data_crear_usuario.id); }",
+                  "pm.test('usuario creado', () => { if (!(pm.response.code === 201)) { throw new Error('usuario creado -- assertion failed (status ' + pm.response.code + ')'); } });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario\",\n  \"apellido_paterno\": \"Prueba\",\n  \"apellido_materno\": \"Postman\",\n  \"correo_electronico\": \"usuario.prueba.{{$timestamp}}@coffeecode.com\",\n  \"password\": \"Prueba123!\",\n  \"id_rol\": {{rol_id_mesero}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/usuarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar Usuarios",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/usuarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Usuario por ID",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/{{usuario_id_nuevo}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{usuario_id_nuevo}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Usuario",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario Editado\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/{{usuario_id_nuevo}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{usuario_id_nuevo}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eliminar/Desactivar Usuario",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/{{usuario_id_nuevo}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{usuario_id_nuevo}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Admin - Gastos Fijos",
+      "item": [
+        {
+          "name": "Crear Gasto Fijo",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/gastos-fijos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gastos-fijos"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"concepto\": \"Pago de internet\",\n  \"monto\": 800,\n  \"categoria\": \"Servicios\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data_gasto_fijo = pm.response.json();",
+                  "pm.collectionVariables.set('gasto_fijo_id', data_gasto_fijo.id);",
+                  "pm.test('gasto fijo creado (201)', () => { if (!(pm.response.code === 201)) { throw new Error('gasto fijo creado (201) -- assertion failed (status ' + pm.response.code + ')'); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Gastos Fijos",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/gastos-fijos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gastos-fijos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Gasto Fijo",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/gastos-fijos/{{gasto_fijo_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gastos-fijos",
+                "{{gasto_fijo_id}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"monto\": 850\n}"
+            }
+          }
+        },
+        {
+          "name": "Aplicar Gasto Fijo (genera gasto real)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/gastos-fijos/{{gasto_fijo_id}}/aplicar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gastos-fijos",
+                "{{gasto_fijo_id}}",
+                "aplicar"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Aplicar Todos los Gastos Fijos",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/gastos-fijos/aplicar-todos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gastos-fijos",
+                "aplicar-todos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Gasto Fijo",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/gastos-fijos/{{gasto_fijo_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gastos-fijos",
+                "{{gasto_fijo_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar Gastos Fijos (Cajero -> 403 esperado)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/gastos-fijos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gastos-fijos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('cajero recibe 403 (solo admin puede gestionar gastos fijos)', () => { if (!(pm.response.code === 403)) { throw new Error('cajero recibe 403 (solo admin puede gestionar gastos fijos) -- assertion failed (status ' + pm.response.code + ')'); } });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

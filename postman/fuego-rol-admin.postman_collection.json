@@ -1,1578 +1,1578 @@
 {
-	"info": {
-		"name": "Fuego - Rol Administrador",
-		"description": "Bateria de prueba de fuego para el rol Administrador: alta/baja de usuarios y categorias, reset de password, reportes JSON/PDF/XLSX, corte diario, y verificacion de que otros roles NO pueden tocar estos endpoints exclusivos. Nota: el rechazo del panel web-admin a un no-administrador se prueba manualmente via POST http://127.0.0.1:8020/login (Flask), no via esta coleccion de API.",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-	},
-	"variable": [
-		{
-			"key": "base_url",
-			"value": "http://127.0.0.1:8010"
-		},
-		{
-			"key": "token_admin",
-			"value": ""
-		},
-		{
-			"key": "token_cajero_setup",
-			"value": ""
-		},
-		{
-			"key": "id_rol_mesero",
-			"value": "1"
-		},
-		{
-			"key": "usuario_id_prueba",
-			"value": ""
-		},
-		{
-			"key": "categoria_id_prueba",
-			"value": ""
-		},
-		{
-			"key": "ingrediente_id_prueba",
-			"value": ""
-		},
-		{
-			"key": "producto_id_receta_prueba",
-			"value": ""
-		},
-		{
-			"key": "gasto_fijo_id_prueba",
-			"value": ""
-		}
-	],
-	"item": [
-		{
-			"name": "00 - Autenticacion",
-			"item": [
-				{
-					"name": "Login Admin",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{base_url}}/auth/login",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"auth",
-								"login"
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"correo_electronico\": \"admin@coffeecode.com\",\n  \"password\": \"Admin123!\"\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  const data = pm.response.json();",
-									"  pm.collectionVariables.set('token_admin', data.access_token);",
-									"  pm.test('login exitoso (200)', () => pm.response.code === 200);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "01 - Usuarios",
-			"item": [
-				{
-					"name": "Crear Usuario de prueba",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{base_url}}/api/usuarios",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"usuarios"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Test\",\n  \"apellido_paterno\": \"Fuego\",\n  \"correo_electronico\": \"test.fuego.postman@coffeecode.com\",\n  \"password\": \"TestFuego123!\",\n  \"id_rol\": \"{{id_rol_mesero}}\"\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  const data = pm.response.json();",
-									"  if (data.id) { pm.collectionVariables.set('usuario_id_prueba', data.id); }",
-									"  pm.test('usuario creado (201)', () => pm.response.code === 201);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Verificar login del usuario nuevo",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{base_url}}/auth/login",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"auth",
-								"login"
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"correo_electronico\": \"test.fuego.postman@coffeecode.com\",\n  \"password\": \"TestFuego123!\"\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('login exitoso (200)', () => pm.response.code === 200);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Reset de password del usuario de prueba",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{base_url}}/api/usuarios/{{usuario_id_prueba}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"usuarios",
-								"{{usuario_id_prueba}}"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"password\": \"TestFuegoNueva456!\"\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Desactivar Usuario de prueba",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{base_url}}/api/usuarios/{{usuario_id_prueba}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"usuarios",
-								"{{usuario_id_prueba}}"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"activo\": false\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "[ERROR] Login de usuario ya desactivado",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{base_url}}/auth/login",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"auth",
-								"login"
-							]
-						},
-						"description": "Un usuario desactivado no debe poder autenticarse. Se espera 401.",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"correo_electronico\": \"test.fuego.postman@coffeecode.com\",\n  \"password\": \"TestFuegoNueva456!\"\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('rechazado (401)', () => pm.response.code === 401);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Eliminar Usuario de prueba (hard delete, sin actividad)",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{base_url}}/api/usuarios/{{usuario_id_prueba}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"usuarios",
-								"{{usuario_id_prueba}}"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"description": "El usuario de prueba nunca creo pedidos/tickets/gastos/cortes, asi que DELETE lo borra de verdad en vez de solo desactivarlo."
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  const data = pm.response.json();",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"  pm.test('eliminado de verdad (no solo desactivado)', () => data.eliminado === true);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "02 - Categorias",
-			"item": [
-				{
-					"name": "Crear Categoria de prueba",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{base_url}}/categorias",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"categorias"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Prueba de Fuego Postman\",\n  \"descripcion\": \"categoria temporal generada por la coleccion de fuego\",\n  \"activo\": true\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  const data = pm.response.json();",
-									"  if (data.id) { pm.collectionVariables.set('categoria_id_prueba', data.id); }",
-									"  pm.test('categoria creada (201)', () => pm.response.code === 201);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Desactivar Categoria de prueba",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{base_url}}/categorias/{{categoria_id_prueba}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"categorias",
-								"{{categoria_id_prueba}}"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Prueba de Fuego Postman\",\n  \"descripcion\": \"categoria temporal generada por la coleccion de fuego\",\n  \"activo\": false\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Eliminar Categoria de prueba (hard delete, sin productos asociados)",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{base_url}}/categorias/{{categoria_id_prueba}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"categorias",
-								"{{categoria_id_prueba}}"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"description": "La categoria de prueba nunca tuvo productos asignados, asi que DELETE la borra de verdad."
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  const data = pm.response.json();",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"  pm.test('eliminada de verdad (no solo desactivada)', () => data.eliminado === true);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "03 - Ingredientes",
-			"item": [
-				{
-					"name": "Crear Ingrediente de prueba",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{base_url}}/ingredientes",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"ingredientes"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Ingrediente Prueba Fuego\",\n  \"unidad\": \"g\",\n  \"stock_actual\": 100,\n  \"stock_minimo\": 10,\n  \"costo_unitario\": 1.5,\n  \"activo\": true\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  const data = pm.response.json();",
-									"  if (data.id) { pm.collectionVariables.set('ingrediente_id_prueba', data.id); }",
-									"  pm.test('ingrediente creado (201)', () => pm.response.code === 201);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Actualizar Ingrediente de prueba",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{base_url}}/ingredientes/{{ingrediente_id_prueba}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"ingredientes",
-								"{{ingrediente_id_prueba}}"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"costo_unitario\": 2.0\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Eliminar Ingrediente de prueba (hard delete, sin uso en recetas)",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{base_url}}/ingredientes/{{ingrediente_id_prueba}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"ingredientes",
-								"{{ingrediente_id_prueba}}"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"description": "El ingrediente de prueba nunca se agrego a ninguna receta, asi que DELETE lo borra de verdad."
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  const data = pm.response.json();",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"  pm.test('eliminado de verdad (no solo desactivado)', () => data.eliminado === true);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "04 - Recetas",
-			"item": [
-				{
-					"name": "Crear Producto temporal para receta",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{base_url}}/productos",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"productos"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Producto Receta Fuego\",\n  \"descripcion\": \"temporal, para probar eliminar receta completa\",\n  \"precio_venta\": 10,\n  \"disponible\": true,\n  \"activo\": true,\n  \"id_categoria\": 1\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  const data = pm.response.json();",
-									"  if (data.id) { pm.collectionVariables.set('producto_id_receta_prueba', data.id); }",
-									"  pm.test('producto creado (201)', () => pm.response.code === 201);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Agregar Ingrediente a la receta (usa Café molido, id 2)",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{base_url}}/producto_ingrediente",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"producto_ingrediente"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"producto_id\": \"{{producto_id_receta_prueba}}\",\n  \"ingrediente_id\": 2,\n  \"cantidad\": 5\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('receta creada (201)', () => pm.response.code === 201);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Listar Receta del producto temporal",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{base_url}}/producto_ingrediente?producto_id={{producto_id_receta_prueba}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"producto_ingrediente"
-							],
-							"query": [
-								{
-									"key": "producto_id",
-									"value": "{{producto_id_receta_prueba}}"
-								}
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  const data = pm.response.json();",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"  pm.test('tiene al menos un ingrediente', () => data.length >= 1);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Eliminar Receta completa (hard delete de todos los ingredientes)",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{base_url}}/producto_ingrediente/producto/{{producto_id_receta_prueba}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"producto_ingrediente",
-								"producto",
-								"{{producto_id_receta_prueba}}"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('204 No Content', () => pm.response.code === 204);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Eliminar Producto temporal (hard delete, sin historial de pedidos)",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{base_url}}/productos/{{producto_id_receta_prueba}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"productos",
-								"{{producto_id_receta_prueba}}"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  const data = pm.response.json();",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"  pm.test('eliminado de verdad', () => data.eliminado === true);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "05 - Gastos Fijos",
-			"item": [
-				{
-					"name": "Crear Gasto Fijo de prueba",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{base_url}}/api/gastos-fijos",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"gastos-fijos"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"concepto\": \"Gasto Fijo Prueba Fuego\",\n  \"monto\": 500,\n  \"categoria\": \"Otro\"\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  const data = pm.response.json();",
-									"  if (data.id) { pm.collectionVariables.set('gasto_fijo_id_prueba', data.id); }",
-									"  pm.test('gasto fijo creado (201)', () => pm.response.code === 201);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Listar Gastos Fijos",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{base_url}}/api/gastos-fijos",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"gastos-fijos"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Actualizar Gasto Fijo de prueba",
-					"request": {
-						"method": "PUT",
-						"url": {
-							"raw": "{{base_url}}/api/gastos-fijos/{{gasto_fijo_id_prueba}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"gastos-fijos",
-								"{{gasto_fijo_id_prueba}}"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"monto\": 550\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Aplicar Gasto Fijo (genera Gasto real, suma al dashboard)",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{base_url}}/api/gastos-fijos/{{gasto_fijo_id_prueba}}/aplicar",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"gastos-fijos",
-								"{{gasto_fijo_id_prueba}}",
-								"aplicar"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  const data = pm.response.json();",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"  pm.test('monto aplicado correcto', () => Number(data.monto) === 550);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Eliminar Gasto Fijo de prueba (catalogo)",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{base_url}}/api/gastos-fijos/{{gasto_fijo_id_prueba}}",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"gastos-fijos",
-								"{{gasto_fijo_id_prueba}}"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"description": "Elimina el catalogo; no afecta el Gasto ya aplicado anteriormente."
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('204 No Content', () => pm.response.code === 204);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "06 - Reportes",
-			"item": [
-				{
-					"name": "Reporte Financiero (JSON)",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{base_url}}/api/reportes/financiero",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"financiero"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Reporte Inventario (JSON)",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{base_url}}/api/reportes/inventario",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"inventario"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Descargar Reporte Financiero (PDF)",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{base_url}}/api/reportes/financiero/pdf",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"financiero",
-								"pdf"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Descargar Reporte Inventario (XLSX)",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{base_url}}/api/reportes/inventario/xlsx",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"inventario",
-								"xlsx"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Reporte Financiero filtrado por secciones (XLSX, solo gastos)",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{base_url}}/api/reportes/financiero/xlsx?secciones=gastos_tipo&secciones=gastos_usuario",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"reportes",
-								"financiero",
-								"xlsx"
-							],
-							"query": [
-								{
-									"key": "secciones",
-									"value": "gastos_tipo"
-								},
-								{
-									"key": "secciones",
-									"value": "gastos_usuario"
-								}
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"description": "Demuestra el filtro granular de exportacion: solo incluye las hojas de gastos por tipo y por usuario, sin el resto del reporte financiero."
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "07 - Corte Diario",
-			"item": [
-				{
-					"name": "Generar Corte Diario",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{base_url}}/api/cortes-diarios",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"cortes-diarios"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_admin}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('200 OK', () => pm.response.code === 200);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "08 - Errores esperados: proteccion de endpoints exclusivos de Admin",
-			"item": [
-				{
-					"name": "Login Cajero (setup)",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{base_url}}/auth/login",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"auth",
-								"login"
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"correo_electronico\": \"cajero@coffeecode.com\",\n  \"password\": \"Cajero123!\"\n}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  const data = pm.response.json();",
-									"  pm.collectionVariables.set('token_cajero_setup', data.access_token);",
-									"  pm.test('login exitoso (200)', () => pm.response.code === 200);",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "[ERROR] Cajero intenta generar Corte Diario",
-					"request": {
-						"method": "POST",
-						"url": {
-							"raw": "{{base_url}}/api/cortes-diarios",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"cortes-diarios"
-							]
-						},
-						"description": "El corte diario es exclusivo de Administrador. Se espera 401/403.",
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cajero_setup}}"
-								}
-							]
-						},
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{}"
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('bloqueado (401/403)', () => [401, 403].includes(pm.response.code));",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "[ERROR] Cajero intenta ver usuarios",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{base_url}}/api/usuarios",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"usuarios"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cajero_setup}}"
-								}
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('bloqueado (401/403)', () => [401, 403].includes(pm.response.code));",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "[ERROR] Cajero intenta gestionar Gastos Fijos",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{base_url}}/api/gastos-fijos",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"gastos-fijos"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cajero_setup}}"
-								}
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('bloqueado (401/403)', () => [401, 403].includes(pm.response.code));",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "[ERROR] Cajero intenta eliminar una Categoria",
-					"request": {
-						"method": "DELETE",
-						"url": {
-							"raw": "{{base_url}}/categorias/1",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"categorias",
-								"1"
-							]
-						},
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token_cajero_setup}}"
-								}
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"(function () {",
-									"  pm.test('bloqueado (401/403)', () => [401, 403].includes(pm.response.code));",
-									"})();"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				}
-			]
-		}
-	]
+  "info": {
+    "name": "Fuego - Rol Administrador",
+    "description": "Bateria de prueba de fuego para el rol Administrador: alta/baja de usuarios y categorias, reset de password, reportes JSON/PDF/XLSX, corte diario, y verificacion de que otros roles NO pueden tocar estos endpoints exclusivos. Nota: el rechazo del panel web-admin a un no-administrador se prueba manualmente via POST http://127.0.0.1:8020/login (Flask), no via esta coleccion de API.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8010"
+    },
+    {
+      "key": "token_admin",
+      "value": ""
+    },
+    {
+      "key": "token_cajero_setup",
+      "value": ""
+    },
+    {
+      "key": "id_rol_mesero",
+      "value": "1"
+    },
+    {
+      "key": "usuario_id_prueba",
+      "value": ""
+    },
+    {
+      "key": "categoria_id_prueba",
+      "value": ""
+    },
+    {
+      "key": "ingrediente_id_prueba",
+      "value": ""
+    },
+    {
+      "key": "producto_id_receta_prueba",
+      "value": ""
+    },
+    {
+      "key": "gasto_fijo_id_prueba",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Autenticacion",
+      "item": [
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo_electronico\": \"admin@coffeecode.com\",\n  \"password\": \"Admin123!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('token_admin', data.access_token);",
+                  "  pm.test('login exitoso (200)', () => { if (!(pm.response.code === 200)) { throw new Error('login exitoso (200) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 - Usuarios",
+      "item": [
+        {
+          "name": "Crear Usuario de prueba",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/usuarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Test\",\n  \"apellido_paterno\": \"Fuego\",\n  \"correo_electronico\": \"test.fuego.postman@coffeecode.com\",\n  \"password\": \"TestFuego123!\",\n  \"id_rol\": \"{{id_rol_mesero}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  if (data.id) { pm.collectionVariables.set('usuario_id_prueba', data.id); }",
+                  "  pm.test('usuario creado (201)', () => { if (!(pm.response.code === 201)) { throw new Error('usuario creado (201) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar login del usuario nuevo",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo_electronico\": \"test.fuego.postman@coffeecode.com\",\n  \"password\": \"TestFuego123!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('login exitoso (200)', () => { if (!(pm.response.code === 200)) { throw new Error('login exitoso (200) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset de password del usuario de prueba",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/{{usuario_id_prueba}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{usuario_id_prueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"TestFuegoNueva456!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar Usuario de prueba",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/{{usuario_id_prueba}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{usuario_id_prueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activo\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "[ERROR] Login de usuario ya desactivado",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Un usuario desactivado no debe poder autenticarse. Se espera 401.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo_electronico\": \"test.fuego.postman@coffeecode.com\",\n  \"password\": \"TestFuegoNueva456!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('rechazado (401)', () => { if (!(pm.response.code === 401)) { throw new Error('rechazado (401) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar Usuario de prueba (hard delete, sin actividad)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/{{usuario_id_prueba}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{usuario_id_prueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "description": "El usuario de prueba nunca creo pedidos/tickets/gastos/cortes, asi que DELETE lo borra de verdad en vez de solo desactivarlo."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "  pm.test('eliminado de verdad (no solo desactivado)', () => { if (!(data.eliminado === true)) { throw new Error('eliminado de verdad (no solo desactivado) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Categorias",
+      "item": [
+        {
+          "name": "Crear Categoria de prueba",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/categorias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prueba de Fuego Postman\",\n  \"descripcion\": \"categoria temporal generada por la coleccion de fuego\",\n  \"activo\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  if (data.id) { pm.collectionVariables.set('categoria_id_prueba', data.id); }",
+                  "  pm.test('categoria creada (201)', () => { if (!(pm.response.code === 201)) { throw new Error('categoria creada (201) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar Categoria de prueba",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/categorias/{{categoria_id_prueba}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias",
+                "{{categoria_id_prueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prueba de Fuego Postman\",\n  \"descripcion\": \"categoria temporal generada por la coleccion de fuego\",\n  \"activo\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar Categoria de prueba (hard delete, sin productos asociados)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/categorias/{{categoria_id_prueba}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias",
+                "{{categoria_id_prueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "description": "La categoria de prueba nunca tuvo productos asignados, asi que DELETE la borra de verdad."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "  pm.test('eliminada de verdad (no solo desactivada)', () => { if (!(data.eliminado === true)) { throw new Error('eliminada de verdad (no solo desactivada) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Ingredientes",
+      "item": [
+        {
+          "name": "Crear Ingrediente de prueba",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/ingredientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ingrediente Prueba Fuego\",\n  \"unidad\": \"g\",\n  \"stock_actual\": 100,\n  \"stock_minimo\": 10,\n  \"costo_unitario\": 1.5,\n  \"activo\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  if (data.id) { pm.collectionVariables.set('ingrediente_id_prueba', data.id); }",
+                  "  pm.test('ingrediente creado (201)', () => { if (!(pm.response.code === 201)) { throw new Error('ingrediente creado (201) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Actualizar Ingrediente de prueba",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/ingredientes/{{ingrediente_id_prueba}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes",
+                "{{ingrediente_id_prueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"costo_unitario\": 2.0\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar Ingrediente de prueba (hard delete, sin uso en recetas)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/ingredientes/{{ingrediente_id_prueba}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes",
+                "{{ingrediente_id_prueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "description": "El ingrediente de prueba nunca se agrego a ninguna receta, asi que DELETE lo borra de verdad."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "  pm.test('eliminado de verdad (no solo desactivado)', () => { if (!(data.eliminado === true)) { throw new Error('eliminado de verdad (no solo desactivado) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Recetas",
+      "item": [
+        {
+          "name": "Crear Producto temporal para receta",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Producto Receta Fuego\",\n  \"descripcion\": \"temporal, para probar eliminar receta completa\",\n  \"precio_venta\": 10,\n  \"disponible\": true,\n  \"activo\": true,\n  \"id_categoria\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  if (data.id) { pm.collectionVariables.set('producto_id_receta_prueba', data.id); }",
+                  "  pm.test('producto creado (201)', () => { if (!(pm.response.code === 201)) { throw new Error('producto creado (201) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agregar Ingrediente a la receta (usa Café molido, id 2)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/producto_ingrediente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "producto_ingrediente"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto_id\": \"{{producto_id_receta_prueba}}\",\n  \"ingrediente_id\": 2,\n  \"cantidad\": 5\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('receta creada (201)', () => { if (!(pm.response.code === 201)) { throw new Error('receta creada (201) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Receta del producto temporal",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/producto_ingrediente?producto_id={{producto_id_receta_prueba}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "producto_ingrediente"
+              ],
+              "query": [
+                {
+                  "key": "producto_id",
+                  "value": "{{producto_id_receta_prueba}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "  pm.test('tiene al menos un ingrediente', () => { if (!(data.length >= 1)) { throw new Error('tiene al menos un ingrediente -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar Receta completa (hard delete de todos los ingredientes)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/producto_ingrediente/producto/{{producto_id_receta_prueba}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "producto_ingrediente",
+                "producto",
+                "{{producto_id_receta_prueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('204 No Content', () => { if (!(pm.response.code === 204)) { throw new Error('204 No Content -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar Producto temporal (hard delete, sin historial de pedidos)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/productos/{{producto_id_receta_prueba}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos",
+                "{{producto_id_receta_prueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "  pm.test('eliminado de verdad', () => { if (!(data.eliminado === true)) { throw new Error('eliminado de verdad -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 - Gastos Fijos",
+      "item": [
+        {
+          "name": "Crear Gasto Fijo de prueba",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/gastos-fijos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gastos-fijos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"concepto\": \"Gasto Fijo Prueba Fuego\",\n  \"monto\": 500,\n  \"categoria\": \"Otro\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  if (data.id) { pm.collectionVariables.set('gasto_fijo_id_prueba', data.id); }",
+                  "  pm.test('gasto fijo creado (201)', () => { if (!(pm.response.code === 201)) { throw new Error('gasto fijo creado (201) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Gastos Fijos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/gastos-fijos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gastos-fijos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Actualizar Gasto Fijo de prueba",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/api/gastos-fijos/{{gasto_fijo_id_prueba}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gastos-fijos",
+                "{{gasto_fijo_id_prueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"monto\": 550\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Aplicar Gasto Fijo (genera Gasto real, suma al dashboard)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/gastos-fijos/{{gasto_fijo_id_prueba}}/aplicar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gastos-fijos",
+                "{{gasto_fijo_id_prueba}}",
+                "aplicar"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "  pm.test('monto aplicado correcto', () => { if (!(Number(data.monto) === 550)) { throw new Error('monto aplicado correcto -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar Gasto Fijo de prueba (catalogo)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/gastos-fijos/{{gasto_fijo_id_prueba}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gastos-fijos",
+                "{{gasto_fijo_id_prueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "description": "Elimina el catalogo; no afecta el Gasto ya aplicado anteriormente."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('204 No Content', () => { if (!(pm.response.code === 204)) { throw new Error('204 No Content -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 - Reportes",
+      "item": [
+        {
+          "name": "Reporte Financiero (JSON)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/financiero",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "financiero"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte Inventario (JSON)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/inventario",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "inventario"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Descargar Reporte Financiero (PDF)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/financiero/pdf",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "financiero",
+                "pdf"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Descargar Reporte Inventario (XLSX)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/inventario/xlsx",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "inventario",
+                "xlsx"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte Financiero filtrado por secciones (XLSX, solo gastos)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/financiero/xlsx?secciones=gastos_tipo&secciones=gastos_usuario",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "financiero",
+                "xlsx"
+              ],
+              "query": [
+                {
+                  "key": "secciones",
+                  "value": "gastos_tipo"
+                },
+                {
+                  "key": "secciones",
+                  "value": "gastos_usuario"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "description": "Demuestra el filtro granular de exportacion: solo incluye las hojas de gastos por tipo y por usuario, sin el resto del reporte financiero."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 - Corte Diario",
+      "item": [
+        {
+          "name": "Generar Corte Diario",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/cortes-diarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cortes-diarios"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08 - Errores esperados: proteccion de endpoints exclusivos de Admin",
+      "item": [
+        {
+          "name": "Login Cajero (setup)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo_electronico\": \"cajero@coffeecode.com\",\n  \"password\": \"Cajero123!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('token_cajero_setup', data.access_token);",
+                  "  pm.test('login exitoso (200)', () => { if (!(pm.response.code === 200)) { throw new Error('login exitoso (200) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "[ERROR] Cajero intenta generar Corte Diario",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/cortes-diarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cortes-diarios"
+              ]
+            },
+            "description": "El corte diario es exclusivo de Administrador. Se espera 401/403.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero_setup}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('bloqueado (401/403)', () => { if (!([401, 403].includes(pm.response.code))) { throw new Error('bloqueado (401/403) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "[ERROR] Cajero intenta ver usuarios",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/usuarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero_setup}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('bloqueado (401/403)', () => { if (!([401, 403].includes(pm.response.code))) { throw new Error('bloqueado (401/403) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "[ERROR] Cajero intenta gestionar Gastos Fijos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/gastos-fijos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gastos-fijos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero_setup}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('bloqueado (401/403)', () => { if (!([401, 403].includes(pm.response.code))) { throw new Error('bloqueado (401/403) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "[ERROR] Cajero intenta eliminar una Categoria",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/categorias/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias",
+                "1"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero_setup}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.test('bloqueado (401/403)', () => { if (!([401, 403].includes(pm.response.code))) { throw new Error('bloqueado (401/403) -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

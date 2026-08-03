@@ -63,7 +63,7 @@
                   "(function () {",
                   "  const data = pm.response.json();",
                   "  pm.collectionVariables.set('token_cocinero', data.access_token);",
-                  "  pm.test('login exitoso (200)', () => pm.response.code === 200);",
+                  "  pm.test('login exitoso (200)', () => { if (!(pm.response.code === 200)) { throw new Error('login exitoso (200) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -105,7 +105,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -154,7 +154,7 @@
                   "(function () {",
                   "  const data = pm.response.json();",
                   "  if (data.id) { pm.collectionVariables.set('producto_id_prueba', data.id); }",
-                  "  pm.test('producto creado (201)', () => pm.response.code === 201);",
+                  "  pm.test('producto creado (201)', () => { if (!(pm.response.code === 201)) { throw new Error('producto creado (201) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -202,7 +202,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -244,7 +244,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -293,7 +293,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -348,7 +348,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('rechazado (422)', () => pm.response.code === 422);",
+                  "  pm.test('rechazado (422)', () => { if (!(pm.response.code === 422)) { throw new Error('rechazado (422) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -397,7 +397,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('rechazado (422)', () => pm.response.code === 422);",
+                  "  pm.test('rechazado (422)', () => { if (!(pm.response.code === 422)) { throw new Error('rechazado (422) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -447,7 +447,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('rechazado (409)', () => pm.response.code === 409);",
+                  "  pm.test('rechazado (409)', () => { if (!(pm.response.code === 409)) { throw new Error('rechazado (409) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -496,7 +496,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('no encontrado (404)', () => pm.response.code === 404);",
+                  "  pm.test('no encontrado (404)', () => { if (!(pm.response.code === 404)) { throw new Error('no encontrado (404) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -549,7 +549,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('bloqueado (401/403)', () => [401, 403].includes(pm.response.code));",
+                  "  pm.test('bloqueado (401/403)', () => { if (!([401, 403].includes(pm.response.code))) { throw new Error('bloqueado (401/403) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -587,7 +587,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('bloqueado (401/403)', () => [401, 403].includes(pm.response.code));",
+                  "  pm.test('bloqueado (401/403)', () => { if (!([401, 403].includes(pm.response.code))) { throw new Error('bloqueado (401/403) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -626,7 +626,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('bloqueado (401/403)', () => [401, 403].includes(pm.response.code));",
+                  "  pm.test('bloqueado (401/403)', () => { if (!([401, 403].includes(pm.response.code))) { throw new Error('bloqueado (401/403) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -671,8 +671,8 @@
                 "exec": [
                   "(function () {",
                   "  const data = pm.response.json();",
-                  "  pm.test('200 OK', () => pm.response.code === 200);",
-                  "  pm.test('eliminado permanentemente (sin historial)', () => data.eliminado === true);",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "  pm.test('eliminado permanentemente (sin historial)', () => { if (!(data.eliminado === true)) { throw new Error('eliminado permanentemente (sin historial) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -722,7 +722,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"

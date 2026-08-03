@@ -1,0 +1,1524 @@
+{
+  "info": {
+    "name": "360 - Cobertura completa de lectura (GET)",
+    "description": "Barrido de solo lectura sobre todos los recursos de la API, incluyendo los endpoints que ninguna otra coleccion cubria: GET /api/reportes (reporte agregado admin), GET /ingredientes/{id}, y GET /api/cortes-diarios/{fecha}. Cada request valida la forma real de la respuesta con pm.expect (no solo el codigo 200).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8010"
+    },
+    {
+      "key": "token_admin",
+      "value": ""
+    },
+    {
+      "key": "token_mesero",
+      "value": ""
+    },
+    {
+      "key": "token_cajero",
+      "value": ""
+    },
+    {
+      "key": "token_cocinero",
+      "value": ""
+    },
+    {
+      "key": "producto_id_muestra",
+      "value": ""
+    },
+    {
+      "key": "ingrediente_id_muestra",
+      "value": ""
+    },
+    {
+      "key": "usuario_id_muestra",
+      "value": ""
+    },
+    {
+      "key": "pedido_id_muestra",
+      "value": ""
+    },
+    {
+      "key": "fecha_hoy",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Login (los 4 roles)",
+      "item": [
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"correo_electronico\": \"admin@coffeecode.com\", \"password\": \"Admin123!\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data.access_token).to.exist;",
+                  "  pm.collectionVariables.set('token_admin', data.access_token);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Mesero",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"correo_electronico\": \"mesero@coffeecode.com\", \"password\": \"Mesero123!\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data.access_token).to.exist;",
+                  "  pm.collectionVariables.set('token_mesero', data.access_token);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Cajero",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"correo_electronico\": \"cajero@coffeecode.com\", \"password\": \"Cajero123!\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data.access_token).to.exist;",
+                  "  pm.collectionVariables.set('token_cajero', data.access_token);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Cocinero",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"correo_electronico\": \"cocinero@coffeecode.com\", \"password\": \"Cocinero123!\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data.access_token).to.exist;",
+                  "  pm.collectionVariables.set('token_cocinero', data.access_token);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 - Catalogo y publico (cualquier rol autenticado)",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ],
+              "query": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () { pm.expect(pm.response.code).to.eql(200); })();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Roles",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/roles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "roles"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(data[0]).to.have.property('nombre');",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Mesas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/mesas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mesas"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(data[0]).to.have.property('estatus');",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Productos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.be.an('array').that.is.not.empty;",
+                  "  pm.collectionVariables.set('producto_id_muestra', data[0].id);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Categorias",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/categorias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.be.an('array').that.is.not.empty;",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Cocina: ingredientes y recetas (lectura)",
+      "item": [
+        {
+          "name": "Listar Ingredientes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/ingredientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.be.an('array').that.is.not.empty;",
+                  "  pm.collectionVariables.set('ingrediente_id_muestra', data[0].id);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obtener Ingrediente por ID (gap encontrado)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/ingredientes/{{ingrediente_id_muestra}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes",
+                "{{ingrediente_id_muestra}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(String(data.id)).to.eql(String(pm.collectionVariables.get('ingrediente_id_muestra')));",
+                  "  pm.expect(data).to.have.property('stock_actual');",
+                  "  pm.expect(data).to.have.property('stock_minimo');",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Receta del Producto de muestra",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/producto_ingrediente?producto_id={{producto_id_muestra}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "producto_ingrediente"
+              ],
+              "query": [
+                {
+                  "key": "producto_id",
+                  "value": "{{producto_id_muestra}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.be.an('array');",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Pedidos (lectura)",
+      "item": [
+        {
+          "name": "Listar Pedidos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/pedidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.be.an('array');",
+                  "  if (data.length > 0) { pm.collectionVariables.set('pedido_id_muestra', data[0].id); }",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obtener Pedido por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/pedidos/{{pedido_id_muestra}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedido_id_muestra}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  const idMuestra = pm.collectionVariables.get('pedido_id_muestra');",
+                  "  if (!idMuestra) { return; }",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(String(data.id)).to.eql(String(idMuestra));",
+                  "  pm.expect(data).to.have.property('detalle');",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Caja (lectura)",
+      "item": [
+        {
+          "name": "Resumen de Caja",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/caja/resumen",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "caja",
+                "resumen"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.have.property('total_ventas');",
+                  "  pm.expect(data).to.have.property('total_gastos');",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 - Administracion: usuarios y reporte agregado (lectura)",
+      "item": [
+        {
+          "name": "Listar Usuarios",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/usuarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.be.an('array').that.is.not.empty;",
+                  "  pm.collectionVariables.set('usuario_id_muestra', data[0].id);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obtener Usuario por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/{{usuario_id_muestra}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{usuario_id_muestra}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(String(data.id)).to.eql(String(pm.collectionVariables.get('usuario_id_muestra')));",
+                  "  pm.expect(data).to.have.property('correo_electronico');",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte Admin agregado (gap encontrado: GET /api/reportes)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.have.property('total_ventas');",
+                  "  pm.expect(data).to.have.property('total_gastos');",
+                  "  pm.expect(data).to.have.property('ganancia_neta');",
+                  "  pm.expect(data).to.have.property('top_productos');",
+                  "  pm.expect(data.top_productos).to.be.an('array');",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Gastos Fijos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/gastos-fijos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "gastos-fijos"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.be.an('array');",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 - Reportes y estadisticas (JSON, PDF, XLSX)",
+      "item": [
+        {
+          "name": "Reporte Financiero (JSON)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/financiero",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "financiero"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.be.an('object');",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte Financiero (PDF)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/financiero/pdf",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "financiero",
+                "pdf"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('pdf');",
+                  "  pm.expect(pm.response.responseSize).to.be.above(0);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte Financiero (XLSX)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/financiero/xlsx",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "financiero",
+                "xlsx"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('spreadsheet');",
+                  "  pm.expect(pm.response.responseSize).to.be.above(0);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte Inventario (JSON)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/inventario",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "inventario"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.be.an('object');",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte Inventario (PDF)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/inventario/pdf",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "inventario",
+                "pdf"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('pdf');",
+                  "  pm.expect(pm.response.responseSize).to.be.above(0);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte Inventario (XLSX)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/inventario/xlsx",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "inventario",
+                "xlsx"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('spreadsheet');",
+                  "  pm.expect(pm.response.responseSize).to.be.above(0);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte Productos (JSON)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "productos"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.be.an('object');",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte Productos (PDF)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/productos/pdf",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "productos",
+                "pdf"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('pdf');",
+                  "  pm.expect(pm.response.responseSize).to.be.above(0);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte Productos (XLSX)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/productos/xlsx",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "productos",
+                "xlsx"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('spreadsheet');",
+                  "  pm.expect(pm.response.responseSize).to.be.above(0);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte Pedidos (JSON)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/pedidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "pedidos"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.be.an('object');",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte Pedidos (PDF)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/pedidos/pdf",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "pedidos",
+                "pdf"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('pdf');",
+                  "  pm.expect(pm.response.responseSize).to.be.above(0);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte Pedidos (XLSX)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reportes/pedidos/xlsx",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "pedidos",
+                "xlsx"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('spreadsheet');",
+                  "  pm.expect(pm.response.responseSize).to.be.above(0);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 - Cortes diarios (lectura, con 1 setup)",
+      "item": [
+        {
+          "name": "Generar corte de hoy (setup necesario para poder consultarlo)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/cortes-diarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cortes-diarios"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.have.property('fecha');",
+                  "  pm.collectionVariables.set('fecha_hoy', data.fecha);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Cortes Diarios (rango)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/cortes-diarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cortes-diarios"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.be.an('array').that.is.not.empty;",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obtener Corte Diario por fecha (gap encontrado)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/cortes-diarios/{{fecha_hoy}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cortes-diarios",
+                "{{fecha_hoy}}"
+              ],
+              "query": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data.fecha).to.eql(pm.collectionVariables.get('fecha_hoy'));",
+                  "  pm.expect(data).to.have.property('ganancia_neta');",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -79,5 +79,8 @@ def cambiar_estado(
     ),
 ) -> Pedido:
     pedido = _get_pedido_o_404(db, pedido_id)
-    pedido, _alertas = cambiar_estado_pedido(db, pedido, datos.estatus)
-    return _get_pedido_o_404(db, pedido.id)
+    pedido, alertas = cambiar_estado_pedido(db, pedido, datos.estatus)
+    pedido_actualizado = _get_pedido_o_404(db, pedido.id)
+    resultado = PedidoOut.model_validate(pedido_actualizado)
+    resultado.alertas_stock_bajo = alertas
+    return resultado

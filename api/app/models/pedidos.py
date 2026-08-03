@@ -62,6 +62,7 @@ class PedidoOut(BaseModel):
     id_usuario: int
     estatus: EstatusPedidoOut
     detalle: list[DetallePedidoOut]
+    alertas_stock_bajo: list[str] = []
 
 
 class CambioEstadoPedido(BaseModel):

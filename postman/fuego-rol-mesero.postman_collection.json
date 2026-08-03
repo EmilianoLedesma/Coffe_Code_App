@@ -75,7 +75,7 @@
                   "(function () {",
                   "  const data = pm.response.json();",
                   "  pm.collectionVariables.set('token_mesero', data.access_token);",
-                  "  pm.test('login exitoso (200)', () => pm.response.code === 200);",
+                  "  pm.test('login exitoso (200)', () => { if (!(pm.response.code === 200)) { throw new Error('login exitoso (200) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -117,7 +117,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -166,7 +166,7 @@
                   "(function () {",
                   "  const data = pm.response.json();",
                   "  if (data.id) { pm.collectionVariables.set('pedido_id', data.id); }",
-                  "  pm.test('pedido creado (201)', () => pm.response.code === 201);",
+                  "  pm.test('pedido creado (201)', () => { if (!(pm.response.code === 201)) { throw new Error('pedido creado (201) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -203,7 +203,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -256,7 +256,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('rechazado (4xx)', () => pm.response.code >= 400 && pm.response.code < 500);",
+                  "  pm.test('rechazado (4xx)', () => { if (!(pm.response.code >= 400 && pm.response.code < 500)) { throw new Error('rechazado (4xx) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -306,7 +306,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('transicion rechazada (409)', () => pm.response.code === 409);",
+                  "  pm.test('transicion rechazada (409)', () => { if (!(pm.response.code === 409)) { throw new Error('transicion rechazada (409) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -350,7 +350,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('bloqueado (401/403)', () => [401, 403].includes(pm.response.code));",
+                  "  pm.test('bloqueado (401/403)', () => { if (!([401, 403].includes(pm.response.code))) { throw new Error('bloqueado (401/403) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -398,7 +398,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('bloqueado (401/403)', () => [401, 403].includes(pm.response.code));",
+                  "  pm.test('bloqueado (401/403)', () => { if (!([401, 403].includes(pm.response.code))) { throw new Error('bloqueado (401/403) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -446,7 +446,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('bloqueado (401/403)', () => [401, 403].includes(pm.response.code));",
+                  "  pm.test('bloqueado (401/403)', () => { if (!([401, 403].includes(pm.response.code))) { throw new Error('bloqueado (401/403) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -491,7 +491,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('rechazado (401)', () => pm.response.code === 401);",
+                  "  pm.test('rechazado (401)', () => { if (!(pm.response.code === 401)) { throw new Error('rechazado (401) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -529,7 +529,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('rechazado (401)', () => pm.response.code === 401);",
+                  "  pm.test('rechazado (401)', () => { if (!(pm.response.code === 401)) { throw new Error('rechazado (401) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"

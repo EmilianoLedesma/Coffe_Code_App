@@ -40,6 +40,26 @@
     {
       "key": "pedido_id",
       "value": ""
+    },
+    {
+      "key": "consumo_esperado",
+      "value": ""
+    },
+    {
+      "key": "stock_antes_preparar",
+      "value": ""
+    },
+    {
+      "key": "ingrediente_alerta_id",
+      "value": ""
+    },
+    {
+      "key": "ingrediente_alerta_nombre",
+      "value": ""
+    },
+    {
+      "key": "delta_forzar_alerta",
+      "value": ""
     }
   ],
   "item": [
@@ -225,6 +245,207 @@
           ]
         },
         {
+          "name": "Leer receta de Producto 1 (para calcular consumo esperado)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/producto_ingrediente?producto_id={{producto_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "producto_ingrediente"
+              ],
+              "query": [
+                {
+                  "key": "producto_id",
+                  "value": "{{producto_id}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const receta = pm.response.json();",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const cantidadPedida = 2;",
+                  "  const consumo = JSON.parse(pm.collectionVariables.get('consumo_esperado') || '{}');",
+                  "  receta.forEach((r) => {",
+                  "    const acumulado = consumo[r.id_ingrediente] || 0;",
+                  "    consumo[r.id_ingrediente] = acumulado + (parseFloat(r.cantidad_requerida) * cantidadPedida);",
+                  "  });",
+                  "  pm.collectionVariables.set('consumo_esperado', JSON.stringify(consumo));",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leer receta de Producto 2 (para calcular consumo esperado)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/producto_ingrediente?producto_id={{producto_id_2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "producto_ingrediente"
+              ],
+              "query": [
+                {
+                  "key": "producto_id",
+                  "value": "{{producto_id_2}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  const receta = pm.response.json();",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const cantidadPedida = 1;",
+                  "  const consumo = JSON.parse(pm.collectionVariables.get('consumo_esperado') || '{}');",
+                  "  receta.forEach((r) => {",
+                  "    const acumulado = consumo[r.id_ingrediente] || 0;",
+                  "    consumo[r.id_ingrediente] = acumulado + (parseFloat(r.cantidad_requerida) * cantidadPedida);",
+                  "  });",
+                  "  pm.collectionVariables.set('consumo_esperado', JSON.stringify(consumo));",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forzar stock bajo en ingrediente de Producto 2 (para probar la alerta)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/ingredientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const ingredientes = pm.response.json();",
+                  "  const consumo = JSON.parse(pm.collectionVariables.get('consumo_esperado') || '{}');",
+                  "  const primerIngredienteId = Object.keys(consumo)[0];",
+                  "  const ing = ingredientes.find((i) => String(i.id) === String(primerIngredienteId));",
+                  "  pm.expect(ing, 'ingrediente no encontrado en /ingredientes').to.exist;",
+                  "  pm.collectionVariables.set('ingrediente_alerta_id', ing.id);",
+                  "  pm.collectionVariables.set('ingrediente_alerta_nombre', ing.nombre);",
+                  "  const stockActual = parseFloat(ing.stock_actual);",
+                  "  const stockMinimo = parseFloat(ing.stock_minimo);",
+                  "  const delta = stockMinimo - stockActual;",
+                  "  pm.collectionVariables.set('delta_forzar_alerta', delta);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ajustar stock exactamente al minimo (setup de la alerta)",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/ingredientes/{{ingrediente_alerta_id}}/stock",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes",
+                "{{ingrediente_alerta_id}}",
+                "stock"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": {{delta_forzar_alerta}}\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(parseFloat(data.stock_actual)).to.be.closeTo(parseFloat(data.stock_minimo), 0.01);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Verificar mesa Ocupada",
           "request": {
             "method": "GET",
@@ -325,6 +546,53 @@
       "name": "03 - Cocina: flujo correcto (descuento atomico de inventario)",
       "item": [
         {
+          "name": "Leer stock de ingredientes ANTES de preparar",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/ingredientes?incluir_inactivos=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes"
+              ],
+              "query": [
+                {
+                  "key": "incluir_inactivos",
+                  "value": "true"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const ingredientes = pm.response.json();",
+                  "  const snapshot = {};",
+                  "  ingredientes.forEach((i) => { snapshot[i.id] = parseFloat(i.stock_actual); });",
+                  "  pm.collectionVariables.set('stock_antes_preparar', JSON.stringify(snapshot));",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
           "name": "Pendiente -> En preparacion",
           "request": {
             "method": "PUT",
@@ -415,7 +683,70 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const data = pm.response.json();",
+                  "  const nombreEsperado = pm.collectionVariables.get('ingrediente_alerta_nombre');",
+                  "  pm.test('alerta de stock bajo incluye el ingrediente forzado', () => {",
+                  "    pm.expect(data.alertas_stock_bajo, JSON.stringify(data.alertas_stock_bajo)).to.include(nombreEsperado);",
+                  "  });",
+                  "})();"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar descuento de inventario segun receta",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/ingredientes?incluir_inactivos=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ingredientes"
+              ],
+              "query": [
+                {
+                  "key": "incluir_inactivos",
+                  "value": "true"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cocinero}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "(function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  const ingredientes = pm.response.json();",
+                  "  const stockAntes = JSON.parse(pm.collectionVariables.get('stock_antes_preparar') || '{}');",
+                  "  const consumoEsperado = JSON.parse(pm.collectionVariables.get('consumo_esperado') || '{}');",
+                  "  Object.keys(consumoEsperado).forEach((idIngrediente) => {",
+                  "    const actual = ingredientes.find((i) => String(i.id) === String(idIngrediente));",
+                  "    pm.test(`ingrediente ${idIngrediente} sigue activo/visible tras el descuento`, () => {",
+                  "      pm.expect(actual, `ingrediente ${idIngrediente} no aparece en /ingredientes`).to.exist;",
+                  "    });",
+                  "    if (!actual) { return; }",
+                  "    const antes = stockAntes[idIngrediente];",
+                  "    const esperado = antes - consumoEsperado[idIngrediente];",
+                  "    pm.test(`ingrediente ${idIngrediente}: stock descontado segun receta (esperado ${esperado})`, () => {",
+                  "      pm.expect(parseFloat(actual.stock_actual)).to.be.closeTo(esperado, 0.001);",
+                  "    });",
+                  "  });",
                   "})();"
                 ],
                 "type": "text/javascript"

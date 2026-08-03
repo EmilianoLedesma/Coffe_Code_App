@@ -59,7 +59,7 @@
                   "(function () {",
                   "  const data = pm.response.json();",
                   "  pm.collectionVariables.set('token_cajero', data.access_token);",
-                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -101,7 +101,7 @@
                   "(function () {",
                   "  const data = pm.response.json();",
                   "  pm.collectionVariables.set('token_admin_lectura', data.access_token);",
-                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -144,7 +144,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('bloqueado (401/403)', () => [401, 403].includes(pm.response.code));",
+                  "  pm.test('bloqueado (401/403)', () => { if (!([401, 403].includes(pm.response.code))) { throw new Error('bloqueado (401/403) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -184,7 +184,7 @@
                   "  const data = pm.response.json();",
                   "  const ing = data.find((i) => i.id === parseInt(pm.collectionVariables.get('ingrediente_id')));",
                   "  if (ing) { pm.collectionVariables.set('stock_antes', ing.stock_actual); }",
-                  "  pm.test('200 OK', () => pm.response.code === 200);",
+                  "  pm.test('200 OK', () => { if (!(pm.response.code === 200)) { throw new Error('200 OK -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -236,7 +236,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('rechazado (422)', () => pm.response.code === 422);",
+                  "  pm.test('rechazado (422)', () => { if (!(pm.response.code === 422)) { throw new Error('rechazado (422) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -283,7 +283,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('rechazado (422)', () => pm.response.code === 422);",
+                  "  pm.test('rechazado (422)', () => { if (!(pm.response.code === 422)) { throw new Error('rechazado (422) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -330,7 +330,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('rechazado (422)', () => pm.response.code === 422);",
+                  "  pm.test('rechazado (422)', () => { if (!(pm.response.code === 422)) { throw new Error('rechazado (422) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -377,7 +377,7 @@
               "script": {
                 "exec": [
                   "(function () {",
-                  "  pm.test('no encontrado (404)', () => pm.response.code === 404);",
+                  "  pm.test('no encontrado (404)', () => { if (!(pm.response.code === 404)) { throw new Error('no encontrado (404) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
@@ -430,10 +430,10 @@
                 "exec": [
                   "(function () {",
                   "  const data = pm.response.json();",
-                  "  pm.test('compra registrada (201)', () => pm.response.code === 201);",
+                  "  pm.test('compra registrada (201)', () => { if (!(pm.response.code === 201)) { throw new Error('compra registrada (201) -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "  const stockAntes = parseFloat(pm.collectionVariables.get('stock_antes'));",
-                  "  pm.test('stock subio exactamente 200', () => Math.abs(parseFloat(data.nuevo_stock) - (stockAntes + 200)) < 0.001);",
-                  "  pm.test('gasto real creado con concepto de compra', () => data.gasto && data.gasto.concepto.includes('Compra de insumo'));",
+                  "  pm.test('stock subio exactamente 200', () => { if (!(Math.abs(parseFloat(data.nuevo_stock) - (stockAntes + 200)) < 0.001)) { throw new Error('stock subio exactamente 200 -- assertion failed (status ' + pm.response.code + ')'); } });",
+                  "  pm.test('gasto real creado con concepto de compra', () => { if (!(data.gasto && data.gasto.concepto.includes('Compra de insumo'))) { throw new Error('gasto real creado con concepto de compra -- assertion failed (status ' + pm.response.code + ')'); } });",
                   "})();"
                 ],
                 "type": "text/javascript"
