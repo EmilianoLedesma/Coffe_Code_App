@@ -1,3 +1,39 @@
+# Sesión 2026-08-03 (parte 2) — Diseño + planificación wiring mobile↔backend (sin implementar)
+
+Sesión guardada: `~/.claude/session-data/2026-08-03-mobilewire1-session.tmp`
+
+`mobile/` (Expo/React Native) es hoy un prototipo 100% mock: `useState` con arrays hardcodeados, `Alert.alert()` simula guardado, cero llamadas HTTP, cero storage de token, navegación Mesero rota (`MesasScreen.js` duplica accidentalmente `EstadoPedidoScreen.js` y nunca navega a `PedidoScreen`; `DetallePedidoScreen.js` huérfano, no registrado en `App.js`). El backend (`api/`) ya está completo y probado. Se exploraron ambos lados con 2 subagentes Explore en paralelo, se brainstormeó con el usuario (4 rondas de preguntas), y se escribió:
+
+- **Spec** (commit `410e2cb`): `docs/superpowers/specs/2026-08-03-mobile-backend-wiring-design.md` — arquitectura completa + Fase 1 (Mesero) detallada + Fases 2-4 esbozadas.
+- **4 planes de implementación** (commit `5c222d6`):
+  - `docs/superpowers/plans/2026-08-03-mobile-fase0-infra-mesero.md` — infra compartida (`api/client.js`, `auth/session.js`, `auth/AuthContext.js`, `config.js`/`app.config.js`) + Mesero end-to-end (login real, MesasScreen reescrito, PedidoScreen real, `DetalleScreen.js` nuevo que fusiona y reemplaza `EstadoPedidoScreen.js`+`DetallePedidoScreen.js`). **Debe correr PRIMERO y solo** — todo lo demás depende de estos 3 archivos.
+  - `docs/superpowers/plans/2026-08-03-mobile-fase2-cocina.md` — Menú/Inventario/Cola de pedidos reales.
+  - `docs/superpowers/plans/2026-08-03-mobile-fase3-caja.md` — Caja cobra pedidos en estatus "Listo" (no "Pendiente", confirmado contra `services/pedidos.py`), Pago real vía `POST /ventas`, Gastos (nota: no existe `GET /gastos`, limitación real de la API, no es bug).
+  - `docs/superpowers/plans/2026-08-03-mobile-fase4-websocket.md` — `ws/client.js` compartido, wiring de `pedido_listo`/`nuevo_pedido`/`pedido_activado` en las 3 pantallas. **Debe correr AL FINAL**, después de que Fase 2 y Fase 3 estén ambas mergeadas.
+
+**Regla de aislamiento clave para ejecución en paralelo:** Fase 2 y Fase 3 crean módulos API separados (`api/pedidos_cocina.js` vs `api/pedidos_caja.js`) en vez de compartir/editar `api/pedidos.js`, específicamente para poder correr en worktrees paralelos sin conflicto de merge. Decisiones de arquitectura confirmadas con el usuario: `fetch` nativo (no axios), `expo-secure-store` (no AsyncStorage), API URL vía LAN IP en `app.config.js` (Expo Go en teléfono físico no alcanza `localhost`), WS diferido a su propia fase, sin framework de tests nuevo (verificación manual contra Docker real con credenciales seed: `mesero@coffeecode.com`/`Mesero123!`, `cocinero@coffeecode.com`/`Cocinero123!`, `cajero@coffeecode.com`/`Cajero123!`).
+
+**Estado: NO se implementó código esta sesión.** El usuario detuvo el dispatch de subagentes explícitamente para guardar sesión primero. Próximo paso exacto: dispatchar Fase 0 a un agente en su propio worktree (merge a `main` al terminar), luego Fase 2 + Fase 3 en paralelo cada una en su worktree, luego Fase 4 al final. Recordar reemplazar el placeholder de LAN IP en `app.config.js` (Fase 0 Tarea 1) por la IP real de la máquina antes de probar en Expo Go.
+
+---
+
+# Sesión 2026-08-03 — Verificación completa post commit 71b1792
+
+Sesión guardada: `~/.claude/session-data/2026-08-03-coffe-verify1-session.tmp`
+
+Rebuild de `coffee_code_api`/`coffee_code_web` a HEAD (`3da22e0`, incluye `71b1792`: productos inactivos + ajuste cancelación de pedidos), `alembic upgrade head` limpio (sin pendientes).
+
+**Resultado: API 114/114, web-admin 44/44, 8/8 colecciones Postman en verde (202 requests, 118 assertions, 0 fails)** contra el stack Docker real reconstruido:
+`coffee-code` 64/64, `fuego-rol-{admin,cajero,cocinero,mesero}` 34+16+15+11=76/76, `fuego-flujo-{pedido-completo,compra-insumos}` 19+9=28/28, `fuego-360-lectura-completa` 34/34 requests (0 assertions — smoke crawl sin `pm.test()`, solo confirma ausencia de 5xx, no valida payloads).
+
+**Nota operativa importante:** correr pytest con `docker compose exec coffee_code_api pytest` da 96 errores falsos (`psycopg2.OperationalError: localhost:5434 connection refused`) porque los fixtures de test asumen acceso a Postgres vía host (`localhost:5434`), no vía red de contenedores. Siempre correr pytest desde el venv del host (`api/.venv/Scripts/python.exe -m pytest`, `web-admin/.venv/Scripts/python.exe -m pytest`), nunca `docker compose exec`.
+
+Pendientes de sesiones previas (corte diario "sin info", `costo_unitario` sin recálculo automático) no re-investigados a fondo esta sesión, pero las colecciones que ejercitan esos endpoints (admin, 360) pasaron sin fallos — sin evidencia de regresión. `fuego-360-lectura-completa` sin assertions reales, pendiente decidir si se le agregan `pm.test()`.
+
+No se modificó código esta sesión — solo verificación.
+
+---
+
 # Reportes API — Implementation Progress
 
 Plan: docs/superpowers/plans/2026-07-02-reportes-api-implementation.md
