@@ -1,3 +1,42 @@
+# Sesión 2026-08-04 — Implementación wiring mobile↔backend (Fases 0, 2, 3) + brainstorming Fases 2b/3b
+
+Sesión guardada: `~/.claude/session-data/2026-08-04-*-session.tmp` (ver /save-session)
+
+## Qué se construyó (todo mergeado a `main`)
+
+Continuación directa de la sesión anterior (2026-08-03, ver abajo) — se dispatcharon los 4 planes de wiring ya escritos, cada uno en su propio worktree vía el Agent tool (isolation: worktree), siguiendo `superpowers:executing-plans` dentro de cada agente.
+
+- **Fase 0 (infra + Mesero)**, dispatchada sola primero. 7 tareas commiteadas: `app.config.js`/`config.js` (API_URL configurable), `api/client.js` + `auth/session.js` (HTTP + JWT en SecureStore), `auth/AuthContext.js` + login real, `HomeScreen` filtrado por rol, `MesasScreen` real (reemplaza el duplicado roto de `EstadoPedidoScreen`), `PedidoScreen` real (`POST /pedidos`), `DetalleScreen` nueva (fusiona `EstadoPedidoScreen`+`DetallePedidoScreen`, ambos eliminados). **Bug real encontrado durante el dispatch:** el agente puso `apiUrl: 'http://<LAN_IP>:8000'` siguiendo el plan al pie de la letra, pero el contenedor Docker real mapea a **puerto 8010**, no 8000 — se corrigió con un commit extra tras el hallazgo (el agente inicialmente rechazó mi corrección enviada por `SendMessage` a mitad de tarea, pensándola una inyección de prompt; se corrigió manualmente en su worktree antes de mergear). Merge a `main` vía `finishing-a-development-branch`, verificado en vivo con Expo Go en teléfono físico contra el Docker real (login, mesas 5 Libre/3 Ocupada coincidiendo con la API, creación de pedido real #39, detalle correcto).
+- **Fase 2 (Cocina) + Fase 3 (Caja)**, dispatchadas en paralelo (`superpowers:dispatching-parallel-agents`), cada una en su propio worktree, con aislamiento de archivos por diseño (`api/pedidos_cocina.js` vs `api/pedidos_caja.js`, sin tocar `api/pedidos.js` de Fase 0). Ambas completaron sus 3 tareas limpio, sin desviaciones del plan más allá de un `git merge main --ff-only` necesario al inicio (sus worktrees habían bifurcado de un punto anterior a que Fase 0 se mergeara a `main`).
+  - Fase 2: `MenuScreen`/`InventarioScreen` con CRUD real, `ColaPedidosScreen`+`CocinaDetalleScreen` con cola FIFO real y cambio de estatus. **Descuento atómico de inventario verificado en vivo de nuevo**: Espresso 3880.00ml→3850.00ml (exacto a receta), los otros 15 ingredientes sin cambio byte-a-byte.
+  - Fase 3: `CajaScreen`/`PagoScreen`/`GastosScreen` con cola real de pedidos "Listo", pago real vía `POST /ventas`. **Flujo completo Listo→Cobrar→Pago-exitoso verificado en vivo**: pedido #40, monto insuficiente rechazado con el mensaje exacto de la API, pago exitoso con total/cambio reales, `GET /pedidos/40` confirma `total` pasó de `null` a `81.20`.
+  - Merge de ambas a `main` sin conflictos (aislamiento de archivos funcionó exactamente como se diseñó). Verificación final: bundle de Expo Web compila limpio con los 4 módulos juntos (515 módulos).
+- Limpieza de worktrees: Windows bloqueó `git worktree remove` por rutas largas dentro de `node_modules` anidado — se resolvió con el truco de `robocopy /MIR` contra un directorio vacío antes de `Remove-Item`, repetido para las 3 worktrees de esta sesión.
+
+## Hallazgos menores de esta sesión (no bugs de la API, contexto operativo)
+
+- `mobile/.git` — un repo git anidado huérfano (probablemente de un `npx create-expo-app` que corrió `git init`), nunca trackeado por el repo principal, encontrado y eliminado al inicio de la sesión.
+- `mobile/node_modules` nunca se había instalado en el checkout base (`package-lock.json` sí, `node_modules` no) — cada agente tuvo que correr `npm install` como primer paso.
+- LAN IP real de la máquina (Wi-Fi): `10.16.72.248`. Puerto real del contenedor API vía `docker compose`: **8010** (no 8000, que era solo un placeholder del plan original).
+
+## Gap encontrado por el usuario: wiring no cubre todos los endpoints listados en `CLAUDE.md`
+
+El usuario preguntó explícitamente si algún endpoint no encajaba en las pantallas mock existentes. Verificado contra la spec original (`docs/superpowers/specs/2026-08-03-mobile-backend-wiring-design.md:104-107`) y el contrato de `CLAUDE.md`: dos endpoints se habían esbozado para Fases 2/3 pero se omitieron sin decisión explícita al escribir los planes finales, porque no encajaban en ninguna pantalla mock ya existente:
+
+1. **`POST /compras`** (Caja) — ya implementado en el backend y en web-admin, nunca wireado a mobile.
+2. **`POST/PUT/DELETE /producto_ingrediente`** (recetas, Cocina) — nunca tuvo ni siquiera una pantalla mock en el prototipo original.
+
+**Bloqueador de backend real encontrado durante el brainstorming de Fase 3b:** `GET /ingredientes` está gateado a `COCINERO, ADMINISTRADOR` (`api/app/routers/ingredientes.py:20`) — Cajero no tiene lectura, así que no puede armar un selector de ingredientes para registrar una compra. Confirmado también por el hallazgo de la prueba de fuego de sesiones previas. Decisión del usuario: ampliar `_lectura` para incluir `CAJERO` (la escritura sigue Cocinero/Admin únicamente).
+
+**Specs + planes escritos y commiteados esta sesión (sin implementar aún):**
+
+- `docs/superpowers/specs/2026-08-04-mobile-fase3b-registrar-compra-design.md` + `docs/superpowers/plans/2026-08-04-mobile-fase3b-registrar-compra.md` — 3 tareas: ampliar rol en `ingredientes.py` (con test nuevo), rebuild+verificación del contenedor, `api/compras.js` + nueva sección "Comprar insumo" en `GastosScreen.js` (reutiliza `getIngredientes()` de Fase 2).
+- `docs/superpowers/specs/2026-08-04-mobile-fase2b-recetas-design.md` + `docs/superpowers/plans/2026-08-04-mobile-fase2b-recetas.md` — 3 tareas: `api/recetas.js`, `RecetaScreen.js` nueva (agregar/editar/eliminar-uno/eliminar-todo, por producto), enlace desde `MenuScreen.js` + ruta en `App.js`.
+
+**Próximo paso exacto:** dispatchar ambos planes vía `superpowers:subagent-driven-development` (un subagente fresco por tarea, con review entre tareas — NO worktree paralelo esta vez, es ejecución dentro de la sesión). Fase 3b es independiente de Fase 2b (no comparten archivos) pero **ambas dependen de que Fase 2/3 ya estén en `main`** (ya lo están, confirmado esta sesión) — Fase 2b específicamente modifica `MenuScreen.js`/`App.js` que Fase 2 creó.
+
+---
+
 # Sesión 2026-08-03 (parte 2) — Diseño + planificación wiring mobile↔backend (sin implementar)
 
 Sesión guardada: `~/.claude/session-data/2026-08-03-mobilewire1-session.tmp`
