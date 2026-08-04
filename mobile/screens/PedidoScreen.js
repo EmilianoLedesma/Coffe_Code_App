@@ -1,87 +1,103 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { getProductos } from '../api/productos';
+import { crearPedido } from '../api/pedidos';
+import { ApiError } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 
 export default function PedidoScreen({ route, navigation }) {
-
   const { mesaId } = route.params;
+  const { userId } = useAuth();
 
-  const menu = [
-    { id: 1, nombre: 'Café' },
-    { id: 2, nombre: 'Pan' },
-    { id: 3, nombre: 'Pastel' },
-    { id: 4, nombre: 'Té' }
-  ];
+  const [menu, setMenu] = useState([]);
+  const [pedido, setPedido] = useState([]);
+  const [loadingMenu, setLoadingMenu] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
 
-  const [pedido, setPedido] = useState([
-    { nombre: 'Café', cantidad: 2 }
-  ]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const productos = await getProductos();
+        setMenu(productos);
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : 'No se pudo cargar el menú');
+      } finally {
+        setLoadingMenu(false);
+      }
+    })();
+  }, []);
 
   const agregarProducto = (producto) => {
-    const existe = pedido.find(p => p.nombre === producto.nombre);
+    setPedido((actual) => {
+      const existe = actual.find((p) => p.id_producto === producto.id);
+      if (existe) {
+        return actual.map((p) =>
+          p.id_producto === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p
+        );
+      }
+      return [...actual, { id_producto: producto.id, nombre: producto.nombre, cantidad: 1 }];
+    });
+  };
 
-    if (existe) {
-      setPedido(
-        pedido.map(p =>
-          p.nombre === producto.nombre
-            ? { ...p, cantidad: p.cantidad + 1 }
-            : p
-        )
-      );
-    } else {
-      setPedido([...pedido, { nombre: producto.nombre, cantidad: 1 }]);
+  const guardarPedido = async () => {
+    if (pedido.length === 0) {
+      setError('El pedido no puede estar vacío');
+      return;
+    }
+
+    setGuardando(true);
+    setError('');
+    try {
+      const creado = await crearPedido({ mesaId, usuarioId: userId, items: pedido });
+      navigation.navigate('Detalle', { pedidoId: creado.id });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo guardar el pedido');
+    } finally {
+      setGuardando(false);
     }
   };
 
-  const guardarPedido = () => {
-    Alert.alert(
-      'Pedido guardado',
-      `Mesa ${mesaId} actualizada`,
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.navigate('EstadoPedido', { mesaId })
-        }
-      ]
+  if (loadingMenu) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#2E1B0F" />
+      </View>
     );
-  };
+  }
 
   return (
     <View style={styles.container}>
 
       <Text style={styles.title}>Mesa {mesaId}</Text>
 
-      {/* PEDIDO ACTUAL */}
       <Text style={styles.subtitle}>Pedido actual</Text>
+      {pedido.length === 0 ? (
+        <Text style={{ color: 'gray' }}>Sin productos aún</Text>
+      ) : (
+        pedido.map((item) => (
+          <Text key={item.id_producto}>{item.nombre} x{item.cantidad}</Text>
+        ))
+      )}
 
-      {pedido.map((item, index) => (
-        <Text key={index}>
-          {item.nombre} x{item.cantidad}
-        </Text>
-      ))}
-
-      {/* MENÚ */}
       <Text style={styles.subtitle}>Menú</Text>
 
       <FlatList
         data={menu}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.item}
-            onPress={() => agregarProducto(item)}
-          >
-            <Text>{item.nombre}</Text>
+          <TouchableOpacity style={styles.item} onPress={() => agregarProducto(item)}>
+            <Text>{item.nombre} — ${item.precio_venta}</Text>
             <Text style={{ fontWeight: 'bold' }}>+</Text>
           </TouchableOpacity>
         )}
       />
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={guardarPedido}
-      >
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      <TouchableOpacity style={styles.button} onPress={guardarPedido} disabled={guardando}>
         <Text style={{ color: 'white', fontWeight: 'bold' }}>
-          ✔ Guardar / Finalizar pedido
+          {guardando ? 'Guardando...' : '✔ Guardar / Finalizar pedido'}
         </Text>
       </TouchableOpacity>
 
@@ -90,24 +106,11 @@ export default function PedidoScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-
-  container: {
-    flex: 1,
-    padding: 20
-  },
-
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center'
-  },
-
-  subtitle: {
-    marginTop: 15,
-    fontSize: 16,
-    fontWeight: 'bold'
-  },
-
+  container: { flex: 1, padding: 20 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center' },
+  subtitle: { marginTop: 15, fontSize: 16, fontWeight: 'bold' },
+  error: { color: '#C0392B', marginTop: 10, textAlign: 'center' },
   item: {
     padding: 15,
     backgroundColor: '#eee',
@@ -116,7 +119,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between'
   },
-
   button: {
     backgroundColor: '#2E1B0F',
     padding: 12,
@@ -124,5 +126,4 @@ const styles = StyleSheet.create({
     marginTop: 20,
     alignItems: 'center'
   }
-
 });
