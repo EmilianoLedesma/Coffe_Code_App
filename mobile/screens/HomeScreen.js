@@ -1,36 +1,46 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useAuth } from '../auth/AuthContext';
+
+const BOTONES_POR_ROL = {
+  Mesero: [{ label: 'Mesero', target: 'Mesas' }],
+  Cocinero: [{ label: 'Cocina', target: 'Cocina' }],
+  Cajero: [{ label: 'Caja', target: 'Caja' }],
+  Administrador: [
+    { label: 'Mesero', target: 'Mesas' },
+    { label: 'Cocina', target: 'Cocina' },
+    { label: 'Caja', target: 'Caja' },
+  ],
+};
 
 export default function HomeScreen({ navigation }) {
+  const { rol, logout } = useAuth();
+  const botones = BOTONES_POR_ROL[rol] || [];
+
+  const handleLogout = async () => {
+    await logout();
+    navigation.replace('Login');
+  };
 
   return (
     <View style={styles.container}>
 
       <Text style={styles.title}>Coffee Code</Text>
-      <Text style={styles.subtitle}>Panel principal</Text>
+      <Text style={styles.subtitle}>Panel principal ({rol})</Text>
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('Mesas')}
-      >
-        <Text style={styles.text}>Mesero</Text>
+      {botones.map((boton) => (
+        <TouchableOpacity
+          key={boton.target}
+          style={styles.button}
+          onPress={() => navigation.navigate(boton.target)}
+        >
+          <Text style={styles.text}>{boton.label}</Text>
+        </TouchableOpacity>
+      ))}
+
+      <TouchableOpacity style={styles.logout} onPress={handleLogout}>
+        <Text style={styles.logoutText}>Cerrar sesión</Text>
       </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('Caja')}
-      >
-        <Text style={styles.text}>Caja</Text>
-      </TouchableOpacity>
-
-    
-
-      <TouchableOpacity
-  style={styles.button}
-  onPress={() => navigation.navigate('Cocina')}
->
-  <Text style={styles.text}>Cocina</Text>
-</TouchableOpacity>
 
     </View>
   );
@@ -64,5 +74,13 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     textAlign: 'center'
-  }
+  },
+  logout: {
+    marginTop: 20,
+    padding: 10,
+  },
+  logoutText: {
+    color: '#C0392B',
+    textAlign: 'center',
+  },
 });
