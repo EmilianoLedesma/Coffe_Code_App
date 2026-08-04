@@ -10,37 +10,39 @@ import {
   ScrollView,
   Platform
 } from 'react-native';
+import { useAuth } from '../auth/AuthContext';
+import { ApiError } from '../api/client';
 
 export default function LoginScreen({ navigation }) {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rol, setRol] = useState('mesero');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
-  const login = () => {
+  const handleLogin = async () => {
+    setError('');
 
-    // 🔥 1. campos vacíos
     if (!email.trim() || !password.trim()) {
-      alert('Faltan campos');
+      setError('Faltan campos');
       return;
     }
 
-    // 🔥 2. correo válido
     if (!email.includes('@')) {
-      alert('Correo inválido');
+      setError('Correo inválido');
       return;
     }
 
-    // 🔥 3. contraseña mínima
-    if (password.length < 4) {
-      alert('Contraseña muy corta');
-      return;
+    setLoading(true);
+    try {
+      await login(email.trim(), password);
+      navigation.replace('Home');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo conectar con el servidor');
+    } finally {
+      setLoading(false);
     }
-
-    // ✔ éxito
-    alert(`Bienvenido ${rol}`);
-
-    navigation.replace('Home');
   };
 
   return (
@@ -69,6 +71,7 @@ export default function LoginScreen({ navigation }) {
             placeholder="correo electrónico"
             value={email}
             onChangeText={setEmail}
+            autoCapitalize="none"
             style={styles.input}
           />
 
@@ -80,30 +83,10 @@ export default function LoginScreen({ navigation }) {
             style={styles.input}
           />
 
-          <Text style={styles.label}>rol: {rol}</Text>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <View style={styles.roles}>
-            <TouchableOpacity onPress={() => setRol('mesero')}>
-              <Text style={rol === 'mesero' ? styles.selected : styles.role}>
-                mesero
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setRol('cocina')}>
-              <Text style={rol === 'cocina' ? styles.selected : styles.role}>
-                cocina
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setRol('caja')}>
-              <Text style={rol === 'caja' ? styles.selected : styles.role}>
-                caja
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity style={styles.button} onPress={login}>
-            <Text style={styles.buttonText}>Iniciar sesión</Text>
+          <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+            <Text style={styles.buttonText}>{loading ? 'Ingresando...' : 'Iniciar sesión'}</Text>
           </TouchableOpacity>
 
         </View>
@@ -165,27 +148,10 @@ const styles = StyleSheet.create({
     color: '#2E1B0F',
   },
 
-  roles: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 15,
-  },
-
-  role: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    color: 'gray',
-  },
-
-  selected: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#2E1B0F',
-    color: 'white',
+  error: {
+    color: '#C0392B',
+    marginBottom: 10,
+    textAlign: 'center',
   },
 
   button: {

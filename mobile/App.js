@@ -16,13 +16,15 @@ import MenuScreen from './screens/MenuScreen';
 import InventarioScreen from './screens/InventarioScreen';
 import RecuperarPassword from './screens/RecuperarPassword';
 import CocinaScreen from './screens/CocinaScreen';
+import { AuthProvider } from './auth/AuthContext';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Splash">
+    <AuthProvider>
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="Splash">
 
         <Stack.Screen
           name="Splash"
@@ -99,6 +101,7 @@ export default function App() {
         />
 
       </Stack.Navigator>
-    </NavigationContainer>
+      </NavigationContainer>
+    </AuthProvider>
   );
 }
