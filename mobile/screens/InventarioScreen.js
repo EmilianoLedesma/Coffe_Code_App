@@ -1,77 +1,126 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, StyleSheet } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { getIngredientes, createIngrediente, ajustarStock, deleteIngrediente } from '../api/ingredientes';
+import { ApiError } from '../api/client';
 
 export default function InventarioScreen() {
-
-  const [items, setItems] = useState([
-    { id: '1', nombre: 'Café en grano', stock: 10, marca: 'Arabica', proveedor: 'Proveedor A' },
-    { id: '2', nombre: 'Leche', stock: 20, marca: 'Lala', proveedor: 'Proveedor B' }
-  ]);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const [nombre, setNombre] = useState('');
-  const [marca, setMarca] = useState('');
-  const [proveedor, setProveedor] = useState('');
+  const [unidad, setUnidad] = useState('');
+  const [stockMinimo, setStockMinimo] = useState('');
+  const [costoUnitario, setCostoUnitario] = useState('');
 
-  const agregar = () => {
-    if (!nombre) return Alert.alert('Error', 'Nombre requerido');
+  const cargar = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      setItems(await getIngredientes());
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo conectar con el servidor');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    const nuevo = {
-      id: Date.now().toString(),
-      nombre,
-      stock: 0,
-      marca,
-      proveedor
-    };
+  useFocusEffect(
+    useCallback(() => {
+      cargar();
+    }, [cargar])
+  );
 
-    setItems([...items, nuevo]);
-    Alert.alert('Agregado', 'Producto en inventario');
+  const agregar = async () => {
+    if (!nombre.trim() || !unidad.trim() || !stockMinimo || !costoUnitario) {
+      setError('Completa nombre, unidad, stock mínimo y costo unitario');
+      return;
+    }
 
-    setNombre('');
-    setMarca('');
-    setProveedor('');
+    setError('');
+    try {
+      await createIngrediente({
+        nombre: nombre.trim(),
+        unidad: unidad.trim(),
+        stockMinimo: parseFloat(stockMinimo),
+        costoUnitario: parseFloat(costoUnitario),
+      });
+      setNombre('');
+      setUnidad('');
+      setStockMinimo('');
+      setCostoUnitario('');
+      await cargar();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo crear el ingrediente');
+    }
   };
 
-  const subir = (id) => {
-    setItems(items.map(i =>
-      i.id === id ? { ...i, stock: i.stock + 1 } : i
-    ));
+  const subir = async (id) => {
+    setError('');
+    try {
+      await ajustarStock(id, 1);
+      await cargar();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo ajustar el stock');
+    }
   };
 
-  const bajar = (id) => {
-    setItems(items.map(i =>
-      i.id === id && i.stock > 0
-        ? { ...i, stock: i.stock - 1 }
-        : i
-    ));
+  const bajar = async (id) => {
+    setError('');
+    try {
+      await ajustarStock(id, -1);
+      await cargar();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo ajustar el stock');
+    }
   };
 
-  const eliminar = (id) => {
-    setItems(items.filter(i => i.id !== id));
+  const eliminar = async (id) => {
+    setError('');
+    try {
+      await deleteIngrediente(id);
+      await cargar();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo eliminar el ingrediente');
+    }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#2E1B0F" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
 
       <Text style={styles.title}>Inventario</Text>
 
-      <TextInput placeholder="Nombre" value={nombre} onChangeText={setNombre} style={styles.input}/>
-      <TextInput placeholder="Marca" value={marca} onChangeText={setMarca} style={styles.input}/>
-      <TextInput placeholder="Proveedor" value={proveedor} onChangeText={setProveedor} style={styles.input}/>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      <TextInput placeholder="Nombre" value={nombre} onChangeText={setNombre} style={styles.input} />
+      <TextInput placeholder="Unidad (g, ml, u)" value={unidad} onChangeText={setUnidad} style={styles.input} />
+      <TextInput placeholder="Stock mínimo" value={stockMinimo} onChangeText={setStockMinimo} keyboardType="numeric" style={styles.input} />
+      <TextInput placeholder="Costo unitario" value={costoUnitario} onChangeText={setCostoUnitario} keyboardType="numeric" style={styles.input} />
 
       <TouchableOpacity style={styles.btn} onPress={agregar}>
-        <Text style={styles.btnText}>Agregar producto</Text>
+        <Text style={styles.btnText}>Agregar ingrediente</Text>
       </TouchableOpacity>
 
       <FlatList
         data={items}
-        keyExtractor={i => i.id}
+        keyExtractor={(i) => i.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.card}>
 
             <Text style={styles.name}>{item.nombre}</Text>
-            <Text>Stock: {item.stock}</Text>
-            <Text>Marca: {item.marca}</Text>
-            <Text>Proveedor: {item.proveedor}</Text>
+            <Text>Stock: {item.stock_actual} {item.unidad}</Text>
+            <Text style={item.stock_actual < item.stock_minimo ? styles.bajo : null}>
+              Mínimo: {item.stock_minimo} {item.unidad}
+            </Text>
 
             <View style={styles.row}>
               <TouchableOpacity onPress={() => subir(item.id)}>
@@ -97,12 +146,15 @@ export default function InventarioScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 15, backgroundColor: '#F5F5F5' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
+  error: { color: '#C0392B', marginBottom: 10 },
   input: { backgroundColor: 'white', padding: 10, marginBottom: 8, borderRadius: 8 },
   btn: { backgroundColor: '#2E1B0F', padding: 12, borderRadius: 8, marginBottom: 10 },
   btnText: { color: 'white', textAlign: 'center' },
   card: { backgroundColor: 'white', padding: 10, marginBottom: 10, borderRadius: 8 },
   name: { fontSize: 16, fontWeight: 'bold' },
+  bajo: { color: '#C0392B', fontWeight: 'bold' },
   row: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
   plus: { color: 'green', fontSize: 16 },
   minus: { color: 'orange', fontSize: 16 },
