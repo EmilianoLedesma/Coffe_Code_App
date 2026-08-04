@@ -16,6 +16,7 @@ import MenuScreen from './screens/MenuScreen';
 import InventarioScreen from './screens/InventarioScreen';
 import RecuperarPassword from './screens/RecuperarPassword';
 import CocinaScreen from './screens/CocinaScreen';
+import CocinaDetalleScreen from './screens/CocinaDetalleScreen';
 import { AuthProvider } from './auth/AuthContext';
 
 const Stack = createNativeStackNavigator();
@@ -95,9 +96,14 @@ export default function App() {
           component={RecuperarPassword} 
         />
 
-        <Stack.Screen 
-          name="Cocina" 
+        <Stack.Screen
+          name="Cocina"
           component={CocinaScreen}
+        />
+
+        <Stack.Screen
+          name="CocinaDetalle"
+          component={CocinaDetalleScreen}
         />
 
       </Stack.Navigator>
