@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -6,127 +6,136 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
   ActivityIndicator
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { getPedido } from '../api/pedidos_caja';
+import { registrarVenta } from '../api/caja';
+import { ApiError } from '../api/client';
 
-export default function PagoScreen({ route }) {
+const METODOS = [
+  { key: 'Efectivo', label: 'Efectivo' },
+  { key: 'Tarjeta débito', label: 'Tarjeta débito' },
+  { key: 'Tarjeta crédito', label: 'Tarjeta crédito' },
+  { key: 'Transferencia', label: 'Transferencia' },
+];
 
-  const pedido = route?.params?.pedido || {
-    mesa: 1,
-    items: [
-      { nombre: 'Café', cantidad: 2, precio: 35 },
-      { nombre: 'Pan', cantidad: 1, precio: 20 }
-    ],
-    estado: 'En preparación'
-  };
+export default function PagoScreen({ route, navigation }) {
+  const { pedidoId } = route.params;
 
+  const [pedido, setPedido] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [metodoPago, setMetodoPago] = useState('');
   const [monto, setMonto] = useState('');
   const [procesando, setProcesando] = useState(false);
+  const [error, setError] = useState('');
+  const [resultado, setResultado] = useState(null);
 
-  const total = pedido.items.reduce(
-    (acc, item) => acc + item.precio * item.cantidad,
-    0
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      getPedido(pedidoId)
+        .then(setPedido)
+        .catch((err) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el pedido'))
+        .finally(() => setLoading(false));
+    }, [pedidoId])
   );
 
-  const pagar = () => {
+  const subtotalEstimado = pedido
+    ? pedido.detalle.reduce((acc, item) => acc + Number(item.precio_unitario) * item.cantidad, 0)
+    : 0;
+
+  const pagar = async () => {
     if (!metodoPago) {
-      alert('Error. Selecciona un método de pago');
+      setError('Selecciona un método de pago');
       return;
     }
-
-    if (metodoPago === 'efectivo' && Number(monto) < total) {
-      alert('Error. Monto insuficiente');
+    if (!monto || Number(monto) <= 0) {
+      setError('Ingresa el monto recibido');
       return;
     }
 
     setProcesando(true);
-
-    setTimeout(() => {
+    setError('');
+    try {
+      const ticket = await registrarVenta({ pedidoId, metodoPago, monto: Number(monto) });
+      setResultado(ticket);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo procesar el pago');
+    } finally {
       setProcesando(false);
-
-      alert(
-        
-        `La mesa ${pedido.mesa} ha sido cobrada correctamente.\nTotal: $${total}\nMétodo: ${metodoPago}`
-      );
-
-      setMetodoPago('');
-      setMonto('');
-    }, 2000);
+    }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#2E1B0F" />
+      </View>
+    );
+  }
+
+  if (resultado) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.title}>Pago registrado</Text>
+        <Text style={styles.text}>Total: ${resultado.total}</Text>
+        <Text style={styles.text}>Cambio: ${resultado.pago.cambio}</Text>
+        <TouchableOpacity style={styles.payButton} onPress={() => navigation.navigate('Caja')}>
+          <Text style={styles.payText}>Volver a Caja</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
 
       <Text style={styles.title}>Procesar Pago</Text>
 
-      {/* DETALLE */}
       <View style={styles.card}>
-        <Text style={styles.subtitle}>Mesa {pedido.mesa}</Text>
+        <Text style={styles.subtitle}>Mesa {pedido.id_mesa} — Pedido #{pedido.id}</Text>
 
-        {pedido.items.map((item, index) => (
-          <Text key={index} style={styles.text}>
-            {item.nombre} x{item.cantidad}
+        {pedido.detalle.map((item) => (
+          <Text key={item.id} style={styles.text}>
+            {item.producto.nombre} x{item.cantidad} — ${item.precio_unitario}
           </Text>
         ))}
 
-        <Text style={styles.total}>Total: ${total}</Text>
+        <Text style={styles.total}>Subtotal (sin IVA): ${subtotalEstimado.toFixed(2)}</Text>
+        <Text style={{ color: 'gray' }}>El total final con IVA lo calcula el servidor al confirmar.</Text>
       </View>
 
-      {/* MÉTODOS */}
       <Text style={styles.subtitle}>Método de pago</Text>
 
       <View style={styles.row}>
-        <TouchableOpacity
-          style={[styles.button, metodoPago === 'efectivo' && styles.buttonActive]}
-          onPress={() => setMetodoPago('efectivo')}
-          disabled={procesando}
-        >
-          <Text style={styles.buttonText}>Efectivo</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, metodoPago === 'tarjeta' && styles.buttonActive]}
-          onPress={() => setMetodoPago('tarjeta')}
-          disabled={procesando}
-        >
-          <Text style={styles.buttonText}>Tarjeta</Text>
-        </TouchableOpacity>
+        {METODOS.map((m) => (
+          <TouchableOpacity
+            key={m.key}
+            style={[styles.button, metodoPago === m.key && styles.buttonActive]}
+            onPress={() => setMetodoPago(m.key)}
+            disabled={procesando}
+          >
+            <Text style={styles.buttonText}>{m.label}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      {/* EFECTIVO */}
-      {metodoPago === 'efectivo' && (
-        <View style={styles.card}>
-          <Text>Monto recibido</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            placeholder="Ej. 200"
-            value={monto}
-            onChangeText={setMonto}
-            editable={!procesando}
-          />
-        </View>
-      )}
+      <View style={styles.card}>
+        <Text>Monto recibido</Text>
+        <TextInput
+          style={styles.input}
+          keyboardType="numeric"
+          placeholder="Ej. 200"
+          value={monto}
+          onChangeText={setMonto}
+          editable={!procesando}
+        />
+      </View>
 
-      {/* TARJETA */}
-      {metodoPago === 'tarjeta' && (
-        <View style={styles.card}>
-          <Text>Simulación tarjeta</Text>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <TextInput style={styles.input} placeholder="Número de tarjeta" editable={!procesando} />
-          <TextInput style={styles.input} placeholder="Nombre del titular" editable={!procesando} />
-          <TextInput style={styles.input} placeholder="CVV" keyboardType="numeric" editable={!procesando} />
-        </View>
-      )}
-
-      {/* BOTÓN */}
-      <TouchableOpacity
-        style={styles.payButton}
-        onPress={pagar}
-        disabled={procesando}
-      >
+      <TouchableOpacity style={styles.payButton} onPress={pagar} disabled={procesando}>
         {procesando ? (
           <ActivityIndicator color="#fff" />
         ) : (
@@ -139,69 +148,19 @@ export default function PagoScreen({ route }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-    padding: 15
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 15
-  },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 10
-  },
-  card: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15
-  },
-  text: {
-    fontSize: 16
-  },
-  total: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 10
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 10
-  },
-  button: {
-    backgroundColor: '#ccc',
-    padding: 10,
-    borderRadius: 8,
-    width: '48%',
-    alignItems: 'center'
-  },
-  buttonActive: {
-    backgroundColor: '#2E1B0F'
-  },
-  buttonText: {
-    color: 'white'
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    marginTop: 10,
-    padding: 10,
-    borderRadius: 8
-  },
-  payButton: {
-    backgroundColor: '#2E1B0F',
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 10,
-    alignItems: 'center'
-  },
-  payText: {
-    color: 'white',
-    fontWeight: 'bold'
-  }
+  container: { flex: 1, backgroundColor: '#F5F5F5', padding: 15 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 15 },
+  subtitle: { fontSize: 18, fontWeight: 'bold', marginTop: 10 },
+  card: { backgroundColor: 'white', padding: 15, borderRadius: 10, marginBottom: 15 },
+  text: { fontSize: 16 },
+  total: { fontSize: 18, fontWeight: 'bold', marginTop: 10 },
+  error: { color: '#C0392B', marginBottom: 10, textAlign: 'center' },
+  row: { flexDirection: 'row', flexWrap: 'wrap', marginVertical: 10 },
+  button: { backgroundColor: '#ccc', padding: 10, borderRadius: 8, width: '48%', alignItems: 'center', marginBottom: 8, marginRight: '2%' },
+  buttonActive: { backgroundColor: '#2E1B0F' },
+  buttonText: { color: 'white' },
+  input: { borderWidth: 1, borderColor: '#ccc', marginTop: 10, padding: 10, borderRadius: 8 },
+  payButton: { backgroundColor: '#2E1B0F', padding: 15, borderRadius: 10, marginTop: 10, alignItems: 'center' },
+  payText: { color: 'white', fontWeight: 'bold' }
 });
