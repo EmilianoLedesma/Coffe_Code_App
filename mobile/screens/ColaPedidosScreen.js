@@ -28,7 +28,7 @@ export default function ColaPedidosScreen({ navigation }) {
 
             <TouchableOpacity
               style={styles.button}
-              onPress={() => navigation.navigate('EstadoPedido', { pedido: item })}
+              onPress={() => navigation.navigate('Detalle', { pedidoId: item.id })}
             >
               <Text style={{ color: 'white' }}>Ver preparación</Text>
             </TouchableOpacity>

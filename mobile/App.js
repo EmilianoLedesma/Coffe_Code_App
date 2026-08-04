@@ -7,7 +7,7 @@ import LoginScreen from './screens/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
 import MesasScreen from './screens/MesasScreen';
 import PedidoScreen from './screens/PedidoScreen';
-import EstadoPedidoScreen from './screens/EstadoPedidoScreen';
+import DetalleScreen from './screens/DetalleScreen';
 import ColaPedidosScreen from './screens/ColaPedidosScreen';
 import CajaScreen from './screens/CajaScreen';
 import PagoScreen from './screens/PagoScreen';
@@ -55,9 +55,9 @@ export default function App() {
 
         
 
-        <Stack.Screen 
-          name="EstadoPedido" 
-          component={EstadoPedidoScreen} 
+        <Stack.Screen
+          name="Detalle"
+          component={DetalleScreen}
         />
 
         <Stack.Screen 
