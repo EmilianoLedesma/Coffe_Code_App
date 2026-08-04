@@ -6,7 +6,7 @@ export default {
     orientation: 'portrait',
     plugins: ['expo-secure-store'],
     extra: {
-      apiUrl: process.env.API_URL || 'http://10.16.72.248:8000',
+      apiUrl: process.env.API_URL || 'http://10.16.72.248:8010',
     },
   },
 };
