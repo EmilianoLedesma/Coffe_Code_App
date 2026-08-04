@@ -1,7 +1,19 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { getColaPendientes } from '../api/pedidos_cocina';
 
 export default function CocinaScreen({ navigation }) {
+  const [pendientes, setPendientes] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      getColaPendientes()
+        .then((data) => setPendientes(data.length))
+        .catch(() => setPendientes(0));
+    }, [])
+  );
+
   return (
     <View style={styles.container}>
 
@@ -11,7 +23,7 @@ export default function CocinaScreen({ navigation }) {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Estado del sistema</Text>
         <Text>Cocina activa</Text>
-        <Text>Pedidos en espera: 3</Text>
+        <Text>Pedidos en espera: {pendientes}</Text>
       </View>
 
       <TouchableOpacity
