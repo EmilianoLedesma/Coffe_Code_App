@@ -1,3 +1,30 @@
+# Sesión 2026-08-07 (parte 2) — Reconciliación remoto/local + auditoría de gaps (en curso)
+
+Continuación de la sesión de abajo, en la máquina que tiene el trabajo real de Fases 0/2/3 implementado (nunca pusheado). El usuario avisó que otra sesión en otro dispositivo había revisado el plan y pidió sincronizar.
+
+**Reconciliación git:** `git fetch` mostró 20 commits locales vs 4 remotos divergentes desde el merge-base `6323eb7`. Los 4 remotos (`d0bd59c`..`c9c49c1`) son SOLO revisión de texto de los 5 docs de plan/spec de wiring (`docs/superpowers/{specs,plans}/2026-08-03-mobile-*`), cero código tocado — confirmado con `git diff --stat 6323eb7 origin/main`. Merge sin conflictos de código, único conflicto en `.superpowers/sdd/progress.md` (ambas sesiones agregaron entradas), resuelto manualmente conservando ambas entradas en orden cronológico + nota de reconciliación. Merge commit `c32f39e`, pusheado a `origin/main` exitosamente.
+
+**Auditoría de gaps (4 subagentes en paralelo, uno por fase, comparando plan revisado vs código real en `mobile/`):**
+
+- **Fase 4 (WebSocket) — reporte recibido:** 100% sin implementar (esperado, nunca se dispatchó). Backend WS real y completo (`api/app/routers/websockets.py`, canales `mesero|cocina|caja`, eventos `nuevo_pedido`/`pedido_activado`/`pedido_listo` emitidos desde `services/pedidos.py`). El único cambio de la revisión (47 líneas) es un fix real de memory-leak (guard `cancelado` en vez de `let cerrar=()=>{}` + closure obsoleta en `connectToChannel`) aplicado igual en las 3 tasks. Plan **validado como ejecutable tal cual** contra los nombres reales de archivos de Fase 0/2/3 (`DetalleScreen.js`, `ColaPedidosScreen.js`, `CajaScreen.js` ya existen con la forma esperada: `useFocusEffect(useCallback(...))`, `getToken()` async en `auth/session.js`, etc.).
+- **Fase 0 (Mesero), Fase 2 (Cocina), Fase 3 (Caja) — subagentes dispatchados, reportes AÚN NO recibidos** al momento de guardar sesión (quedaron "idle" sin enviar el reporte final pese a pedírselo dos veces cada uno — posible falla de entrega o el agente se quedó esperando algo). Nombres de los subagentes para retomar en la próxima sesión (siguen direccionables por nombre vía SendMessage si el proceso sigue vivo, si no, redispatchar): `audit-fase0`, `audit-fase2`, `audit-fase3`.
+
+**Qué hay que auditar en Fase 0/2/3 (de la revisión remota, sin verificar aún contra código real):**
+- Fase 0: parseo de error 422 (`detail` es array, no string) en `api/client.js`; `navigationRef.js` + `setUnauthorizedHandler` para forzar logout+reset a Login en 401; `atob` con padding para decodificar JWT (Hermes ya trae `atob`, no hace falta decoder a mano); `SplashScreen` debe esperar `AuthContext.loading` en vez de `setTimeout` fijo de 2s; `AuthContext` debe descartar token si `exp` ya venció al restaurar; `MesasScreen` debe ramificar en mesa `Ocupada` para buscar pedido activo (`getPedidoActivoDeMesa`) en vez de crear siempre un pedido nuevo; `PedidoScreen` debe filtrar `disponible !== false` client-side; `DetalleScreen` debe tener botón "Marcar como Entregado" visible Mesero/Admin habilitado solo si estatus es 'Listo'; pasar `numeroMesa` como parámetro de navegación en vez de asumir `id_mesa == numero_mesa`.
+- Fase 2: brechas conocidas del spec (menú sin filtrar `disponible`, techo de 50 pedidos en `GET /pedidos`), guard contra spinner infinito en `CocinaDetalleScreen` si falla el fetch.
+- Fase 3: guard null en `PagoScreen`; cola de Caja debe distinguir pedidos ya pagados (evitar 409 de pago duplicado); pantalla "Registrar compra" en la revisión de Fase 3 queda **Administrador-únicamente** (sin cambio de backend) — esto puede **entrar en conflicto** con el plan ya escrito `docs/superpowers/plans/2026-08-04-mobile-fase3b-registrar-compra.md` (Fase 3b), que sí asume un cambio de backend (`_lectura` de `ingredientes.py` ampliado a incluir CAJERO) para dar acceso a Cajero. Hay que resolver esta discrepancia de diseño antes de implementar cualquiera de las dos — **no implementar Fase 3b tal cual está escrita sin decidir esto primero.**
+
+**Instrucciones del usuario para la implementación (aplican a partir de acá):**
+1. Crear un worktree dedicado para implementar/retomar el plan (no trabajar directo en `main`).
+2. Dispatchar el trabajo con subagentes manejados por `superpowers:subagent-driven-development`.
+3. Commit + push **cada vez que una TAREA completa del plan termine y sea revisada** (no cada paso suelto dentro de una tarea).
+4. No hay forma de probar en el celular/Expo Go por ahora (usuario no puede probar directo) — Docker de la API se deja corriendo por el usuario; verificar contra los endpoints reales/tests en vez de UI manual. Si no hay suite de tests que cubra algo, crear unit tests nuevos.
+5. Regla nueva de esta sesión en adelante: **después de cada tarea completa del plan, chequear uso de las 5 horas de Claude Code** — si queda poco, guardar sesión (`/ecc:save-session` + actualizar este `progress.md`) antes de seguir.
+
+**Próximo paso exacto:** recibir (o redispatchar si los agentes ya no responden) los reportes de auditoría de Fase 0/2/3, resolver el conflicto Fase3-revisión vs Fase3b, crear el worktree, y arrancar `superpowers:subagent-driven-development` sobre los gaps reales encontrados (no sobre el plan completo desde cero — mucho ya está implementado).
+
+---
+
 # Sesión 2026-08-07 — Resumida en dispositivo nuevo, triple revisión Opus del plan wiring mobile↔backend (sin implementar código)
 
 **NOTA DE RECONCILIACIÓN (añadida al mergear):** esta sesión corrió en una máquina distinta y asumió erróneamente que `mobile/` seguía siendo el prototipo mock del commit `6323eb7`, porque el trabajo real de wiring (sesión 2026-08-04, ver abajo) nunca se había pusheado a GitHub todavía cuando esta sesión arrancó. Por lo tanto las revisiones Opus de esta sesión son correcciones al TEXTO del plan original (asumiendo cero código implementado), no una auditoría del código real ya mergeado a `main`. Al reconciliar (sesión que seguía después), hay que comparar cada uno de los 24 hallazgos (16+8) contra el código real ya implementado en Fases 0/2/3, no asumir que ninguno está cubierto.
