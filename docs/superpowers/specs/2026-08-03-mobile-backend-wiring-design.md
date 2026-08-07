@@ -16,7 +16,7 @@ navegación del flujo Mesero está además rota:
   camino de UI que se lo pase — pantalla inalcanzable.
 - `screens/DetallePedidoScreen.js` (botones de cambio de estado) existe pero
   no está registrada en `App.js` — código huérfano.
-- `screens/RecuperarPasswordScreen.js` no está enlazada desde `LoginScreen` y
+- `screens/RecuperarPassword.js` no está enlazada desde `LoginScreen` y
   no hay endpoint de reset de password en la API — se deja fuera de alcance.
 
 El backend (`api/`) ya expone el contrato completo (auth JWT, mesas, pedidos
@@ -54,7 +54,12 @@ Archivos nuevos en `mobile/`:
   conozca React Navigation.
 - `api/auth.js` — `login(correo, password)`.
 - `api/mesas.js` — `getMesas()`.
-- `api/pedidos.js` — `crearPedido(payload)`, `getPedido(id)`, `getPedidos(params)`.
+- `api/pedidos.js` — `crearPedido(payload)`, `getPedido(id)`,
+  `cambiarEstadoPedido(id, estatus)`, `getPedidoActivoDeMesa(mesaId)`. No hay
+  un `getPedidos(params)` genérico: las colas por estado viven en los módulos
+  propios de cada fase (`api/pedidos_cocina.js` con `getColaPendientes()` en
+  Fase 2, `api/pedidos_caja.js` con `getPedidosListos()` en Fase 3), separados
+  a propósito para que las fases puedan implementarse en worktrees paralelos.
 - `api/productos.js` — `getProductos()` (para el menú de `PedidoScreen`).
 - `auth/session.js` — `saveToken`/`getToken`/`clearToken` (expo-secure-store);
   decodifica el payload del JWT (base64, sin librería) para leer
@@ -110,7 +115,7 @@ independientemente de lo que la UI muestre).
   `numeroMesa` como parámetro de navegación desde `MesasScreen` (que ya tiene
   el `MesaOut` completo); Cocina y Caja, que ven colas de mesas distintas sin
   parámetro disponible, hacen un `GET /mesas` y unen client-side por `id_mesa`.
-- `RecuperarPasswordScreen` queda sin enlazar (fuera de alcance, sin endpoint de backend).
+- `screens/RecuperarPassword.js` queda sin enlazar (fuera de alcance, sin endpoint de backend).
 
 ## Manejo de errores
 
@@ -161,6 +166,14 @@ automatizada nueva.
   Las Fases 0-4 **no** implementan ninguna UI de cancelación en móvil, por
   decisión explícita de alcance, no por omisión. Se cancela por Postman/API si
   hace falta durante las pruebas.
+- **Administración pura: exclusiva de `web-admin`, no se porta a móvil.**
+  `/api/usuarios`, `/api/reportes/*`, `/api/cortes-diarios`,
+  `/api/gastos-fijos`, las escrituras sobre `/categorias` y
+  `/producto_ingrediente` (recetas) quedan **intencionalmente** fuera de las
+  cuatro fases móviles: ninguna pantalla de mobile las expone, ni siquiera para
+  el rol Administrador. Es decisión de alcance, no omisión — el móvil cubre
+  operación de piso (Mesero/Cocina/Caja); la administración se hace en
+  `web-admin`.
 - **Techo de 50 pedidos por consulta.** `GET /pedidos` usa `limit=50` por
   defecto (`api/app/routers/pedidos.py:42`) y no se envía `limit` desde
   mobile. Como los pedidos solo salen de `Listo` cuando el Mesero marca

@@ -12,6 +12,11 @@
 
 - Prerequisite: Fase 0 (`docs/superpowers/plans/2026-08-03-mobile-fase0-infra-mesero.md`) is merged to `main` before this plan starts — `api/client.js`, `auth/session.js`, `auth/AuthContext.js`, `config.js`, `app.config.js` already exist.
 - **Isolation rule:** this plan creates `api/pedidos_cocina.js` as a NEW file for pedido-queue calls rather than modifying the shared `api/pedidos.js` from Fase 0 — Fase 3 (Caja) also needs pedido reads and runs in a parallel worktree; two phases editing the same file would conflict on merge. Minor duplication of a couple of `request()` wrapper calls is the accepted tradeoff for merge safety.
+- **Única excepción al aislamiento: `App.js`.** Los dos planes lo modifican para
+  registrar una ruta nueva (Fase 2 añade `CocinaDetalle`, Fase 3 añade
+  `Compras`), así que al fusionar worktrees paralelos es esperable un conflicto
+  trivial en ese archivo — se resuelve conservando ambos `<Stack.Screen>` y
+  ambos imports. No indica acoplamiento real: ningún otro archivo se comparte.
 - This plan touches ONLY: `api/categorias.js` (new), `api/productos.js` (extends Fase 0's read-only version with write methods — Fase 3 never touches this file, safe), `api/ingredientes.js` (new), `api/pedidos_cocina.js` (new), `screens/CocinaScreen.js`, `screens/ColaPedidosScreen.js`, `screens/MenuScreen.js`, `screens/InventarioScreen.js`, `screens/CocinaDetalleScreen.js` (new), `App.js` (adds one route). It must NOT touch any Caja screen/file or `api/pedidos.js`.
 - No axios, no socket.io, no new test framework — manual verification against the live Docker API, per `docs/superpowers/specs/2026-08-03-mobile-backend-wiring-design.md`.
 - Seed credentials: `cocinero@coffeecode.com` / `Cocinero123!`.
@@ -28,7 +33,8 @@
 - **Nota de coordinación con Fase 3 (no es acoplamiento de código):** la
   verificación manual de Fase 3 necesita un pedido en estatus `Listo`, que
   normalmente produce el Task 3 de este plan. Los archivos no se tocan entre
-  sí y los planes pueden implementarse en paralelo; solo el **orden de
+  sí (salvo `App.js`, ver arriba) y los planes pueden implementarse en
+  paralelo; solo el **orden de
   verificación** importa. Fase 3 documenta el fallback por Postman.
 
 ---
@@ -529,7 +535,7 @@ export function cambiarEstadoPedido(pedidoId, estatus) {
 
 ```js
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getPedido, cambiarEstadoPedido } from '../api/pedidos_cocina';
 import { ApiError } from '../api/client';
@@ -573,10 +579,25 @@ export default function CocinaDetalleScreen({ route, navigation }) {
     try {
       const actualizado = await cambiarEstadoPedido(pedidoId, siguiente);
       setPedido(actualizado);
-      if (actualizado.alertas_stock_bajo && actualizado.alertas_stock_bajo.length > 0) {
-        setError(`Alerta de stock bajo: ${actualizado.alertas_stock_bajo.join(', ')}`);
-      }
-      if (siguiente === 'Listo') {
+
+      if (siguiente !== 'Listo') return;
+
+      const alertas = actualizado.alertas_stock_bajo || [];
+
+      // Marcar "Listo" descuenta receta y puede devolver ingredientes bajo
+      // mínimo (api/app/services/pedidos.py:167-168, expuesto en
+      // api/app/routers/pedidos.py:85). Un setError() seguido de goBack()
+      // desmonta la pantalla antes de que el cocinero llegue a leerlo: aquí sí
+      // corresponde un Alert nativo bloqueante, porque necesita acuse de
+      // recibo ANTES de salir (distinto de los Alert.alert de validación que
+      // esta revisión eliminó, que solo interrumpían sin aportar nada).
+      if (alertas.length > 0) {
+        Alert.alert(
+          'Stock bajo',
+          `Estos ingredientes quedaron bajo el mínimo: ${alertas.join(', ')}`,
+          [{ text: 'Entendido', onPress: () => navigation.goBack() }]
+        );
+      } else {
         navigation.goBack();
       }
     } catch (err) {
@@ -586,10 +607,24 @@ export default function CocinaDetalleScreen({ route, navigation }) {
     }
   };
 
-  if (loading || !pedido) {
+  if (loading && !pedido) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#2E1B0F" />
+      </View>
+    );
+  }
+
+  // Con `loading || !pedido` un GET fallido dejaba el spinner girando para
+  // siempre (loading:false, pedido:null) y nunca mostraba el error ni permitía
+  // reintentar. Mismo patrón que DetalleScreen (Fase 0, Task 7).
+  if (error && !pedido) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.error}>{error}</Text>
+        <TouchableOpacity style={styles.button} onPress={cargar}>
+          <Text style={styles.buttonText}>Reintentar</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -788,6 +823,13 @@ Add `import CocinaDetalleScreen from './screens/CocinaDetalleScreen';` near the 
 6. Confirm the cola shows the **numero de mesa** (same value visible in the
    Mesero grid), not the DB id — seed them apart if needed by deleting/adding
    a mesa so `id` and `numero_mesa` diverge.
+7. Alerta de stock bajo: antes de repetir el paso 5, sube el `stock_minimo` de
+   un ingrediente de la receta por encima de su `stock_actual`
+   (`PUT /ingredientes/{id}`). Expected: al marcar "Listo" aparece el diálogo
+   "Stock bajo" nombrando ese ingrediente, y la pantalla **no** vuelve a la
+   cola hasta tocar "Entendido".
+8. Error de carga: apaga la API y entra a "Ver preparación". Expected: el
+   mensaje de error con botón "Reintentar", no un spinner infinito.
 
 - [ ] **Step 7: Commit**
 

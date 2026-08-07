@@ -12,6 +12,11 @@
 
 - Prerequisite: Fase 0 merged to `main` before this plan starts.
 - **Isolation rule:** this plan creates `api/pedidos_caja.js` as its OWN file for pedido reads (`getPedidosListos`, `getPedido`) instead of modifying the shared `api/pedidos.js` from Fase 0 or Fase 2's `api/pedidos_cocina.js` — Fase 2 (Cocina) runs in a parallel worktree and also reads pedidos; two phases editing the same file would conflict on merge. Minor duplication of `request()` wrapper calls is the accepted tradeoff for merge safety.
+- **Única excepción al aislamiento: `App.js`.** Los dos planes lo modifican para
+  registrar una ruta nueva (Fase 2 añade `CocinaDetalle`, Fase 3 añade
+  `Compras`), así que al fusionar worktrees paralelos es esperable un conflicto
+  trivial en ese archivo — se resuelve conservando ambos `<Stack.Screen>` y
+  ambos imports. No indica acoplamiento real: ningún otro archivo se comparte.
 - Real business flow (confirmed against `api/app/services/pedidos.py` and prior session verification): pedido reaches estatus **"Listo"** in Cocina, THEN Caja charges it via `POST /ventas`, THEN Mesero marks it **"Entregado"**. Caja's queue is `GET /pedidos?estado=Listo`, not "Pendiente".
 - **Known API limitation, not a bug to fix here:** there is no `GET /gastos` list endpoint — only `POST /gastos`. `GastosScreen` therefore shows expenses added in the current app session (client-side accumulation, same pattern the mock already uses) plus the authoritative period total pulled from `GET /caja/resumen`. Do not invent a new backend endpoint for this plan.
 - This plan touches ONLY: `api/caja.js` (new), `api/pedidos_caja.js` (new), `api/gastos.js` (new), `api/ingredientes_caja.js` (new), `screens/CajaScreen.js`, `screens/PagoScreen.js`, `screens/GastosScreen.js`, `screens/ComprasScreen.js` (new), `App.js` (adds one route). It must NOT touch any Cocina screen/file, `api/pedidos.js`, `api/pedidos_cocina.js`, or `api/ingredientes.js` (Fase 2's). `api/mesas.js` (Fase 0) se **importa sin modificar**.
@@ -29,7 +34,8 @@
   puede truncar la cola de Caja. Paginación fuera de alcance; se documenta.
 - **Orden de verificación (no de código):** los Steps de verificación manual
   de los Tasks 1 y 2 necesitan un pedido real en estatus `Listo`, que produce
-  Fase 2 (Cocina). Los archivos de ambos planes son disjuntos y pueden
+  Fase 2 (Cocina). Los archivos de ambos planes son disjuntos (salvo `App.js`,
+  ver arriba) y pueden
   implementarse en paralelo; solo la **verificación** requiere que exista un
   `Listo`. Fallback ya previsto: generarlo por Postman con
   `PUT /pedidos/{id}/estado` usando un token de Cocinero.
@@ -98,10 +104,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getPedidosListos } from '../api/pedidos_caja';
 import { getMesas } from '../api/mesas';
 import { ApiError } from '../api/client';
-import { useAuth } from '../auth/AuthContext';
 
 export default function CajaScreen({ navigation }) {
-  const { rol } = useAuth();
   const [pedidos, setPedidos] = useState([]);
   const [numeroPorMesa, setNumeroPorMesa] = useState({});
   const [loading, setLoading] = useState(true);
@@ -187,15 +191,8 @@ export default function CajaScreen({ navigation }) {
             >
               <Text style={{ color: 'white' }}>Gastos y cuentas</Text>
             </TouchableOpacity>
-
-            {rol === 'Administrador' && (
-              <TouchableOpacity
-                style={[styles.button, { marginTop: 10, backgroundColor: '#444' }]}
-                onPress={() => navigation.navigate('Compras')}
-              >
-                <Text style={{ color: 'white' }}>Registrar compra de insumo</Text>
-              </TouchableOpacity>
-            )}
+            {/* Task 4 agrega aquí el botón "Registrar compra de insumo",
+                junto con la ruta `Compras` que necesita para no crashear. */}
           </View>
         )}
       />
@@ -217,8 +214,9 @@ const styles = StyleSheet.create({
 });
 ```
 
-El botón "Registrar compra de insumo" solo se renderiza para `Administrador`
-— ver Task 4 y la sección de brechas conocidas de la spec.
+El acceso a compras de insumo **no** se agrega aquí: su botón vive en Task 4,
+junto con la ruta `Compras` que necesita. Añadirlo antes sería un enlace a una
+ruta inexistente (crash de React Navigation).
 
 - [ ] **Step 4: Manual verification**
 
@@ -285,14 +283,22 @@ export default function PagoScreen({ route, navigation }) {
   const [error, setError] = useState('');
   const [resultado, setResultado] = useState(null);
 
+  const cargar = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      setPedido(await getPedido(pedidoId));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo cargar el pedido');
+    } finally {
+      setLoading(false);
+    }
+  }, [pedidoId]);
+
   useFocusEffect(
     useCallback(() => {
-      setLoading(true);
-      getPedido(pedidoId)
-        .then(setPedido)
-        .catch((err) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el pedido'))
-        .finally(() => setLoading(false));
-    }, [pedidoId])
+      cargar();
+    }, [cargar])
   );
 
   const subtotalEstimado = pedido
@@ -321,10 +327,24 @@ export default function PagoScreen({ route, navigation }) {
     }
   };
 
-  if (loading) {
+  if (loading && !pedido) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#2E1B0F" />
+      </View>
+    );
+  }
+
+  // Sin este guard, si el GET falla el render de abajo lee pedido.id_mesa /
+  // pedido.detalle sobre null y revienta con TypeError. Mismo patrón que
+  // DetalleScreen (Fase 0, Task 7).
+  if (error && !pedido) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.error}>{error}</Text>
+        <TouchableOpacity style={styles.payButton} onPress={cargar}>
+          <Text style={styles.payText}>Reintentar</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -435,6 +455,10 @@ you force it via Postman (`POST /ventas` again on the same `pedido_id`),
 expected `409 "El pedido ya tiene un pago registrado"` — the same assertion as
 `fuego-rol-cajero` "[ERROR] Pago duplicado".
 
+Finalmente, el caso de carga fallida: apaga la API y navega a `Pago`. Expected:
+mensaje de error con botón "Reintentar" — **no** una pantalla en blanco ni un
+crash por leer `pedido.detalle` sobre `null`.
+
 - [ ] **Step 4: Commit**
 
 ```bash
@@ -521,7 +545,9 @@ export default function GastosScreen() {
     setError('');
     try {
       const creado = await crearGasto({ concepto: descripcion.trim(), monto: parseFloat(monto) });
-      setGastosSesion([creado, ...gastosSesion]);
+      // updater funcional: evita perder un gasto si dos altas caen seguidas
+      // sobre el mismo `gastosSesion` capturado en el closure.
+      setGastosSesion((actual) => [creado, ...actual]);
       setDescripcion('');
       setMonto('');
       await cargarResumen();
@@ -634,7 +660,10 @@ git commit -m "feat(mobile): GastosScreen registra gastos reales y muestra total
 > **Resolución de este plan:** la pantalla se entrega funcionando **solo para
 > `Administrador`** (rol ya alcanzable: `HomeScreen` de Fase 0 le muestra
 > Mesero/Cocina/Caja). El punto de entrada en `CajaScreen` está condicionado a
-> `rol === 'Administrador'` (Task 1). **No se implementa ningún cambio de
+> `rol === 'Administrador'` y se agrega en el **Step 4 de este mismo Task**,
+> no en Task 1: el botón y la ruta `Compras` tienen que aterrizar en el mismo
+> commit, o entre Task 1 y Task 4 un Administrador que lo toque navega a una
+> ruta inexistente. **No se implementa ningún cambio de
 > backend.** Si se quiere que un Cajero registre compras desde el móvil, hace
 > falta una decisión del usuario sobre un cambio de API (abrir
 > `GET /ingredientes` a Cajero, o un `GET /ingredientes/nombres` de
@@ -645,9 +674,10 @@ git commit -m "feat(mobile): GastosScreen registra gastos reales y muestra total
 - Create: `mobile/screens/ComprasScreen.js`
 - Modify: `mobile/api/caja.js` (adds `registrarCompra` — additive)
 - Modify: `mobile/App.js` (adds the `Compras` route)
+- Modify: `mobile/screens/CajaScreen.js` (adds the Administrador-only entry point — additive, Step 4)
 
 **Interfaces:**
-- Consumes: `request` from `api/client.js`, `useAuth()` for `rol`.
+- Consumes: `request` from `api/client.js`, `useAuth()` for `rol` (both in `ComprasScreen` and in `CajaScreen`'s entry-point gate).
 - Produces: `getIngredientes(): Promise<IngredienteOut[]>`, `registrarCompra({ingredienteId, cantidad, monto}): Promise<{gasto, ingrediente_id, nuevo_stock}>` (shape from `CompraOut`, `api/app/models/ventas.py:59-62`).
 
 - [ ] **Step 1: Create `mobile/api/ingredientes_caja.js`**
@@ -815,7 +845,7 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 4: Register the route in `mobile/App.js`**
+- [ ] **Step 4: Register the route in `mobile/App.js` and add the entry point in `CajaScreen`**
 
 Add `import ComprasScreen from './screens/ComprasScreen';` near the other
 screen imports, and:
@@ -827,12 +857,39 @@ screen imports, and:
         />
 ```
 
+En el **mismo commit**, agregar el punto de entrada en
+`mobile/screens/CajaScreen.js` (Task 1 lo dejó fuera a propósito). Añadir el
+import y el hook:
+
+```js
+import { useAuth } from '../auth/AuthContext';
+```
+
+```js
+  const { rol } = useAuth();
+```
+
+y, dentro del `ListFooterComponent`, debajo del botón "Gastos y cuentas"
+(donde Task 1 dejó el comentario que apunta a este Step):
+
+```jsx
+            {rol === 'Administrador' && (
+              <TouchableOpacity
+                style={[styles.button, { marginTop: 10, backgroundColor: '#444' }]}
+                onPress={() => navigation.navigate('Compras')}
+              >
+                <Text style={{ color: 'white' }}>Registrar compra de insumo</Text>
+              </TouchableOpacity>
+            )}
+```
+
 - [ ] **Step 5: Manual verification**
 
 1. Log in as `cajero@coffeecode.com`, Home → Caja. Expected: **no** aparece el
    botón "Registrar compra de insumo" (rol distinto de Administrador).
-2. Log in as the seed Administrador, Home → Caja → "Registrar compra de
-   insumo". Expected: lista real de ingredientes.
+2. Log in as the seed Administrador, Home → Caja. Expected: el botón
+   "Registrar compra de insumo" **sí** aparece; al tocarlo abre `Compras` (la
+   ruta ya existe, agregada en el Step 4) con la lista real de ingredientes.
 3. Selecciona uno, cantidad `-5`: expected inline error legible del 422 (no
    `[object Object]` — esto valida la corrección de `client.js` de Fase 0).
 4. Monto `0`: expected otro 422 legible.
@@ -845,7 +902,7 @@ screen imports, and:
 - [ ] **Step 6: Commit**
 
 ```bash
-git add mobile/api/ingredientes_caja.js mobile/api/caja.js mobile/screens/ComprasScreen.js mobile/App.js
+git add mobile/api/ingredientes_caja.js mobile/api/caja.js mobile/screens/ComprasScreen.js mobile/screens/CajaScreen.js mobile/App.js
 git commit -m "feat(mobile): registrar compra de insumo (solo Administrador)"
 ```
 

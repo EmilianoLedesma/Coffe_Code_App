@@ -1014,7 +1014,7 @@ git commit -m "feat(mobile): PedidoScreen crea pedidos reales contra la API"
 - Create: `mobile/screens/DetalleScreen.js`
 - Delete: `mobile/screens/EstadoPedidoScreen.js` (mock content fully superseded)
 - Delete: `mobile/screens/DetallePedidoScreen.js` (was orphaned/unregistered — its state-machine buttons are superseded by the single, backend-accurate "Marcar como Entregado" action built into `DetalleScreen` below)
-- Modify: `mobile/App.js` (remove `EstadoPedidoScreen` import/route, add `DetalleScreen` import/route, remove `RecuperarPassword` unused import check — leave `RecuperarPassword` route registered since deleting it is out of this plan's scope, it's just unreachable from Login)
+- Modify: `mobile/App.js` (remove the `EstadoPedidoScreen` import/route, add the `DetalleScreen` import/route). Do **not** touch `screens/RecuperarPassword.js` nor its `App.js` route: se deja registrada tal cual — sigue sin enlace desde `LoginScreen` y sin endpoint de backend, y borrarla está fuera del alcance de este plan.
 - Modify: `mobile/screens/ColaPedidosScreen.js:31` (one-line fix: `navigation.navigate('EstadoPedido', ...)` → `navigation.navigate('Detalle', { pedidoId: item.id })` — only a compatibility fix so tapping "Ver preparación" doesn't crash after the route rename; Fase 2 rewires this screen's data source properly)
 
 **Interfaces:**
