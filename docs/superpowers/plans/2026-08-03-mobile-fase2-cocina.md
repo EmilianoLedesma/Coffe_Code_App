@@ -12,9 +12,30 @@
 
 - Prerequisite: Fase 0 (`docs/superpowers/plans/2026-08-03-mobile-fase0-infra-mesero.md`) is merged to `main` before this plan starts — `api/client.js`, `auth/session.js`, `auth/AuthContext.js`, `config.js`, `app.config.js` already exist.
 - **Isolation rule:** this plan creates `api/pedidos_cocina.js` as a NEW file for pedido-queue calls rather than modifying the shared `api/pedidos.js` from Fase 0 — Fase 3 (Caja) also needs pedido reads and runs in a parallel worktree; two phases editing the same file would conflict on merge. Minor duplication of a couple of `request()` wrapper calls is the accepted tradeoff for merge safety.
+- **Única excepción al aislamiento: `App.js`.** Los dos planes lo modifican para
+  registrar una ruta nueva (Fase 2 añade `CocinaDetalle`, Fase 3 añade
+  `Compras`), así que al fusionar worktrees paralelos es esperable un conflicto
+  trivial en ese archivo — se resuelve conservando ambos `<Stack.Screen>` y
+  ambos imports. No indica acoplamiento real: ningún otro archivo se comparte.
 - This plan touches ONLY: `api/categorias.js` (new), `api/productos.js` (extends Fase 0's read-only version with write methods — Fase 3 never touches this file, safe), `api/ingredientes.js` (new), `api/pedidos_cocina.js` (new), `screens/CocinaScreen.js`, `screens/ColaPedidosScreen.js`, `screens/MenuScreen.js`, `screens/InventarioScreen.js`, `screens/CocinaDetalleScreen.js` (new), `App.js` (adds one route). It must NOT touch any Caja screen/file or `api/pedidos.js`.
 - No axios, no socket.io, no new test framework — manual verification against the live Docker API, per `docs/superpowers/specs/2026-08-03-mobile-backend-wiring-design.md`.
 - Seed credentials: `cocinero@coffeecode.com` / `Cocinero123!`.
+- `screens/ColaPedidosScreen.js` y `screens/CocinaDetalleScreen.js` importan
+  `getMesas` de `api/mesas.js` (creado en Fase 0, **solo lectura, no se
+  modifica**) para traducir `id_mesa` → `numero_mesa`. `PedidoOut` expone
+  únicamente `id_mesa`, que es la PK, no el número visible de la mesa
+  (`api/app/models/pedidos.py:55-65` vs `api/app/models/mesas.py:11-18`);
+  coinciden solo por el orden del seed.
+- **Techo conocido, no se arregla aquí:** `GET /pedidos` usa `limit=50` por
+  defecto (`api/app/routers/pedidos.py:42`) y no mandamos `limit`. La cola de
+  cocina se trunca en 50 pedidos. Paginación queda fuera de alcance; se
+  documenta para que no sorprenda después.
+- **Nota de coordinación con Fase 3 (no es acoplamiento de código):** la
+  verificación manual de Fase 3 necesita un pedido en estatus `Listo`, que
+  normalmente produce el Task 3 de este plan. Los archivos no se tocan entre
+  sí (salvo `App.js`, ver arriba) y los planes pueden implementarse en
+  paralelo; solo el **orden de
+  verificación** importa. Fase 3 documenta el fallback por Postman.
 
 ---
 
@@ -83,6 +104,7 @@ export default function MenuScreen() {
   const [categoriaId, setCategoriaId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [aviso, setAviso] = useState('');
 
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');
@@ -95,13 +117,14 @@ export default function MenuScreen() {
       const [prods, cats] = await Promise.all([getProductos(), getCategorias()]);
       setProductos(prods);
       setCategorias(cats);
-      if (cats.length > 0 && categoriaId === null) setCategoriaId(cats[0].id);
+      // updater funcional: no necesitamos categoriaId como dependencia
+      setCategoriaId((actual) => (actual === null && cats.length > 0 ? cats[0].id : actual));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo conectar con el servidor');
     } finally {
       setLoading(false);
     }
-  }, [categoriaId]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -134,8 +157,14 @@ export default function MenuScreen() {
 
   const eliminar = async (id) => {
     setError('');
+    setAviso('');
     try {
-      await deleteProducto(id);
+      // DELETE /productos/{id} responde 200 {eliminado, mensaje}: si el
+      // producto tiene historial de pedidos NO se borra, se desactiva
+      // (api/app/routers/productos.py). Sin mostrar `mensaje` el usuario cree
+      // que borró algo que sigue ahí.
+      const resultado = await deleteProducto(id);
+      setAviso(resultado.mensaje);
       await cargar();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo eliminar el producto');
@@ -156,6 +185,7 @@ export default function MenuScreen() {
       <Text style={styles.title}>Gestión de Menú</Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      {aviso ? <Text style={styles.aviso}>{aviso}</Text> : null}
 
       <TextInput placeholder="Nombre" value={nombre} onChangeText={setNombre} style={styles.input} />
       <TextInput placeholder="Precio" value={precio} onChangeText={setPrecio} keyboardType="numeric" style={styles.input} />
@@ -200,6 +230,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
   error: { color: '#C0392B', marginBottom: 10 },
+  aviso: { color: '#1F618D', marginBottom: 10 },
   input: { backgroundColor: 'white', padding: 10, marginBottom: 10, borderRadius: 8 },
   categorias: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10 },
   categoria: { padding: 8, marginRight: 8, marginBottom: 8, borderRadius: 8, borderWidth: 1, borderColor: '#ddd', color: 'gray' },
@@ -210,6 +241,15 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: 'bold' }
 });
 ```
+
+> Con `[categoriaId]` en las deps, cada tap en un chip de categoría cambiaba
+> la identidad de `cargar`, lo que re-disparaba el `useFocusEffect` y
+> re-pedía **productos y categorías** completos. El updater funcional lee el
+> valor actual sin declararlo como dependencia.
+
+> Mismo patrón que `web-admin`, que ya hace
+> `flash(resultado["mensaje"], "success")`
+> (`web-admin/app/blueprints/ingredientes.py:103`).
 
 - [ ] **Step 4: Manual verification**
 
@@ -282,6 +322,7 @@ export default function InventarioScreen() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [aviso, setAviso] = useState('');
 
   const [nombre, setNombre] = useState('');
   const [unidad, setUnidad] = useState('');
@@ -352,8 +393,13 @@ export default function InventarioScreen() {
 
   const eliminar = async (id) => {
     setError('');
+    setAviso('');
     try {
-      await deleteIngrediente(id);
+      // DELETE /ingredientes/{id} responde 200 {eliminado, mensaje}: si el
+      // ingrediente está en alguna receta se desactiva en vez de borrarse
+      // (api/app/routers/ingredientes.py:101-117).
+      const resultado = await deleteIngrediente(id);
+      setAviso(resultado.mensaje);
       await cargar();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo eliminar el ingrediente');
@@ -374,6 +420,7 @@ export default function InventarioScreen() {
       <Text style={styles.title}>Inventario</Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      {aviso ? <Text style={styles.aviso}>{aviso}</Text> : null}
 
       <TextInput placeholder="Nombre" value={nombre} onChangeText={setNombre} style={styles.input} />
       <TextInput placeholder="Unidad (g, ml, u)" value={unidad} onChangeText={setUnidad} style={styles.input} />
@@ -423,6 +470,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
   error: { color: '#C0392B', marginBottom: 10 },
+  aviso: { color: '#1F618D', marginBottom: 10 },
   input: { backgroundColor: 'white', padding: 10, marginBottom: 8, borderRadius: 8 },
   btn: { backgroundColor: '#2E1B0F', padding: 12, borderRadius: 8, marginBottom: 10 },
   btnText: { color: 'white', textAlign: 'center' },
@@ -487,7 +535,7 @@ export function cambiarEstadoPedido(pedidoId, estatus) {
 
 ```js
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getPedido, cambiarEstadoPedido } from '../api/pedidos_cocina';
 import { ApiError } from '../api/client';
@@ -498,7 +546,7 @@ const SIGUIENTE_ESTATUS = {
 };
 
 export default function CocinaDetalleScreen({ route, navigation }) {
-  const { pedidoId } = route.params;
+  const { pedidoId, numeroMesa } = route.params;
   const [pedido, setPedido] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cambiando, setCambiando] = useState(false);
@@ -531,10 +579,25 @@ export default function CocinaDetalleScreen({ route, navigation }) {
     try {
       const actualizado = await cambiarEstadoPedido(pedidoId, siguiente);
       setPedido(actualizado);
-      if (actualizado.alertas_stock_bajo && actualizado.alertas_stock_bajo.length > 0) {
-        setError(`Alerta de stock bajo: ${actualizado.alertas_stock_bajo.join(', ')}`);
-      }
-      if (siguiente === 'Listo') {
+
+      if (siguiente !== 'Listo') return;
+
+      const alertas = actualizado.alertas_stock_bajo || [];
+
+      // Marcar "Listo" descuenta receta y puede devolver ingredientes bajo
+      // mínimo (api/app/services/pedidos.py:167-168, expuesto en
+      // api/app/routers/pedidos.py:85). Un setError() seguido de goBack()
+      // desmonta la pantalla antes de que el cocinero llegue a leerlo: aquí sí
+      // corresponde un Alert nativo bloqueante, porque necesita acuse de
+      // recibo ANTES de salir (distinto de los Alert.alert de validación que
+      // esta revisión eliminó, que solo interrumpían sin aportar nada).
+      if (alertas.length > 0) {
+        Alert.alert(
+          'Stock bajo',
+          `Estos ingredientes quedaron bajo el mínimo: ${alertas.join(', ')}`,
+          [{ text: 'Entendido', onPress: () => navigation.goBack() }]
+        );
+      } else {
         navigation.goBack();
       }
     } catch (err) {
@@ -544,10 +607,24 @@ export default function CocinaDetalleScreen({ route, navigation }) {
     }
   };
 
-  if (loading || !pedido) {
+  if (loading && !pedido) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#2E1B0F" />
+      </View>
+    );
+  }
+
+  // Con `loading || !pedido` un GET fallido dejaba el spinner girando para
+  // siempre (loading:false, pedido:null) y nunca mostraba el error ni permitía
+  // reintentar. Mismo patrón que DetalleScreen (Fase 0, Task 7).
+  if (error && !pedido) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.error}>{error}</Text>
+        <TouchableOpacity style={styles.button} onPress={cargar}>
+          <Text style={styles.buttonText}>Reintentar</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -557,7 +634,7 @@ export default function CocinaDetalleScreen({ route, navigation }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
 
-      <Text style={styles.title}>Pedido #{pedido.id} — Mesa {pedido.id_mesa}</Text>
+      <Text style={styles.title}>Pedido #{pedido.id} — Mesa {numeroMesa ?? pedido.id_mesa}</Text>
       <Text style={styles.estado}>Estado: {pedido.estatus.nombre}</Text>
 
       {pedido.detalle.map((item) => (
@@ -603,10 +680,12 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getColaPendientes } from '../api/pedidos_cocina';
+import { getMesas } from '../api/mesas';
 import { ApiError } from '../api/client';
 
 export default function ColaPedidosScreen({ navigation }) {
   const [pedidos, setPedidos] = useState([]);
+  const [numeroPorMesa, setNumeroPorMesa] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -614,7 +693,10 @@ export default function ColaPedidosScreen({ navigation }) {
     setLoading(true);
     setError('');
     try {
-      setPedidos(await getColaPendientes());
+      // PedidoOut solo trae id_mesa (PK); el número visible vive en MesaOut.
+      const [lista, mesas] = await Promise.all([getColaPendientes(), getMesas()]);
+      setPedidos(lista);
+      setNumeroPorMesa(Object.fromEntries(mesas.map((m) => [m.id, m.numero_mesa])));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo conectar con el servidor');
     } finally {
@@ -649,13 +731,18 @@ export default function ColaPedidosScreen({ navigation }) {
         renderItem={({ item }) => (
           <View style={styles.card}>
 
-            <Text style={styles.mesa}>Mesa {item.id_mesa}</Text>
+            <Text style={styles.mesa}>Mesa {numeroPorMesa[item.id_mesa] ?? item.id_mesa}</Text>
             <Text>Items: {item.detalle.length}</Text>
             <Text>Estado: {item.estatus.nombre}</Text>
 
             <TouchableOpacity
               style={styles.button}
-              onPress={() => navigation.navigate('CocinaDetalle', { pedidoId: item.id })}
+              onPress={() =>
+                navigation.navigate('CocinaDetalle', {
+                  pedidoId: item.id,
+                  numeroMesa: numeroPorMesa[item.id_mesa],
+                })
+              }
             >
               <Text style={{ color: 'white' }}>Ver preparación</Text>
             </TouchableOpacity>
@@ -733,6 +820,16 @@ Add `import CocinaDetalleScreen from './screens/CocinaDetalleScreen';` near the 
 3. Tap "Cola de pedidos". Expected: the pedido from step 1 appears with correct mesa/item count.
 4. Tap "Ver preparación", tap "Marcar como En preparación", confirm via `GET /pedidos/{id}` the estatus changed.
 5. Tap "Marcar como Listo". Confirm atomic ingredient stock discount happened (`GET /ingredientes/{id}` before/after matches the recipe quantities), and the screen navigates back to the (now-empty, since it's no longer Pendiente) cola.
+6. Confirm the cola shows the **numero de mesa** (same value visible in the
+   Mesero grid), not the DB id — seed them apart if needed by deleting/adding
+   a mesa so `id` and `numero_mesa` diverge.
+7. Alerta de stock bajo: antes de repetir el paso 5, sube el `stock_minimo` de
+   un ingrediente de la receta por encima de su `stock_actual`
+   (`PUT /ingredientes/{id}`). Expected: al marcar "Listo" aparece el diálogo
+   "Stock bajo" nombrando ese ingrediente, y la pantalla **no** vuelve a la
+   cola hasta tocar "Entendido".
+8. Error de carga: apaga la API y entra a "Ver preparación". Expected: el
+   mensaje de error con botón "Reintentar", no un spinner infinito.
 
 - [ ] **Step 7: Commit**
 
