@@ -6,7 +6,7 @@ import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 
 export default function PedidoScreen({ route, navigation }) {
-  const { mesaId } = route.params;
+  const { mesaId, numeroMesa } = route.params;
   const { userId } = useAuth();
 
   const [menu, setMenu] = useState([]);
@@ -19,7 +19,10 @@ export default function PedidoScreen({ route, navigation }) {
     (async () => {
       try {
         const productos = await getProductos();
-        setMenu(productos);
+        // GET /productos solo filtra por `activo`; los `disponible:false`
+        // llegan igual y provocarían un 409 tardío al Guardar
+        // (api/app/services/pedidos.py:64-71). Se filtran aquí.
+        setMenu(productos.filter((p) => p.disponible !== false));
       } catch (err) {
         setError(err instanceof ApiError ? err.message : 'No se pudo cargar el menú');
       } finally {
@@ -50,7 +53,7 @@ export default function PedidoScreen({ route, navigation }) {
     setError('');
     try {
       const creado = await crearPedido({ mesaId, usuarioId: userId, items: pedido });
-      navigation.navigate('Detalle', { pedidoId: creado.id });
+      navigation.navigate('Detalle', { pedidoId: creado.id, numeroMesa });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo guardar el pedido');
     } finally {
@@ -69,7 +72,7 @@ export default function PedidoScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
 
-      <Text style={styles.title}>Mesa {mesaId}</Text>
+      <Text style={styles.title}>Mesa {numeroMesa ?? mesaId}</Text>
 
       <Text style={styles.subtitle}>Pedido actual</Text>
       {pedido.length === 0 ? (
