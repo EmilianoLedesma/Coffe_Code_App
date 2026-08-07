@@ -6,7 +6,11 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "test": "jest"
+  },
+  "jest": {
+    "preset": "jest-expo"
   },
   "dependencies": {
     "@react-navigation/native": "^7.3.7",
@@ -24,5 +28,10 @@
     "react-native-screens": "~4.16.0",
     "react-native-web": "^0.21.0"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@testing-library/react-native": "13.3.3",
+    "jest-expo": "^54.0.17",
+    "react-test-renderer": "19.1.0"
+  }
 }
