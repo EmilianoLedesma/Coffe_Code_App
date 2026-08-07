@@ -8,6 +8,25 @@ export class ApiError extends Error {
   }
 }
 
+// AuthContext registra aquí su forceLogout. client.js no importa React ni
+// React Navigation: solo guarda un callback opcional.
+let onUnauthorized = null;
+
+export function setUnauthorizedHandler(handler) {
+  onUnauthorized = handler;
+}
+
+function mensajeDeError(data, status) {
+  const detail = data && data.detail;
+  // FastAPI 422: detail es [{msg, loc, type}, ...], no un string.
+  if (Array.isArray(detail)) {
+    const msgs = detail.map((e) => e && e.msg).filter(Boolean);
+    return msgs.length ? msgs.join('; ') : `Error ${status}`;
+  }
+  if (typeof detail === 'string' && detail) return detail;
+  return `Error ${status}`;
+}
+
 export async function request(path, { method = 'GET', body, auth = true } = {}) {
   const headers = { 'Content-Type': 'application/json' };
 
@@ -28,14 +47,19 @@ export async function request(path, { method = 'GET', body, auth = true } = {}) 
   }
 
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  let data = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = null; // respuesta no-JSON (proxy/502): cae al mensaje genérico
+  }
 
   if (!response.ok) {
     if (response.status === 401 && auth) {
       await clearToken();
+      if (onUnauthorized) onUnauthorized();
     }
-    const message = (data && data.detail) || `Error ${response.status}`;
-    throw new ApiError(response.status, message);
+    throw new ApiError(response.status, mensajeDeError(data, response.status));
   }
 
   return data;
