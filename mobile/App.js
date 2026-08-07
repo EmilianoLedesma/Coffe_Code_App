@@ -18,13 +18,14 @@ import RecuperarPassword from './screens/RecuperarPassword';
 import CocinaScreen from './screens/CocinaScreen';
 import CocinaDetalleScreen from './screens/CocinaDetalleScreen';
 import { AuthProvider } from './auth/AuthContext';
+import { navigationRef } from './navigationRef';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
     <AuthProvider>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <Stack.Navigator initialRouteName="Splash">
 
         <Stack.Screen
