@@ -498,7 +498,7 @@ sesión", kill and reopen: expected Login.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add mobile/api/auth.js mobile/auth/AuthContext.js mobile/screens/LoginScreen.js mobile/App.js
+git add mobile/api/auth.js mobile/auth/AuthContext.js mobile/navigationRef.js mobile/screens/LoginScreen.js mobile/screens/SplashScreen.js mobile/App.js
 git commit -m "feat(mobile): login real contra la API con JWT"
 ```
 
