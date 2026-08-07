@@ -1,3 +1,31 @@
+# Sesión 2026-08-07 (parte 3) — Implementación de gaps Fase 0 vía subagent-driven-development (en curso)
+
+Continuación directa de la parte 2 (auditoría de gaps). Decisión del usuario: **Fase3b (Cajero) gana** sobre la revisión de Fase3 (Admin-only) para "Registrar compra" — Fase3 Task4 queda descartada.
+
+**Worktree dedicado creado:** `.claude/worktrees/mobile-plan-catchup`, branch `mobile-plan-catchup`, pusheado a `origin/mobile-plan-catchup`. `npm install` corrido en `mobile/` dentro del worktree. Toda la implementación de gaps vive ahí, NO en `main` directamente (instrucción explícita del usuario).
+
+**Auditorías re-dispatchadas (los 3 agentes originales quedaron "idle" sin enviar reporte pese a 2 pings cada uno — se redispatcharon con instrucción explícita de terminar con `SendMessage` a "main", esta vez sí funcionó):**
+- **Fase 0: 0/13 fixes cubiertos.** El código en `main` coincidía línea por línea con el plan ORIGINAL (pre-revisión). Gaps de mayor impacto: sin botón "Marcar como Entregado" (ningún pedido sale nunca de "Listo", mesa nunca se libera) y `SplashScreen` con `setTimeout` fijo que anulaba la restauración de sesión.
+- **Fase 2: 8 missing, 1 parcial** (App.js le faltaba ruta `Compras` — ya no aplica, ver decisión Fase3b abajo), 3 covered.
+- **Fase 3: 11 missing** (excluyendo Task4 que se descarta). Bug real: `PagoScreen` puede crashear con `pedido=null` tras fetch fallido (sin guard). Cola de Caja no distingue pedidos ya pagados → 409 de pago duplicado alcanzable.
+- **Fase 4 (WebSocket): 100% sin implementar, backend real y completo, plan de la revisión ejecutable tal cual** (único cambio real es un fix de memory-leak genuino).
+
+**Usando `superpowers:subagent-driven-development` sobre el plan `docs/superpowers/plans/2026-08-03-mobile-fase0-infra-mesero.md`** (ledger en `.claude/worktrees/mobile-plan-catchup/.superpowers/sdd/2026-08-03-mobile-fase0-infra-mesero/progress.md`):
+
+- Task 1 (config LAN IP) y Task 4 (HomeScreen por rol): ya estaban correctos, sin gap — marcados complete sin redispatch.
+- **Task 2 (client.js + session.js):** implementado limpio, review Approved primer intento. Commits `de982f3`.
+- **Bug real de infraestructura encontrado y corregido:** contenedor `coffee_code_db` estaba **desconectado de la red Docker** `coffe_code_app_default` (`docker ps` mostraba "healthy" pero `docker inspect` mostraba `Networks: {}` vacío) — causaba 500 en `/auth/login` por DNS interno roto (`could not translate host name "coffee_code_db"`). Corregido con `docker network connect coffe_code_app_default coffee_code_db`. Login verificado en vivo tras el fix: 200 + JWT real.
+- **Task 3 (AuthContext + navigationRef + SplashScreen):** implementado limpio, review Approved primer intento. Commit `5537b29`.
+- **Task 6 (api/pedidos.js + PedidoScreen, dispatchada ANTES de Task 5 por dependencia documentada en el plan):** implementado limpio, review Approved primer intento, verificado en vivo contra la API real. Commit `728f8e5`.
+- **Task 5 (MesasScreen — rama Ocupada):** **falso positivo real detectado.** Primer intento del implementador reportó DONE con **cero commits** — el HEAD del worktree se reseteó por debajo del implementador a mitad de tarea (reflog: `reset: moving to HEAD` de vuelta a `cf50d21`, dejando colgante un commit `7ae7414` que en realidad era la implementación ORIGINAL pre-revisión, no la nueva). El controlador (esta sesión) verificó el diff/grep directamente antes de confiar en el reporte, detectó la discrepancia, y reenvió al mismo implementador con evidencia exacta. Segundo intento: implementación real, correcta, commit `a8c5dfb`, review Approved. **Lección operativa registrada en el ledger: nunca confiar en un reporte DONE de un subagente sin verificar el diff real primero — ya pasó dos veces esta sesión (agentes de auditoría que se quedaban "idle" sin reportar, y ahora un reporte DONE directamente falso).**
+- **Hallazgo menor pendiente (no bloqueante):** `getPedidoActivoDeMesa` (Task 6) puede devolver el pedido incorrecto si una mesa tiene más de un pedido activo simultáneo entre distintos estatus — confirmado con datos reales de la DB de desarrollo (mesa 1: pedido #40 Listo viejo vs #42 Pendiente nuevo). No bloquea Fase 0 (el caso normal de un pedido activo por mesa funciona bien), pendiente de decidir si vale la pena endurecerlo.
+
+**Pusheado:** `mobile-plan-catchup` a `origin/mobile-plan-catchup` tras completar Tasks 2/3/6/5.
+
+**Próximo paso exacto:** continuar con Task 7 (fusión Detalle + botón "Marcar como Entregado") del plan Fase 0 — es el último gap de Fase 0 y el de mayor impacto funcional (sin él ningún pedido sale de "Listo"). Después: Fase 2 (3 tasks con gaps), Fase 3 (3 tasks con gaps, Task4 descartada), Fase 3b (3 tasks nuevas — Cajero), Fase 4 (4 tasks nuevas — WebSocket). Todo vía `subagent-driven-development` en el mismo worktree, un ledger por plan. Commit+push tras cada task completa y revisada. Verificar contra Docker real (ahora con la red arreglada) en vez de Expo Go — sin dispositivo móvil disponible esta sesión.
+
+---
+
 # Sesión 2026-08-07 (parte 2) — Reconciliación remoto/local + auditoría de gaps (en curso)
 
 Continuación de la sesión de abajo, en la máquina que tiene el trabajo real de Fases 0/2/3 implementado (nunca pusheado). El usuario avisó que otra sesión en otro dispositivo había revisado el plan y pidió sincronizar.
