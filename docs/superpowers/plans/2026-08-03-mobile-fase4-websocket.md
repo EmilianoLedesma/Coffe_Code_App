@@ -18,6 +18,11 @@
   - Auth: token passed as a query param (`?token=<jwt>`), not a header (WebSocket API can't set custom headers in RN). Server closes with code 1008 on invalid/expired token or role mismatch.
 - No axios, no socket.io — plain `WebSocket` global, already available in React Native without a polyfill.
 - No new test framework — manual verification against the live Docker API and its real WS server.
+- **Patrón de suscripción obligatorio** (Tasks 2-4): `connectToChannel` es
+  asíncrono. Si la pantalla pierde el foco antes de que resuelva la promesa,
+  el cleanup corre sobre un `cerrar` que todavía es un no-op y el socket queda
+  abierto para siempre. Todas las suscripciones usan la bandera `cancelado`
+  del snippet de abajo — no la versión `let cerrar = () => {}`.
 
 ---
 
@@ -113,7 +118,9 @@ Add a second effect alongside the existing `useFocusEffect(() => { cargar(); }, 
 ```js
   useFocusEffect(
     useCallback(() => {
-      let cerrar = () => {};
+      let cerrar = null;
+      let cancelado = false;
+
       connectToChannel('mesero', {
         onMessage: (evento) => {
           if (evento.evento === 'pedido_listo' && evento.pedido_id === pedido?.id) {
@@ -121,10 +128,18 @@ Add a second effect alongside the existing `useFocusEffect(() => { cargar(); }, 
           }
         },
       }).then((unsub) => {
+        // la pantalla pudo perder el foco mientras conectábamos
+        if (cancelado) {
+          unsub();
+          return;
+        }
         cerrar = unsub;
       });
 
-      return () => cerrar();
+      return () => {
+        cancelado = true;
+        if (cerrar) cerrar();
+      };
     }, [pedido?.id, cargar])
   );
 ```
@@ -165,7 +180,9 @@ Add a second `useFocusEffect`:
 ```js
   useFocusEffect(
     useCallback(() => {
-      let cerrar = () => {};
+      let cerrar = null;
+      let cancelado = false;
+
       connectToChannel('cocina', {
         onMessage: (evento) => {
           if (evento.evento === 'nuevo_pedido') {
@@ -173,10 +190,18 @@ Add a second `useFocusEffect`:
           }
         },
       }).then((unsub) => {
+        // la pantalla pudo perder el foco mientras conectábamos
+        if (cancelado) {
+          unsub();
+          return;
+        }
         cerrar = unsub;
       });
 
-      return () => cerrar();
+      return () => {
+        cancelado = true;
+        if (cerrar) cerrar();
+      };
     }, [cargar])
   );
 ```
@@ -215,7 +240,9 @@ Add a second `useFocusEffect`:
 ```js
   useFocusEffect(
     useCallback(() => {
-      let cerrar = () => {};
+      let cerrar = null;
+      let cancelado = false;
+
       connectToChannel('caja', {
         onMessage: (evento) => {
           if (evento.evento === 'pedido_activado') {
@@ -223,10 +250,18 @@ Add a second `useFocusEffect`:
           }
         },
       }).then((unsub) => {
+        // la pantalla pudo perder el foco mientras conectábamos
+        if (cancelado) {
+          unsub();
+          return;
+        }
         cerrar = unsub;
       });
 
-      return () => cerrar();
+      return () => {
+        cancelado = true;
+        if (cerrar) cerrar();
+      };
     }, [cargar])
   );
 ```

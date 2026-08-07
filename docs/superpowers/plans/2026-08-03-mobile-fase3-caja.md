@@ -14,7 +14,29 @@
 - **Isolation rule:** this plan creates `api/pedidos_caja.js` as its OWN file for pedido reads (`getPedidosListos`, `getPedido`) instead of modifying the shared `api/pedidos.js` from Fase 0 or Fase 2's `api/pedidos_cocina.js` — Fase 2 (Cocina) runs in a parallel worktree and also reads pedidos; two phases editing the same file would conflict on merge. Minor duplication of `request()` wrapper calls is the accepted tradeoff for merge safety.
 - Real business flow (confirmed against `api/app/services/pedidos.py` and prior session verification): pedido reaches estatus **"Listo"** in Cocina, THEN Caja charges it via `POST /ventas`, THEN Mesero marks it **"Entregado"**. Caja's queue is `GET /pedidos?estado=Listo`, not "Pendiente".
 - **Known API limitation, not a bug to fix here:** there is no `GET /gastos` list endpoint — only `POST /gastos`. `GastosScreen` therefore shows expenses added in the current app session (client-side accumulation, same pattern the mock already uses) plus the authoritative period total pulled from `GET /caja/resumen`. Do not invent a new backend endpoint for this plan.
-- This plan touches ONLY: `api/caja.js` (new), `api/pedidos_caja.js` (new), `api/gastos.js` (new), `screens/CajaScreen.js`, `screens/PagoScreen.js`, `screens/GastosScreen.js`. It must NOT touch any Cocina screen/file, `api/pedidos.js`, or `api/pedidos_cocina.js`.
+- This plan touches ONLY: `api/caja.js` (new), `api/pedidos_caja.js` (new), `api/gastos.js` (new), `api/ingredientes_caja.js` (new), `screens/CajaScreen.js`, `screens/PagoScreen.js`, `screens/GastosScreen.js`, `screens/ComprasScreen.js` (new), `App.js` (adds one route). It must NOT touch any Cocina screen/file, `api/pedidos.js`, `api/pedidos_cocina.js`, or `api/ingredientes.js` (Fase 2's). `api/mesas.js` (Fase 0) se **importa sin modificar**.
+- **Un pedido pagado NO cambia de estatus.** `registrar_venta`
+  (`api/app/services/ventas.py:63`) solo hace `pedido.total = total`; el
+  `id_estatus` sigue en `Listo` hasta que el Mesero marque `Entregado`
+  (Fase 0, `DetalleScreen`). Por eso la cola de Caja **debe** distinguir los
+  ya cobrados: si no, siguen ofreciendo "Cobrar" y el reintento devuelve 409
+  "El pedido ya tiene un pago registrado"
+  (`api/app/services/ventas.py:26-31`) — exactamente lo que afirma
+  `fuego-rol-cajero` en "[ERROR] Pago duplicado". El discriminador es
+  `pedido.total !== null`.
+- **Techo conocido, no se arregla aquí:** `GET /pedidos` usa `limit=50`
+  (`api/app/routers/pedidos.py:42`). Combinado con lo anterior, un día ocupado
+  puede truncar la cola de Caja. Paginación fuera de alcance; se documenta.
+- **Orden de verificación (no de código):** los Steps de verificación manual
+  de los Tasks 1 y 2 necesitan un pedido real en estatus `Listo`, que produce
+  Fase 2 (Cocina). Los archivos de ambos planes son disjuntos y pueden
+  implementarse en paralelo; solo la **verificación** requiere que exista un
+  `Listo`. Fallback ya previsto: generarlo por Postman con
+  `PUT /pedidos/{id}/estado` usando un token de Cocinero.
+- **`PedidoOut` no expone `numero_mesa`**, solo `id_mesa` (PK)
+  (`api/app/models/pedidos.py:55-65`). Caja ve pedidos de mesas distintas y no
+  recibe parámetros de navegación desde Mesas, así que hace un `GET /mesas`
+  y une client-side por `id_mesa`.
 - No axios, no socket.io, no new test framework — manual verification against the live Docker API, per `docs/superpowers/specs/2026-08-03-mobile-backend-wiring-design.md`.
 - Seed credentials: `cajero@coffeecode.com` / `Cajero123!`.
 - Real métodos de pago (must match backend's `MetodoPagoNombre` exactly, from `api/app/core/constants.py:28-32`): `"Efectivo"`, `"Tarjeta débito"`, `"Tarjeta crédito"`, `"Transferencia"`.
@@ -74,10 +96,14 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getPedidosListos } from '../api/pedidos_caja';
+import { getMesas } from '../api/mesas';
 import { ApiError } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 
 export default function CajaScreen({ navigation }) {
+  const { rol } = useAuth();
   const [pedidos, setPedidos] = useState([]);
+  const [numeroPorMesa, setNumeroPorMesa] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -85,7 +111,10 @@ export default function CajaScreen({ navigation }) {
     setLoading(true);
     setError('');
     try {
-      setPedidos(await getPedidosListos());
+      // PedidoOut solo trae id_mesa (PK); el número visible vive en MesaOut.
+      const [lista, mesas] = await Promise.all([getPedidosListos(), getMesas()]);
+      setPedidos(lista);
+      setNumeroPorMesa(Object.fromEntries(mesas.map((m) => [m.id, m.numero_mesa])));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo conectar con el servidor');
     } finally {
@@ -119,26 +148,55 @@ export default function CajaScreen({ navigation }) {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{ paddingBottom: 30 }}
         ListEmptyComponent={<Text style={{ textAlign: 'center', color: 'gray' }}>Sin pedidos listos para cobrar</Text>}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.mesa}>Mesa {item.id_mesa}</Text>
-            <Text>Pedido #{item.id} — {item.detalle.length} ítem(s)</Text>
+        renderItem={({ item }) => {
+          // registrar_venta pone `total` pero deja el estatus en `Listo`
+          // (api/app/services/ventas.py:63): el pedido sigue en esta cola
+          // hasta que el Mesero lo marque Entregado. Ofrecerle "Cobrar" otra
+          // vez garantiza un 409 de pago duplicado.
+          const pagado = item.total !== null;
+          return (
+            <View style={[styles.card, pagado && styles.cardPagado]}>
+              <Text style={styles.mesa}>Mesa {numeroPorMesa[item.id_mesa] ?? item.id_mesa}</Text>
+              <Text>Pedido #{item.id} — {item.detalle.length} ítem(s)</Text>
 
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => navigation.navigate('Pago', { pedidoId: item.id })}
-            >
-              <Text style={{ color: 'white' }}>Cobrar</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+              {pagado ? (
+                <Text style={styles.pagado}>
+                  Cobrado (${item.total}) — pendiente de entrega por el mesero
+                </Text>
+              ) : (
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() =>
+                    navigation.navigate('Pago', {
+                      pedidoId: item.id,
+                      numeroMesa: numeroPorMesa[item.id_mesa],
+                    })
+                  }
+                >
+                  <Text style={{ color: 'white' }}>Cobrar</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          );
+        }}
         ListFooterComponent={() => (
-          <TouchableOpacity
-            style={[styles.button, { marginTop: 15, backgroundColor: '#444' }]}
-            onPress={() => navigation.navigate('Gastos')}
-          >
-            <Text style={{ color: 'white' }}>Gastos y cuentas</Text>
-          </TouchableOpacity>
+          <View>
+            <TouchableOpacity
+              style={[styles.button, { marginTop: 15, backgroundColor: '#444' }]}
+              onPress={() => navigation.navigate('Gastos')}
+            >
+              <Text style={{ color: 'white' }}>Gastos y cuentas</Text>
+            </TouchableOpacity>
+
+            {rol === 'Administrador' && (
+              <TouchableOpacity
+                style={[styles.button, { marginTop: 10, backgroundColor: '#444' }]}
+                onPress={() => navigation.navigate('Compras')}
+              >
+                <Text style={{ color: 'white' }}>Registrar compra de insumo</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
       />
 
@@ -152,14 +210,27 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
   error: { color: '#C0392B', marginBottom: 10 },
   card: { backgroundColor: '#fff', padding: 15, marginBottom: 10, borderRadius: 10 },
+  cardPagado: { opacity: 0.6 },
+  pagado: { marginTop: 8, color: '#1F618D', fontWeight: 'bold' },
   mesa: { fontSize: 18, fontWeight: 'bold' },
   button: { marginTop: 10, backgroundColor: '#2E1B0F', padding: 10, borderRadius: 8, alignItems: 'center' }
 });
 ```
 
+El botón "Registrar compra de insumo" solo se renderiza para `Administrador`
+— ver Task 4 y la sección de brechas conocidas de la spec.
+
 - [ ] **Step 4: Manual verification**
 
 Ensure a pedido has been marked "Listo" by Cocina (Fase 2's flow, or `PUT /pedidos/{id}/estado` via Postman). Log in as `cajero@coffeecode.com`, Home → Caja. Expected: that pedido appears with correct mesa/item count; tapping "Cobrar" navigates to `Pago` with the right `pedidoId`.
+
+Then verify the paid-order distinction: after completing Task 2's payment on
+a pedido, come back to Caja. Expected: ese pedido **sigue** en la lista (su
+estatus sigue siendo `Listo`) pero atenuado, con "Cobrado ($X) — pendiente de
+entrega por el mesero" y **sin** botón "Cobrar". Confirm via
+`GET /pedidos/{id}` que `total` ya no es `null` y `estatus.nombre` sigue
+siendo `"Listo"`. Cuando el Mesero lo marque `Entregado` (Fase 0), desaparece
+de esta cola.
 
 - [ ] **Step 5: Commit**
 
@@ -204,7 +275,7 @@ const METODOS = [
 ];
 
 export default function PagoScreen({ route, navigation }) {
-  const { pedidoId } = route.params;
+  const { pedidoId, numeroMesa } = route.params;
 
   const [pedido, setPedido] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -277,7 +348,7 @@ export default function PagoScreen({ route, navigation }) {
       <Text style={styles.title}>Procesar Pago</Text>
 
       <View style={styles.card}>
-        <Text style={styles.subtitle}>Mesa {pedido.id_mesa} — Pedido #{pedido.id}</Text>
+        <Text style={styles.subtitle}>Mesa {numeroMesa ?? pedido.id_mesa} — Pedido #{pedido.id}</Text>
 
         {pedido.detalle.map((item) => (
           <Text key={item.id} style={styles.text}>
@@ -356,6 +427,13 @@ This screen now expects `route.params.pedidoId` (not a `pedido` object) — alre
 - [ ] **Step 3: Manual verification**
 
 From Task 1's verified Caja queue, tap "Cobrar" on a real pedido. Expected: real items + prices shown. Enter a `monto` below the true IVA-inclusive total, select "Efectivo": expected inline error "El monto recibido (...) es insuficiente...". Enter enough, confirm: expected success screen with real `total`/`cambio` from the API response. Confirm via `GET /pedidos/{id}` that `total` is now set (was `null` before payment).
+
+Then confirm the duplicate-payment guard end-to-end: without marking the
+pedido `Entregado`, go back to Caja. Expected: the paid pedido shows as
+"Cobrado" with no "Cobrar" button, so the 409 is unreachable from the UI. If
+you force it via Postman (`POST /ventas` again on the same `pedido_id`),
+expected `409 "El pedido ya tiene un pago registrado"` — the same assertion as
+`fuego-rol-cajero` "[ERROR] Pago duplicado".
 
 - [ ] **Step 4: Commit**
 
@@ -538,6 +616,244 @@ git commit -m "feat(mobile): GastosScreen registra gastos reales y muestra total
 
 ---
 
+### Task 4: Registrar compra de insumo — `POST /compras` (solo Administrador)
+
+> **Alcance restringido a propósito — leer antes de implementar.**
+> `POST /compras` acepta `Cajero|Administrador`
+> (`api/app/routers/caja.py:26,53`), pero el selector de ingrediente necesita
+> `GET /ingredientes`, que es `Cocinero|Administrador`
+> (`api/app/routers/ingredientes.py:20`). **Un Cajero recibe 403 al listar
+> ingredientes**, y `fuego-rol-cajero` afirma ese 403 como comportamiento
+> correcto ("[ERROR] Cajero intenta listar ingredientes"). `web-admin` nunca
+> topó con esto porque rechaza todo login que no sea Administrador
+> (`web-admin/app/blueprints/auth.py:23-25`); la propia suite
+> `fuego-flujo-compra-insumos` incluye un request llamado "Login Admin (solo
+> para leer inventario)" para sortearlo. Mobile no puede cambiar de token a
+> media pantalla.
+>
+> **Resolución de este plan:** la pantalla se entrega funcionando **solo para
+> `Administrador`** (rol ya alcanzable: `HomeScreen` de Fase 0 le muestra
+> Mesero/Cocina/Caja). El punto de entrada en `CajaScreen` está condicionado a
+> `rol === 'Administrador'` (Task 1). **No se implementa ningún cambio de
+> backend.** Si se quiere que un Cajero registre compras desde el móvil, hace
+> falta una decisión del usuario sobre un cambio de API (abrir
+> `GET /ingredientes` a Cajero, o un `GET /ingredientes/nombres` de
+> solo-lectura) — registrado como decisión abierta en la spec.
+
+**Files:**
+- Create: `mobile/api/ingredientes_caja.js`
+- Create: `mobile/screens/ComprasScreen.js`
+- Modify: `mobile/api/caja.js` (adds `registrarCompra` — additive)
+- Modify: `mobile/App.js` (adds the `Compras` route)
+
+**Interfaces:**
+- Consumes: `request` from `api/client.js`, `useAuth()` for `rol`.
+- Produces: `getIngredientes(): Promise<IngredienteOut[]>`, `registrarCompra({ingredienteId, cantidad, monto}): Promise<{gasto, ingrediente_id, nuevo_stock}>` (shape from `CompraOut`, `api/app/models/ventas.py:59-62`).
+
+- [ ] **Step 1: Create `mobile/api/ingredientes_caja.js`**
+
+```js
+import { request } from './client';
+
+// Archivo propio por la regla de aislamiento: api/ingredientes.js pertenece a
+// Fase 2 (Cocina) y puede estar en un worktree paralelo.
+// OJO: GET /ingredientes es Cocinero|Administrador. Con token de Cajero
+// devuelve 403 — por eso ComprasScreen es solo para Administrador.
+export function getIngredientes() {
+  return request('/ingredientes');
+}
+```
+
+- [ ] **Step 2: Append `registrarCompra` to `mobile/api/caja.js`**
+
+```js
+export function registrarCompra({ ingredienteId, cantidad, monto }) {
+  return request('/compras', {
+    method: 'POST',
+    body: { ingrediente_id: ingredienteId, cantidad, monto },
+  });
+}
+```
+
+`CompraCreate` (`api/app/models/ventas.py:53-56`) exige `cantidad` y `monto`
+con `Field(gt=0)`: cero o negativo devuelve **422 con `detail` como array**,
+que el `client.js` corregido en Fase 0 ya sabe aplanar. Es exactamente lo que
+afirman "[ERROR] Cantidad negativa" / "[ERROR] Monto en cero" de
+`fuego-flujo-compra-insumos`.
+
+- [ ] **Step 3: Create `mobile/screens/ComprasScreen.js`**
+
+```js
+import React, { useCallback, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { getIngredientes } from '../api/ingredientes_caja';
+import { registrarCompra } from '../api/caja';
+import { ApiError } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
+
+export default function ComprasScreen() {
+  const { rol } = useAuth();
+  const [ingredientes, setIngredientes] = useState([]);
+  const [seleccionado, setSeleccionado] = useState(null);
+  const [cantidad, setCantidad] = useState('');
+  const [monto, setMonto] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
+  const [aviso, setAviso] = useState('');
+
+  const cargar = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      setIngredientes(await getIngredientes());
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo cargar el inventario');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      cargar();
+    }, [cargar])
+  );
+
+  const comprar = async () => {
+    if (!seleccionado) {
+      setError('Selecciona un ingrediente');
+      return;
+    }
+    setGuardando(true);
+    setError('');
+    setAviso('');
+    try {
+      const resultado = await registrarCompra({
+        ingredienteId: seleccionado.id,
+        cantidad: Number(cantidad),
+        monto: Number(monto),
+      });
+      setAviso(`Compra registrada. Nuevo stock de ${seleccionado.nombre}: ${resultado.nuevo_stock} ${seleccionado.unidad}.`);
+      setCantidad('');
+      setMonto('');
+      await cargar();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo registrar la compra');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  if (rol !== 'Administrador') {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.error}>
+          Registrar compras requiere el rol Administrador: el listado de
+          ingredientes no está disponible para Cajero.
+        </Text>
+      </View>
+    );
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#2E1B0F" />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+
+      <Text style={styles.title}>Registrar compra de insumo</Text>
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {aviso ? <Text style={styles.aviso}>{aviso}</Text> : null}
+
+      <TextInput placeholder="Cantidad a ingresar" value={cantidad} onChangeText={setCantidad} keyboardType="numeric" style={styles.input} />
+      <TextInput placeholder="Monto total de la compra" value={monto} onChangeText={setMonto} keyboardType="numeric" style={styles.input} />
+
+      <TouchableOpacity style={styles.btn} onPress={comprar} disabled={guardando}>
+        <Text style={styles.btnText}>
+          {guardando ? 'Registrando...' : seleccionado ? `Comprar ${seleccionado.nombre}` : 'Selecciona un ingrediente'}
+        </Text>
+      </TouchableOpacity>
+
+      <FlatList
+        data={ingredientes}
+        keyExtractor={(i) => i.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[styles.card, seleccionado && seleccionado.id === item.id && styles.cardSel]}
+            onPress={() => setSeleccionado(item)}
+          >
+            <Text style={styles.name}>{item.nombre}</Text>
+            <Text>Stock: {item.stock_actual} {item.unidad}</Text>
+          </TouchableOpacity>
+        )}
+      />
+
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 15, backgroundColor: '#F5F5F5' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
+  error: { color: '#C0392B', marginBottom: 10, textAlign: 'center' },
+  aviso: { color: '#1F618D', marginBottom: 10 },
+  input: { backgroundColor: 'white', padding: 10, marginBottom: 8, borderRadius: 8 },
+  btn: { backgroundColor: '#2E1B0F', padding: 12, borderRadius: 8, marginBottom: 10 },
+  btnText: { color: 'white', textAlign: 'center' },
+  card: { backgroundColor: 'white', padding: 10, marginBottom: 8, borderRadius: 8, borderWidth: 2, borderColor: 'transparent' },
+  cardSel: { borderColor: '#2E1B0F' },
+  name: { fontSize: 16, fontWeight: 'bold' },
+});
+```
+
+- [ ] **Step 4: Register the route in `mobile/App.js`**
+
+Add `import ComprasScreen from './screens/ComprasScreen';` near the other
+screen imports, and:
+
+```jsx
+        <Stack.Screen
+          name="Compras"
+          component={ComprasScreen}
+        />
+```
+
+- [ ] **Step 5: Manual verification**
+
+1. Log in as `cajero@coffeecode.com`, Home → Caja. Expected: **no** aparece el
+   botón "Registrar compra de insumo" (rol distinto de Administrador).
+2. Log in as the seed Administrador, Home → Caja → "Registrar compra de
+   insumo". Expected: lista real de ingredientes.
+3. Selecciona uno, cantidad `-5`: expected inline error legible del 422 (no
+   `[object Object]` — esto valida la corrección de `client.js` de Fase 0).
+4. Monto `0`: expected otro 422 legible.
+5. Cantidad y monto positivos: expected "Compra registrada. Nuevo stock de
+   X: N." Confirm via `GET /ingredientes/{id}` que el stock subió exactamente
+   `cantidad`, y via `GET /caja/resumen` que `total_gastos` subió exactamente
+   `monto` (`POST /compras` hace ambas cosas en una transacción,
+   `api/app/services/gastos.py::registrar_compra`).
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add mobile/api/ingredientes_caja.js mobile/api/caja.js mobile/screens/ComprasScreen.js mobile/App.js
+git commit -m "feat(mobile): registrar compra de insumo (solo Administrador)"
+```
+
+---
+
 ## Fase 3 complete when
 
-All 3 tasks committed, each task's manual verification step passes against the live Docker API, including the full Listo → Cobrar → Pago-exitoso chain in Task 2.
+All 4 tasks committed, each task's manual verification step passes against the
+live Docker API, including the full Listo → Cobrar → Pago-exitoso chain in
+Task 2, the paid-order distinction in Task 1 Step 4, and the Administrador-only
+compras flow in Task 4.
