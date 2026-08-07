@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMesas } from '../api/mesas';
+import { getPedidoActivoDeMesa } from '../api/pedidos';
 import { ApiError } from '../api/client';
 
 const COLOR_POR_ESTATUS = {
@@ -13,6 +14,7 @@ const COLOR_POR_ESTATUS = {
 export default function MesasScreen({ navigation }) {
   const [mesas, setMesas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [abriendo, setAbriendo] = useState(null);
   const [error, setError] = useState('');
 
   const cargarMesas = useCallback(async () => {
@@ -33,6 +35,31 @@ export default function MesasScreen({ navigation }) {
       cargarMesas();
     }, [cargarMesas])
   );
+
+  const abrirMesa = async (mesa) => {
+    setError('');
+    const nuevoPedido = () =>
+      navigation.navigate('Pedido', { mesaId: mesa.id, numeroMesa: mesa.numero_mesa });
+
+    if (mesa.estatus.nombre !== 'Ocupada') {
+      nuevoPedido();
+      return;
+    }
+
+    setAbriendo(mesa.id);
+    try {
+      const activo = await getPedidoActivoDeMesa(mesa.id);
+      if (activo) {
+        navigation.navigate('Detalle', { pedidoId: activo.id, numeroMesa: mesa.numero_mesa });
+      } else {
+        nuevoPedido();
+      }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo abrir la mesa');
+    } finally {
+      setAbriendo(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -55,13 +82,15 @@ export default function MesasScreen({ navigation }) {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[styles.card, { borderColor: COLOR_POR_ESTATUS[item.estatus.nombre] || '#999' }]}
-            onPress={() => navigation.navigate('Pedido', { mesaId: item.id })}
+            onPress={() => abrirMesa(item)}
+            disabled={abriendo !== null}
           >
             <Text style={styles.mesaNumero}>Mesa {item.numero_mesa}</Text>
             <Text style={{ color: COLOR_POR_ESTATUS[item.estatus.nombre] || '#999', fontWeight: 'bold' }}>
               {item.estatus.nombre}
             </Text>
             <Text style={styles.capacidad}>Capacidad: {item.capacidad}</Text>
+            {abriendo === item.id ? <Text style={styles.capacidad}>Abriendo…</Text> : null}
           </TouchableOpacity>
         )}
       />
