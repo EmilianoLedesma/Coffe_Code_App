@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
-  TouchableOpacity,
   Image,
   KeyboardAvoidingView,
   ScrollView,
@@ -12,6 +10,10 @@ import {
 } from 'react-native';
 import { useAuth } from '../auth/AuthContext';
 import { ApiError } from '../api/client';
+import { colors, typography, spacing } from '../theme';
+import { Card } from '../components/Card';
+import { Input } from '../components/Input';
+import { Button } from '../components/Button';
 
 export default function LoginScreen({ navigation }) {
 
@@ -65,31 +67,38 @@ export default function LoginScreen({ navigation }) {
         <Text style={styles.title}>Coffee Code</Text>
         <Text style={styles.subtitle}>Sistema de cafetería</Text>
 
-        <View style={styles.card}>
+        <Card size="hero" style={styles.card}>
 
-          <TextInput
+          <Input
             placeholder="correo electrónico"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
-            style={styles.input}
           />
 
-          <TextInput
+          <Input
             placeholder="contraseña"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            style={styles.input}
           />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-            <Text style={styles.buttonText}>{loading ? 'Ingresando...' : 'Iniciar sesión'}</Text>
-          </TouchableOpacity>
+          <Button
+            variant="primary"
+            label={loading ? 'Ingresando...' : 'Iniciar sesión'}
+            onPress={handleLogin}
+            disabled={loading}
+          />
 
-        </View>
+          <Button
+            variant="text"
+            label="¿Olvidaste tu contraseña?"
+            onPress={() => navigation.navigate('RecuperarPassword')}
+          />
+
+        </Card>
 
       </ScrollView>
 
@@ -101,69 +110,37 @@ const styles = StyleSheet.create({
 
   container: {
     flexGrow: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: spacing.xl,
   },
 
   logo: {
     width: 270,
     height: 270,
-    marginBottom: 10,
+    marginBottom: spacing.sm,
   },
 
   title: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: '#2E1B0F',
+    fontSize: typography.size.hero,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
   },
 
   subtitle: {
-    fontSize: 16,
-    color: 'gray',
-    marginBottom: 20,
+    fontSize: typography.size.xl,
+    color: colors.textSecondary,
+    marginBottom: spacing.xxl,
   },
 
   card: {
     width: '100%',
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 15,
-    elevation: 6,
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    backgroundColor: '#FAFAFA',
-    padding: 12,
-    marginBottom: 10,
-    borderRadius: 10,
-  },
-
-  label: {
-    marginTop: 10,
-    fontWeight: 'bold',
-    color: '#2E1B0F',
   },
 
   error: {
-    color: '#C0392B',
-    marginBottom: 10,
+    color: colors.danger,
+    marginBottom: spacing.md,
     textAlign: 'center',
-  },
-
-  button: {
-    backgroundColor: '#2E1B0F',
-    padding: 14,
-    borderRadius: 10,
-    marginTop: 10,
-  },
-
-  buttonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
   },
 });

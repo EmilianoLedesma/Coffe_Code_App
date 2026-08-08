@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { useAuth } from '../auth/AuthContext';
+import { colors, typography, spacing } from '../theme';
 
 export default function SplashScreen({ navigation }) {
   const { token, loading } = useAuth();
@@ -24,8 +25,8 @@ export default function SplashScreen({ navigation }) {
 
         <ActivityIndicator
             size="large"
-            color="#ffffff"
-            style={{ marginTop: 20 }}
+            color={colors.primary}
+            style={{ marginTop: spacing.xl }}
         />
 
         <Text style={styles.loadingText}>Cargando...</Text>
@@ -38,19 +39,19 @@ export default function SplashScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center'
   },
   logo: {
     width: 350,
     height: 350,
-    marginBottom: 15
+    marginBottom: spacing.lg
   },
 
   loadingText: {
-    marginTop: 10,
-    color: '#2E1B0F',
-    fontSize: 20
+    marginTop: spacing.md,
+    color: colors.textPrimary,
+    fontSize: typography.size.xxl
   }
 });
