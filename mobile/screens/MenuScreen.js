@@ -1,9 +1,16 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { getProductos, createProducto, deleteProducto } from '../api/productos';
 import { getCategorias } from '../api/categorias';
 import { ApiError } from '../api/client';
+import { Input } from '../components/Input';
+import { Button } from '../components/Button';
+import { Chip } from '../components/Chip';
+import { ListItem } from '../components/ListItem';
+import { EmptyState } from '../components/EmptyState';
+import { colors, typography, spacing } from '../theme';
 
 export default function MenuScreen() {
   const [productos, setProductos] = useState([]);
@@ -11,6 +18,7 @@ export default function MenuScreen() {
   const [categoriaId, setCategoriaId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [aviso, setAviso] = useState('');
 
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');
@@ -23,13 +31,14 @@ export default function MenuScreen() {
       const [prods, cats] = await Promise.all([getProductos(), getCategorias()]);
       setProductos(prods);
       setCategorias(cats);
-      if (cats.length > 0 && categoriaId === null) setCategoriaId(cats[0].id);
+      // updater funcional: no necesitamos categoriaId como dependencia
+      setCategoriaId((actual) => (actual === null && cats.length > 0 ? cats[0].id : actual));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo conectar con el servidor');
     } finally {
       setLoading(false);
     }
-  }, [categoriaId]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -62,8 +71,14 @@ export default function MenuScreen() {
 
   const eliminar = async (id) => {
     setError('');
+    setAviso('');
     try {
-      await deleteProducto(id);
+      // DELETE /productos/{id} responde 200 {eliminado, mensaje}: si el
+      // producto tiene historial de pedidos NO se borra, se desactiva
+      // (api/app/routers/productos.py). Sin mostrar `mensaje` el usuario cree
+      // que borró algo que sigue ahí.
+      const resultado = await deleteProducto(id);
+      setAviso(resultado.mensaje);
       await cargar();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo eliminar el producto');
@@ -73,7 +88,7 @@ export default function MenuScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2E1B0F" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -84,38 +99,40 @@ export default function MenuScreen() {
       <Text style={styles.title}>Gestión de Menú</Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      {aviso ? <Text style={styles.aviso}>{aviso}</Text> : null}
 
-      <TextInput placeholder="Nombre" value={nombre} onChangeText={setNombre} style={styles.input} />
-      <TextInput placeholder="Precio" value={precio} onChangeText={setPrecio} keyboardType="numeric" style={styles.input} />
-      <TextInput placeholder="Descripción" value={descripcion} onChangeText={setDescripcion} style={styles.input} />
+      <Input placeholder="Nombre" value={nombre} onChangeText={setNombre} />
+      <Input placeholder="Precio" value={precio} onChangeText={setPrecio} keyboardType="numeric" />
+      <Input placeholder="Descripción" value={descripcion} onChangeText={setDescripcion} />
 
       <View style={styles.categorias}>
         {categorias.map((cat) => (
-          <TouchableOpacity key={cat.id} onPress={() => setCategoriaId(cat.id)}>
-            <Text style={categoriaId === cat.id ? styles.categoriaSelected : styles.categoria}>
-              {cat.nombre}
-            </Text>
-          </TouchableOpacity>
+          <Chip
+            key={cat.id}
+            label={cat.nombre}
+            selected={categoriaId === cat.id}
+            onPress={() => setCategoriaId(cat.id)}
+          />
         ))}
       </View>
 
-      <TouchableOpacity style={styles.btn} onPress={agregarProducto}>
-        <Text style={styles.btnText}>Agregar producto</Text>
-      </TouchableOpacity>
+      <Button variant="secondary" label="Agregar producto" onPress={agregarProducto} />
 
       <FlatList
         data={productos}
         keyExtractor={(item) => item.id.toString()}
+        style={styles.list}
+        ListEmptyComponent={<EmptyState icon="restaurant-outline" message="Sin productos registrados." />}
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.name}>{item.nombre}</Text>
-            <Text>${item.precio_venta}</Text>
-            <Text>{item.categoria.nombre}</Text>
-
-            <TouchableOpacity onPress={() => eliminar(item.id)}>
-              <Text style={{ color: 'red', marginTop: 5 }}>Eliminar</Text>
-            </TouchableOpacity>
-          </View>
+          <ListItem
+            title={item.nombre}
+            subtitle={`$${item.precio_venta} · ${item.categoria.nombre}`}
+            trailing={
+              <TouchableOpacity style={styles.iconBtn} onPress={() => eliminar(item.id)}>
+                <Ionicons name="trash-outline" size={22} color={colors.danger} />
+              </TouchableOpacity>
+            }
+          />
         )}
       />
 
@@ -124,16 +141,17 @@ export default function MenuScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: '#F5F5F5' },
+  container: { flex: 1, padding: spacing.lg, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
-  error: { color: '#C0392B', marginBottom: 10 },
-  input: { backgroundColor: 'white', padding: 10, marginBottom: 10, borderRadius: 8 },
-  categorias: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10 },
-  categoria: { padding: 8, marginRight: 8, marginBottom: 8, borderRadius: 8, borderWidth: 1, borderColor: '#ddd', color: 'gray' },
-  categoriaSelected: { padding: 8, marginRight: 8, marginBottom: 8, borderRadius: 8, backgroundColor: '#2E1B0F', color: 'white' },
-  btn: { backgroundColor: '#2E1B0F', padding: 12, borderRadius: 8, marginBottom: 10 },
-  btnText: { color: 'white', textAlign: 'center' },
-  card: { backgroundColor: 'white', padding: 10, marginBottom: 10, borderRadius: 8 },
-  name: { fontSize: 16, fontWeight: 'bold' }
+  title: {
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.lg,
+  },
+  error: { color: colors.danger, marginBottom: spacing.md },
+  aviso: { color: colors.info, marginBottom: spacing.md },
+  categorias: { flexDirection: 'row', flexWrap: 'wrap' },
+  list: { marginTop: spacing.md },
+  iconBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });

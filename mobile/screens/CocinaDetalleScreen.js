@@ -1,8 +1,12 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getPedido, cambiarEstadoPedido } from '../api/pedidos_cocina';
 import { ApiError } from '../api/client';
+import { Card } from '../components/Card';
+import { Button } from '../components/Button';
+import { ListItem } from '../components/ListItem';
+import { colors, typography, spacing } from '../theme';
 
 const SIGUIENTE_ESTATUS = {
   Pendiente: 'En preparación',
@@ -10,7 +14,7 @@ const SIGUIENTE_ESTATUS = {
 };
 
 export default function CocinaDetalleScreen({ route, navigation }) {
-  const { pedidoId } = route.params;
+  const { pedidoId, numeroMesa } = route.params;
   const [pedido, setPedido] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cambiando, setCambiando] = useState(false);
@@ -43,10 +47,18 @@ export default function CocinaDetalleScreen({ route, navigation }) {
     try {
       const actualizado = await cambiarEstadoPedido(pedidoId, siguiente);
       setPedido(actualizado);
-      if (actualizado.alertas_stock_bajo && actualizado.alertas_stock_bajo.length > 0) {
-        setError(`Alerta de stock bajo: ${actualizado.alertas_stock_bajo.join(', ')}`);
-      }
-      if (siguiente === 'Listo') {
+
+      if (siguiente !== 'Listo') return;
+
+      const alertas = actualizado.alertas_stock_bajo || [];
+
+      if (alertas.length > 0) {
+        Alert.alert(
+          'Stock bajo',
+          `Estos ingredientes quedaron bajo el mínimo: ${alertas.join(', ')}`,
+          [{ text: 'Entendido', onPress: () => navigation.goBack() }]
+        );
+      } else {
         navigation.goBack();
       }
     } catch (err) {
@@ -56,10 +68,19 @@ export default function CocinaDetalleScreen({ route, navigation }) {
     }
   };
 
-  if (loading || !pedido) {
+  if (loading && !pedido) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2E1B0F" />
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (error && !pedido) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.error}>{error}</Text>
+        <Button variant="primary" label="Reintentar" onPress={cargar} />
       </View>
     );
   }
@@ -67,28 +88,32 @@ export default function CocinaDetalleScreen({ route, navigation }) {
   const siguiente = SIGUIENTE_ESTATUS[pedido.estatus.nombre];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.xl }}>
 
-      <Text style={styles.title}>Pedido #{pedido.id} — Mesa {pedido.id_mesa}</Text>
-      <Text style={styles.estado}>Estado: {pedido.estatus.nombre}</Text>
+      <Card style={styles.header}>
+        <Text style={styles.title}>Pedido #{pedido.id} — Mesa {numeroMesa ?? pedido.id_mesa}</Text>
+        <Text style={styles.estado}>Estado: {pedido.estatus.nombre}</Text>
+      </Card>
 
       {pedido.detalle.map((item) => (
-        <View key={item.id} style={styles.card}>
-          <Text style={styles.producto}>{item.producto.nombre} x{item.cantidad}</Text>
-          {item.especificaciones ? <Text style={{ color: 'gray' }}>{item.especificaciones}</Text> : null}
-        </View>
+        <ListItem
+          key={item.id}
+          title={`${item.producto.nombre} x${item.cantidad}`}
+          subtitle={item.especificaciones || undefined}
+        />
       ))}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {siguiente ? (
-        <TouchableOpacity style={styles.button} onPress={avanzarEstado} disabled={cambiando}>
-          <Text style={styles.buttonText}>
-            {cambiando ? 'Actualizando...' : `Marcar como ${siguiente}`}
-          </Text>
-        </TouchableOpacity>
+        <Button
+          variant="primary"
+          label={cambiando ? 'Actualizando...' : `Marcar como ${siguiente}`}
+          onPress={avanzarEstado}
+          disabled={cambiando}
+        />
       ) : (
-        <Text style={{ color: 'gray', textAlign: 'center' }}>No hay más transiciones desde cocina</Text>
+        <Text style={styles.sinTransiciones}>No hay más transiciones desde cocina</Text>
       )}
 
     </ScrollView>
@@ -96,13 +121,20 @@ export default function CocinaDetalleScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
-  estado: { fontSize: 16, fontWeight: 'bold', color: '#E67E22', marginBottom: 15 },
-  error: { color: '#C0392B', marginBottom: 15, textAlign: 'center' },
-  card: { backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, elevation: 3 },
-  producto: { fontSize: 16, fontWeight: 'bold' },
-  button: { backgroundColor: '#2E1B0F', padding: 14, borderRadius: 10, alignItems: 'center', marginTop: 10 },
-  buttonText: { color: 'white', fontWeight: 'bold' },
+  header: { marginBottom: spacing.lg },
+  title: {
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  estado: {
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.bold,
+    color: colors.secondary,
+  },
+  error: { color: colors.danger, marginBottom: spacing.lg, textAlign: 'center' },
+  sinTransiciones: { color: colors.textSecondary, textAlign: 'center' },
 });

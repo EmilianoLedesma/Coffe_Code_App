@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { getProductos } from '../api/productos';
 import { crearPedido } from '../api/pedidos';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { Card } from '../components/Card';
+import { ListItem } from '../components/ListItem';
+import { Button } from '../components/Button';
+import { colors, typography, spacing } from '../theme';
 
 export default function PedidoScreen({ route, navigation }) {
-  const { mesaId } = route.params;
+  const { mesaId, numeroMesa } = route.params;
   const { userId } = useAuth();
 
   const [menu, setMenu] = useState([]);
@@ -19,7 +23,10 @@ export default function PedidoScreen({ route, navigation }) {
     (async () => {
       try {
         const productos = await getProductos();
-        setMenu(productos);
+        // GET /productos solo filtra por `activo`; los `disponible:false`
+        // llegan igual y provocarían un 409 tardío al Guardar
+        // (api/app/services/pedidos.py:64-71). Se filtran aquí.
+        setMenu(productos.filter((p) => p.disponible !== false));
       } catch (err) {
         setError(err instanceof ApiError ? err.message : 'No se pudo cargar el menú');
       } finally {
@@ -50,7 +57,7 @@ export default function PedidoScreen({ route, navigation }) {
     setError('');
     try {
       const creado = await crearPedido({ mesaId, usuarioId: userId, items: pedido });
-      navigation.navigate('Detalle', { pedidoId: creado.id });
+      navigation.navigate('Detalle', { pedidoId: creado.id, numeroMesa });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo guardar el pedido');
     } finally {
@@ -61,7 +68,7 @@ export default function PedidoScreen({ route, navigation }) {
   if (loadingMenu) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2E1B0F" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -69,16 +76,18 @@ export default function PedidoScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
 
-      <Text style={styles.title}>Mesa {mesaId}</Text>
+      <Text style={styles.title}>Mesa {numeroMesa ?? mesaId}</Text>
 
       <Text style={styles.subtitle}>Pedido actual</Text>
-      {pedido.length === 0 ? (
-        <Text style={{ color: 'gray' }}>Sin productos aún</Text>
-      ) : (
-        pedido.map((item) => (
-          <Text key={item.id_producto}>{item.nombre} x{item.cantidad}</Text>
-        ))
-      )}
+      <Card style={styles.carritoCard}>
+        {pedido.length === 0 ? (
+          <Text style={styles.vacio}>Sin productos aún</Text>
+        ) : (
+          pedido.map((item) => (
+            <Text key={item.id_producto} style={styles.carritoItem}>{item.nombre} x{item.cantidad}</Text>
+          ))
+        )}
+      </Card>
 
       <Text style={styles.subtitle}>Menú</Text>
 
@@ -86,44 +95,47 @@ export default function PedidoScreen({ route, navigation }) {
         data={menu}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.item} onPress={() => agregarProducto(item)}>
-            <Text>{item.nombre} — ${item.precio_venta}</Text>
-            <Text style={{ fontWeight: 'bold' }}>+</Text>
-          </TouchableOpacity>
+          <ListItem
+            title={item.nombre}
+            subtitle={`$${item.precio_venta}`}
+            trailing={<Text style={styles.agregar}>+</Text>}
+            onPress={() => agregarProducto(item)}
+          />
         )}
       />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <TouchableOpacity style={styles.button} onPress={guardarPedido} disabled={guardando}>
-        <Text style={{ color: 'white', fontWeight: 'bold' }}>
-          {guardando ? 'Guardando...' : '✔ Guardar / Finalizar pedido'}
-        </Text>
-      </TouchableOpacity>
+      <Button
+        variant="primary"
+        label={guardando ? 'Guardando...' : '✔ Guardar / Finalizar pedido'}
+        onPress={guardarPedido}
+        disabled={guardando}
+      />
 
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.xl },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center' },
-  subtitle: { marginTop: 15, fontSize: 16, fontWeight: 'bold' },
-  error: { color: '#C0392B', marginTop: 10, textAlign: 'center' },
-  item: {
-    padding: 15,
-    backgroundColor: '#eee',
-    marginVertical: 5,
-    borderRadius: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between'
+  title: {
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    textAlign: 'center',
   },
-  button: {
-    backgroundColor: '#2E1B0F',
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 20,
-    alignItems: 'center'
-  }
+  subtitle: {
+    marginTop: spacing.lg,
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  carritoCard: { marginBottom: spacing.sm },
+  vacio: { color: colors.textSecondary },
+  carritoItem: { color: colors.textPrimary, fontSize: typography.size.md },
+  agregar: { fontWeight: typography.weight.bold, color: colors.primary, fontSize: typography.size.xl },
+  error: { color: colors.danger, marginTop: spacing.md, textAlign: 'center' },
 });

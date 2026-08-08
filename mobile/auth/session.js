@@ -14,27 +14,13 @@ export async function clearToken() {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
 }
 
-const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-
-function base64UrlDecode(input) {
-  const base64 = input.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
-  let output = '';
-  let buffer = 0;
-  let bits = 0;
-  for (const char of padded) {
-    if (char === '=') break;
-    buffer = (buffer << 6) | BASE64_CHARS.indexOf(char);
-    bits += 6;
-    if (bits >= 8) {
-      bits -= 8;
-      output += String.fromCharCode((buffer >> bits) & 0xff);
-    }
-  }
-  return output;
-}
-
 export function decodeToken(token) {
-  const payload = token.split('.')[1];
-  return JSON.parse(base64UrlDecode(payload));
+  try {
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    // atob de Hermes exige padding múltiplo de 4; base64url lo omite.
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    return JSON.parse(atob(padded));
+  } catch {
+    return {};
+  }
 }

@@ -17,7 +17,7 @@ from app.security.auth import require_rol
 
 router = APIRouter(prefix="/ingredientes", tags=["ingredientes"])
 
-_lectura = require_rol(RolNombre.COCINERO, RolNombre.ADMINISTRADOR)
+_lectura = require_rol(RolNombre.COCINERO, RolNombre.CAJERO, RolNombre.ADMINISTRADOR)
 _escritura = require_rol(RolNombre.COCINERO, RolNombre.ADMINISTRADOR)
 
 

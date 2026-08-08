@@ -1,15 +1,18 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useAuth } from '../auth/AuthContext';
+import { colors, typography, spacing } from '../theme';
+import { ListItem } from '../components/ListItem';
+import { Button } from '../components/Button';
 
 const BOTONES_POR_ROL = {
-  Mesero: [{ label: 'Mesero', target: 'Mesas' }],
-  Cocinero: [{ label: 'Cocina', target: 'Cocina' }],
-  Cajero: [{ label: 'Caja', target: 'Caja' }],
+  Mesero: [{ label: 'Mesero', target: 'Mesas', icon: 'restaurant-outline' }],
+  Cocinero: [{ label: 'Cocina', target: 'Cocina', icon: 'flame-outline' }],
+  Cajero: [{ label: 'Caja', target: 'Caja', icon: 'cash-outline' }],
   Administrador: [
-    { label: 'Mesero', target: 'Mesas' },
-    { label: 'Cocina', target: 'Cocina' },
-    { label: 'Caja', target: 'Caja' },
+    { label: 'Mesero', target: 'Mesas', icon: 'restaurant-outline' },
+    { label: 'Cocina', target: 'Cocina', icon: 'flame-outline' },
+    { label: 'Caja', target: 'Caja', icon: 'cash-outline' },
   ],
 };
 
@@ -29,18 +32,17 @@ export default function HomeScreen({ navigation }) {
       <Text style={styles.subtitle}>Panel principal ({rol})</Text>
 
       {botones.map((boton) => (
-        <TouchableOpacity
+        <ListItem
           key={boton.target}
-          style={styles.button}
+          icon={boton.icon}
+          title={boton.label}
           onPress={() => navigation.navigate(boton.target)}
-        >
-          <Text style={styles.text}>{boton.label}</Text>
-        </TouchableOpacity>
+        />
       ))}
 
-      <TouchableOpacity style={styles.logout} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Cerrar sesión</Text>
-      </TouchableOpacity>
+      <View style={styles.logout}>
+        <Button variant="secondary" label="Cerrar sesión" onPress={handleLogout} />
+      </View>
 
     </View>
   );
@@ -49,38 +51,23 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.background,
     justifyContent: 'center',
-    padding: 20
+    padding: spacing.xl
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: typography.size.hero,
+    fontWeight: typography.weight.bold,
     textAlign: 'center',
-    marginBottom: 5
+    color: colors.textPrimary,
+    marginBottom: spacing.xs
   },
   subtitle: {
     textAlign: 'center',
-    marginBottom: 30,
-    color: 'gray'
-  },
-  button: {
-    backgroundColor: '#2E1B0F',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15
-  },
-  text: {
-    color: 'white',
-    fontSize: 18,
-    textAlign: 'center'
+    marginBottom: spacing.xxxl,
+    color: colors.textSecondary
   },
   logout: {
-    marginTop: 20,
-    padding: 10,
-  },
-  logoutText: {
-    color: '#C0392B',
-    textAlign: 'center',
+    marginTop: spacing.xl,
   },
 });

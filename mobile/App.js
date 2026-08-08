@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { colors, typography } from './theme';
 
 import SplashScreen from './screens/SplashScreen';
 import LoginScreen from './screens/LoginScreen';
@@ -18,14 +19,28 @@ import RecuperarPassword from './screens/RecuperarPassword';
 import CocinaScreen from './screens/CocinaScreen';
 import CocinaDetalleScreen from './screens/CocinaDetalleScreen';
 import { AuthProvider } from './auth/AuthContext';
+import { navigationRef } from './navigationRef';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <Stack.Navigator initialRouteName="Splash">
+      <NavigationContainer ref={navigationRef}>
+        <Stack.Navigator
+          initialRouteName="Splash"
+          screenOptions={{
+            headerStyle: { backgroundColor: colors.surface },
+            headerTitleStyle: {
+              color: colors.textPrimary,
+              fontWeight: typography.weight.bold,
+              fontSize: typography.size.xl,
+            },
+            headerTintColor: colors.primary,
+            headerShadowVisible: false,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        >
 
         <Stack.Screen
           name="Splash"

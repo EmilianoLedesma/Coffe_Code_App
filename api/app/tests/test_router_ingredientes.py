@@ -129,3 +129,24 @@ def test_actualizar_ingrediente_renombrar_a_nombre_existente_409(client, db_sess
         headers={"Authorization": f"Bearer {token}"},
     )
     assert respuesta.status_code == 409
+
+
+def test_cajero_puede_listar_ingredientes(client, db_session, catalogos):
+    db_session.add(
+        Ingrediente(nombre="Café", unidad="g", stock_actual=1000, stock_minimo=200, costo_unitario="0.05", activo=True)
+    )
+    db_session.flush()
+
+    token = _token(catalogos, RolNombre.CAJERO)
+    respuesta = client.get("/ingredientes", headers={"Authorization": f"Bearer {token}"})
+    assert respuesta.status_code == 200
+
+
+def test_cajero_no_puede_crear_ingrediente(client, catalogos):
+    token = _token(catalogos, RolNombre.CAJERO)
+    respuesta = client.post(
+        "/ingredientes",
+        json={"nombre": "Test Cajero Bloqueado", "unidad": "g", "stock_minimo": 1, "costo_unitario": 1},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 403

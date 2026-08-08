@@ -1,7 +1,10 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getColaPendientes } from '../api/pedidos_cocina';
+import { Card } from '../components/Card';
+import { ListItem } from '../components/ListItem';
+import { colors, typography, spacing } from '../theme';
 
 export default function CocinaScreen({ navigation }) {
   const [pendientes, setPendientes] = useState(0);
@@ -17,68 +20,57 @@ export default function CocinaScreen({ navigation }) {
   return (
     <View style={styles.container}>
 
-      <Text style={styles.title}> Cocina</Text>
+      <Text style={styles.title}>Cocina</Text>
       <Text style={styles.subtitle}>Gestión operativa de pedidos</Text>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Estado del sistema</Text>
-        <Text>Cocina activa</Text>
-        <Text>Pedidos en espera: {pendientes}</Text>
-      </View>
+      <Card size="hero" style={styles.heroCard}>
+        <Text style={styles.heroNumber}>{pendientes}</Text>
+        <Text style={styles.heroLabel}>Pedidos en espera</Text>
+      </Card>
 
-      <TouchableOpacity
-        style={styles.button}
+      <ListItem
+        icon="list-outline"
+        title="Cola de pedidos"
+        subtitle="Ver y avanzar pedidos pendientes"
         onPress={() => navigation.navigate('ColaPedidos')}
-      >
-        <Text style={styles.buttonText}>Cola de pedidos</Text>
-      </TouchableOpacity>
+      />
 
-      <TouchableOpacity
-        style={styles.button}
+      <ListItem
+        icon="restaurant-outline"
+        title="Gestión de menú"
+        subtitle="Productos y categorías"
         onPress={() => navigation.navigate('Menu')}
-      >
-        <Text style={styles.buttonText}> Gestión de menú</Text>
-      </TouchableOpacity>
+      />
 
-      <TouchableOpacity
-        style={styles.button}
+      <ListItem
+        icon="cube-outline"
+        title="Inventario"
+        subtitle="Ingredientes y stock"
         onPress={() => navigation.navigate('Inventario')}
-      >
-        <Text style={styles.buttonText}> Inventario</Text>
-      </TouchableOpacity>
+      />
 
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#F5F5F5' },
-  title: { fontSize: 26, fontWeight: 'bold', marginBottom: 5 },
-  subtitle: { color: 'gray', marginBottom: 20 },
-
-  card: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 20,
-    elevation: 3
+  container: { flex: 1, padding: spacing.lg, backgroundColor: colors.background },
+  title: {
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
   },
-
-  cardTitle: {
-    fontWeight: 'bold',
-    marginBottom: 5
+  subtitle: { color: colors.textSecondary, marginBottom: spacing.lg },
+  heroCard: { alignItems: 'center', marginBottom: spacing.xl },
+  heroNumber: {
+    fontSize: typography.size.hero,
+    fontWeight: typography.weight.extrabold,
+    color: colors.primary,
   },
-
-  button: {
-    backgroundColor: '#2E1B0F',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 12
+  heroLabel: {
+    fontSize: typography.size.md,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
-
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    textAlign: 'center'
-  }
 });

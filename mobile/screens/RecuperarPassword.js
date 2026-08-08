@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
+import { colors, typography, spacing } from '../theme';
+import { Card } from '../components/Card';
+import { Input } from '../components/Input';
+import { Button } from '../components/Button';
 
 export default function RecuperarPassword({ navigation }) {
 
@@ -28,20 +32,19 @@ export default function RecuperarPassword({ navigation }) {
         Ingresa tu correo para enviarte un enlace de recuperación
       </Text>
 
-      <TextInput
-        placeholder="Correo electrónico"
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-      />
+      <Card size="hero">
 
-      <TouchableOpacity style={styles.button} onPress={enviar}>
-        <Text style={{ color: 'white' }}>Enviar enlace</Text>
-      </TouchableOpacity>
+        <Input
+          placeholder="Correo electrónico"
+          value={email}
+          onChangeText={setEmail}
+        />
 
-      <TouchableOpacity onPress={() => navigation.goBack()}>
-        <Text style={styles.back}>← Volver al login</Text>
-      </TouchableOpacity>
+        <Button variant="primary" label="Enviar enlace" onPress={enviar} />
+
+        <Button variant="text" label="← Volver al login" onPress={() => navigation.goBack()} />
+
+      </Card>
 
     </View>
   );
@@ -51,35 +54,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 20,
-    backgroundColor: '#F5F5F5'
+    padding: spacing.xl,
+    backgroundColor: colors.background
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm
   },
   subtitle: {
-    marginBottom: 20,
-    color: '#555'
+    marginBottom: spacing.xxl,
+    color: colors.textSecondary
   },
-  input: {
-    borderWidth: 1,
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 15,
-    backgroundColor: 'white'
-  },
-  button: {
-    backgroundColor: '#2E1B0F',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center'
-  },
-  back: {
-    marginTop: 15,
-    textAlign: 'center',
-    color: '#2E1B0F',
-    fontWeight: 'bold'
-  }
 });
