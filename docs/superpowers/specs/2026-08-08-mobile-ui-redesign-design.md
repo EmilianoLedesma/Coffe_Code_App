@@ -6,7 +6,7 @@
 
 ## Goal
 
-Coffee Code's mobile app (React Native/Expo, 14 screens across Mesero/Cocina/Caja roles) currently has zero design system: every screen defines its own inline `StyleSheet`, colors are ad-hoc (at least 4 near-identical greys, string literals like `'red'` mixed with hex equivalents), no shared components, no icon library, plain system font. The user wants a modern visual redesign before doing real device testing, using a reference project (`SWAY POO/MockupsSwayMobile`) as the structural/geometric inspiration — NOT its literal color palette.
+Coffee Code's mobile app (React Native/Expo, 15 screens across Mesero/Cocina/Caja roles) currently has zero design system: every screen defines its own inline `StyleSheet`, colors are ad-hoc (at least 4 near-identical greys, string literals like `'red'` mixed with hex equivalents), no shared components, no icon library, plain system font. The user wants a modern visual redesign before doing real device testing, using a reference project (`SWAY POO/MockupsSwayMobile`) as the structural/geometric inspiration — NOT its literal color palette.
 
 ## Reference analysis (Sway)
 
@@ -15,7 +15,7 @@ Sway is an Apple-HIG-inspired design language: iOS-blue primary on a near-black/
 ## Decisions locked in (from clarifying questions)
 
 1. **Color**: coffee brand palette (espresso brown primary, cream canvas), not Sway's blue. Keep Sway's structural language (radii, shadows, chip grammar, header pattern).
-2. **Scope**: all 14 screens redesigned in one pass, not a role-by-role pilot.
+2. **Scope**: all 15 screens redesigned in one pass, not a role-by-role pilot.
 3. **Navigation**: keep the existing single stack navigator (no bottom tabs, no new nav dependency) — pure visual restyle of headers/transitions, zero navigation-logic change.
 4. **Dark mode**: light-only, matching Sway (which also has none).
 
@@ -78,7 +78,7 @@ Install `@expo/vector-icons` (ships with Expo SDK, zero new native dependency �
 
 ## Screen-by-screen scope
 
-All 14 screens get their `StyleSheet.create` block replaced with the shared theme tokens/components. This is a **pure visual restyle** — no navigation logic, no data-fetching logic, no state-management changes in any screen. Every existing `useFocusEffect`, WS subscription (`DetalleScreen`/`ColaPedidosScreen`/`CajaScreen`, from the just-completed Fase 4 work), API call, and role-gate stays untouched; only the returned JSX's styling/markup changes to use the new components.
+All 15 screens get their `StyleSheet.create` block replaced with the shared theme tokens/components. This is a **pure visual restyle** — no navigation logic, no data-fetching logic, no state-management changes in any screen. Every existing `useFocusEffect`, WS subscription (`DetalleScreen`/`ColaPedidosScreen`/`CajaScreen`, from the just-completed Fase 4 work), API call, and role-gate stays untouched; only the returned JSX's styling/markup changes to use the new components.
 
 Grouped by natural SDD task boundaries (final task breakdown happens in the implementation plan, not here):
 - **Foundation**: `theme/` + `components/` + Ionicons install + `App.js` stack header restyle (`screenOptions`).
@@ -105,6 +105,6 @@ No physical device/Expo Go available this session (same constraint as the WebSoc
 
 ## Risks / open items carried into planning
 
-- 14 screens is a lot of surface area for one plan — the implementation plan (next step) should size tasks so no single task both builds a shared component AND migrates many screens onto it; foundation work must land and be reviewed before any screen migration task starts.
+- 15 screens is a lot of surface area for one plan — the implementation plan (next step) should size tasks so no single task both builds a shared component AND migrates many screens onto it; foundation work must land and be reviewed before any screen migration task starts.
 - `ListItem`/`Card` need to flex enough to cover fairly different real layouts (a 2-column mesa grid tile vs. a full-width pedido queue row vs. a form card) — the component API should stay generic (slots, not screen-specific props) rather than growing screen-specific special cases.
 - Icon-mapping table above is a starting point, not exhaustive — implementation tasks may need to pick reasonable additional icons for cases not enumerated here; task briefs should say so explicitly rather than let an implementer guess silently.
