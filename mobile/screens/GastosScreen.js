@@ -11,7 +11,7 @@ import { Card } from '../components/Card';
 import { Chip } from '../components/Chip';
 import { Input } from '../components/Input';
 import { ListItem } from '../components/ListItem';
-import { colors, typography, spacing } from '../theme';
+import { colors, typography, spacing, radii } from '../theme';
 
 export default function GastosScreen() {
 
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerTint,
     borderWidth: 1,
     borderColor: 'rgba(192,57,43,0.3)',
-    borderRadius: 8,
+    borderRadius: radii.r8,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.md,

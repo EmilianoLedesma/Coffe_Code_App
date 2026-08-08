@@ -1,7 +1,7 @@
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { colors, typography, spacing, radii } from '../theme';
 
-export function Input({ label, value, onChangeText, placeholder, keyboardType, secureTextEntry, error, multiline = false }) {
+export function Input({ label, value, onChangeText, placeholder, keyboardType, secureTextEntry, error, multiline = false, ...inputProps }) {
   return (
     <View style={styles.container}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
@@ -14,6 +14,7 @@ export function Input({ label, value, onChangeText, placeholder, keyboardType, s
         secureTextEntry={secureTextEntry}
         multiline={multiline}
         style={[styles.input, multiline && styles.multiline, error && styles.inputError]}
+        {...inputProps}
       />
       {error ? (
         <View style={styles.errorBanner}>

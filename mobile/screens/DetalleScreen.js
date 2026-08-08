@@ -10,14 +10,7 @@ import { ListItem } from '../components/ListItem';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
 import { colors, typography, spacing } from '../theme';
-
-const TONE_POR_ESTATUS_PEDIDO = {
-  Pendiente: 'neutral',
-  'En preparación': 'warning',
-  Listo: 'info',
-  Entregado: 'success',
-  Cancelado: 'danger',
-};
+import { TONE_POR_ESTATUS_PEDIDO } from '../constants/estatusPedido';
 
 export default function DetalleScreen({ route }) {
   const { pedidoId, numeroMesa } = route.params;

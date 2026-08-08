@@ -7,6 +7,7 @@ import { ApiError } from '../api/client';
 import { connectToChannel } from '../ws/client';
 import { Button } from '../components/Button';
 import { ListItem } from '../components/ListItem';
+import { Badge } from '../components/Badge';
 import { EmptyState } from '../components/EmptyState';
 import { colors, typography, spacing } from '../theme';
 
@@ -99,13 +100,11 @@ export default function CajaScreen({ navigation }) {
           return (
             <ListItem
               title={`Mesa ${numeroPorMesa[item.id_mesa] ?? item.id_mesa}`}
-              subtitle={
-                pagado
-                  ? `Cobrado ($${item.total}) — pendiente de entrega por el mesero`
-                  : `Pedido #${item.id} — ${item.detalle.length} ítem(s)`
-              }
+              subtitle={`Pedido #${item.id} — ${item.detalle.length} ítem(s)`}
               trailing={
-                pagado ? null : (
+                pagado ? (
+                  <Badge label="Cobrado" tone="info" />
+                ) : (
                   <Button
                     variant="primary"
                     label="Cobrar"

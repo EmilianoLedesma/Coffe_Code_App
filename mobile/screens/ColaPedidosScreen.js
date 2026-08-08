@@ -9,12 +9,7 @@ import { ListItem } from '../components/ListItem';
 import { Badge } from '../components/Badge';
 import { EmptyState } from '../components/EmptyState';
 import { colors, typography, spacing } from '../theme';
-
-const TONE_POR_ESTATUS = {
-  Pendiente: 'warning',
-  'En preparación': 'info',
-  Listo: 'success',
-};
+import { TONE_POR_ESTATUS_PEDIDO } from '../constants/estatusPedido';
 
 export default function ColaPedidosScreen({ navigation }) {
   const [pedidos, setPedidos] = useState([]);
@@ -98,7 +93,7 @@ export default function ColaPedidosScreen({ navigation }) {
           <ListItem
             title={`Mesa ${numeroPorMesa[item.id_mesa] ?? item.id_mesa}`}
             subtitle={`Items: ${item.detalle.length}`}
-            trailing={<Badge label={item.estatus.nombre} tone={TONE_POR_ESTATUS[item.estatus.nombre] || 'neutral'} />}
+            trailing={<Badge label={item.estatus.nombre} tone={TONE_POR_ESTATUS_PEDIDO[item.estatus.nombre] || 'neutral'} />}
             onPress={() =>
               navigation.navigate('CocinaDetalle', {
                 pedidoId: item.id,
