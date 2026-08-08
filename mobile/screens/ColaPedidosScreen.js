@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getColaPendientes } from '../api/pedidos_cocina';
 import { getMesas } from '../api/mesas';
 import { ApiError } from '../api/client';
+import { connectToChannel } from '../ws/client';
 
 export default function ColaPedidosScreen({ navigation }) {
   const [pedidos, setPedidos] = useState([]);
@@ -28,6 +29,33 @@ export default function ColaPedidosScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       cargar();
+    }, [cargar])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cerrar = null;
+      let cancelado = false;
+
+      connectToChannel('cocina', {
+        onMessage: (evento) => {
+          if (evento.evento === 'nuevo_pedido') {
+            cargar();
+          }
+        },
+      }).then((unsub) => {
+        // la pantalla pudo perder el foco mientras conectábamos
+        if (cancelado) {
+          unsub();
+          return;
+        }
+        cerrar = unsub;
+      });
+
+      return () => {
+        cancelado = true;
+        if (cerrar) cerrar();
+      };
     }, [cargar])
   );
 
