@@ -1,18 +1,17 @@
 import React, { useCallback, useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  StyleSheet
-} from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { crearGasto } from '../api/gastos';
 import { getResumenCaja } from '../api/caja';
 import { ApiError } from '../api/client';
 import { getIngredientes } from '../api/ingredientes';
 import { crearCompra } from '../api/compras';
+import { Button } from '../components/Button';
+import { Card } from '../components/Card';
+import { Chip } from '../components/Chip';
+import { Input } from '../components/Input';
+import { ListItem } from '../components/ListItem';
+import { colors, typography, spacing } from '../theme';
 
 export default function GastosScreen() {
 
@@ -112,83 +111,96 @@ export default function GastosScreen() {
 
       <Text style={styles.title}>Caja - Gastos y Cuentas</Text>
 
-      <View style={styles.card}>
+      <Card style={styles.card}>
 
-        <TextInput
+        <Input
           placeholder="Descripción del gasto (mín. 3 caracteres)"
           value={descripcion}
           onChangeText={setDescripcion}
-          style={styles.input}
         />
 
-        <TextInput
+        <Input
           placeholder="Monto"
           value={monto}
           onChangeText={setMonto}
           keyboardType="numeric"
-          style={styles.input}
         />
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
 
-        <TouchableOpacity style={styles.btnAgregar} onPress={agregarGasto} disabled={guardando}>
-          <Text style={styles.btnText}>{guardando ? 'Guardando...' : 'Agregar gasto'}</Text>
-        </TouchableOpacity>
+        <Button
+          variant="primary"
+          label={guardando ? 'Guardando...' : 'Agregar gasto'}
+          onPress={agregarGasto}
+          loading={guardando}
+          disabled={guardando}
+        />
 
-      </View>
+      </Card>
 
-      <View style={styles.card}>
+      <Card style={styles.card}>
 
-        <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>Comprar insumo</Text>
+        <Text style={styles.cardHeading}>Comprar insumo</Text>
 
-        <View style={styles.categorias}>
+        <View style={styles.chipsRow}>
           {ingredientes.map((ing) => (
-            <TouchableOpacity key={ing.id} onPress={() => setIngredienteId(ing.id)}>
-              <Text style={ingredienteId === ing.id ? styles.categoriaSelected : styles.categoria}>
-                {ing.nombre}
-              </Text>
-            </TouchableOpacity>
+            <Chip
+              key={ing.id}
+              label={ing.nombre}
+              selected={ingredienteId === ing.id}
+              onPress={() => setIngredienteId(ing.id)}
+            />
           ))}
         </View>
 
-        <TextInput
+        <Input
           placeholder="Cantidad"
           value={cantidadCompra}
           onChangeText={setCantidadCompra}
           keyboardType="numeric"
-          style={styles.input}
         />
 
-        <TextInput
+        <Input
           placeholder="Monto"
           value={montoCompra}
           onChangeText={setMontoCompra}
           keyboardType="numeric"
-          style={styles.input}
         />
 
         {resultadoCompra ? (
-          <Text style={{ color: 'green', marginBottom: 10 }}>
+          <Text style={styles.successText}>
             Compra registrada. Nuevo stock: {resultadoCompra.nuevo_stock}
           </Text>
         ) : null}
 
-        {errorCompra ? <Text style={styles.error}>{errorCompra}</Text> : null}
+        {errorCompra ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{errorCompra}</Text>
+          </View>
+        ) : null}
 
-        <TouchableOpacity style={styles.btnAgregar} onPress={registrarCompra} disabled={comprando}>
-          <Text style={styles.btnText}>{comprando ? 'Registrando...' : 'Registrar compra'}</Text>
-        </TouchableOpacity>
+        <Button
+          variant="primary"
+          label={comprando ? 'Registrando...' : 'Registrar compra'}
+          onPress={registrarCompra}
+          loading={comprando}
+          disabled={comprando}
+        />
 
-      </View>
+      </Card>
 
-      <View style={styles.totalBox}>
+      <Card style={styles.card}>
         <Text style={styles.totalText}>
           Total gastos de hoy (servidor): {totalPeriodo !== null ? `$${totalPeriodo}` : 'no disponible'}
         </Text>
-      </View>
+      </Card>
 
       {gastosSesion.length > 0 ? (
-        <Text style={{ marginBottom: 5, color: 'gray' }}>Registrados en esta sesión:</Text>
+        <Text style={styles.sesionLabel}>Registrados en esta sesión:</Text>
       ) : null}
 
     </>
@@ -202,12 +214,7 @@ export default function GastosScreen() {
         keyExtractor={(item) => item.id.toString()}
         ListHeaderComponent={renderHeader}
         renderItem={({ item }) => (
-          <View style={styles.item}>
-            <View>
-              <Text style={styles.desc}>{item.concepto}</Text>
-              <Text style={styles.monto}>${item.monto}</Text>
-            </View>
-          </View>
+          <ListItem title={item.concepto} subtitle={`$${item.monto}`} />
         )}
       />
 
@@ -217,19 +224,36 @@ export default function GastosScreen() {
 
 const styles = StyleSheet.create({
 
-  container: { flex: 1, backgroundColor: '#F5F5F5', padding: 15 },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
-  card: { backgroundColor: 'white', padding: 15, borderRadius: 10, marginBottom: 10 },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, marginBottom: 10 },
-  error: { color: '#C0392B', marginBottom: 10 },
-  btnAgregar: { backgroundColor: '#2E1B0F', padding: 12, borderRadius: 8 },
-  btnText: { color: 'white', textAlign: 'center', fontWeight: 'bold' },
-  totalBox: { backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 10 },
-  totalText: { fontSize: 16, fontWeight: 'bold' },
-  item: { backgroundColor: 'white', padding: 15, borderRadius: 10, marginBottom: 10 },
-  desc: { fontSize: 16, fontWeight: 'bold' },
-  monto: { color: 'gray' },
-  categorias: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10 },
-  categoria: { padding: 8, marginRight: 8, marginBottom: 8, borderRadius: 8, borderWidth: 1, borderColor: '#ddd', color: 'gray' },
-  categoriaSelected: { padding: 8, marginRight: 8, marginBottom: 8, borderRadius: 8, backgroundColor: '#2E1B0F', color: 'white' },
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
+  title: {
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.lg,
+  },
+  card: { marginBottom: spacing.md },
+  cardHeading: {
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+  },
+  errorBanner: {
+    backgroundColor: colors.dangerTint,
+    borderWidth: 1,
+    borderColor: 'rgba(192,57,43,0.3)',
+    borderRadius: 8,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+  },
+  errorText: { color: colors.danger, fontSize: typography.size.md },
+  successText: { color: colors.success, marginBottom: spacing.md, fontSize: typography.size.md },
+  totalText: {
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+  },
+  sesionLabel: { marginBottom: spacing.sm, color: colors.textSecondary },
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap' },
 });

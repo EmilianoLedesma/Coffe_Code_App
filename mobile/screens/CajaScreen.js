@@ -1,10 +1,14 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getPedidosListos } from '../api/pedidos_caja';
 import { getMesas } from '../api/mesas';
 import { ApiError } from '../api/client';
 import { connectToChannel } from '../ws/client';
+import { Button } from '../components/Button';
+import { ListItem } from '../components/ListItem';
+import { EmptyState } from '../components/EmptyState';
+import { colors, typography, spacing } from '../theme';
 
 export default function CajaScreen({ navigation }) {
   const [pedidos, setPedidos] = useState([]);
@@ -64,7 +68,7 @@ export default function CajaScreen({ navigation }) {
   if (loading && pedidos.length === 0) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2E1B0F" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -79,8 +83,13 @@ export default function CajaScreen({ navigation }) {
       <FlatList
         data={pedidos}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{ paddingBottom: 30 }}
-        ListEmptyComponent={<Text style={{ textAlign: 'center', color: 'gray' }}>Sin pedidos listos para cobrar</Text>}
+        contentContainerStyle={{ paddingBottom: spacing.xxl }}
+        ListEmptyComponent={
+          <EmptyState
+            icon="cash-outline"
+            message="Sin pedidos por cobrar. Aparecerán aquí cuando cocina marque un pedido como Listo."
+          />
+        }
         renderItem={({ item }) => {
           // registrar_venta pone `total` pero deja el estatus en `Listo`
           // (api/app/services/ventas.py:63): el pedido sigue en esta cola
@@ -88,38 +97,37 @@ export default function CajaScreen({ navigation }) {
           // vez garantiza un 409 de pago duplicado.
           const pagado = item.total !== null;
           return (
-            <View style={[styles.card, pagado && styles.cardPagado]}>
-              <Text style={styles.mesa}>Mesa {numeroPorMesa[item.id_mesa] ?? item.id_mesa}</Text>
-              <Text>Pedido #{item.id} — {item.detalle.length} ítem(s)</Text>
-
-              {pagado ? (
-                <Text style={styles.pagado}>
-                  Cobrado (${item.total}) — pendiente de entrega por el mesero
-                </Text>
-              ) : (
-                <TouchableOpacity
-                  style={styles.button}
-                  onPress={() =>
-                    navigation.navigate('Pago', {
-                      pedidoId: item.id,
-                      numeroMesa: numeroPorMesa[item.id_mesa],
-                    })
-                  }
-                >
-                  <Text style={{ color: 'white' }}>Cobrar</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            <ListItem
+              title={`Mesa ${numeroPorMesa[item.id_mesa] ?? item.id_mesa}`}
+              subtitle={
+                pagado
+                  ? `Cobrado ($${item.total}) — pendiente de entrega por el mesero`
+                  : `Pedido #${item.id} — ${item.detalle.length} ítem(s)`
+              }
+              trailing={
+                pagado ? null : (
+                  <Button
+                    variant="primary"
+                    label="Cobrar"
+                    onPress={() =>
+                      navigation.navigate('Pago', {
+                        pedidoId: item.id,
+                        numeroMesa: numeroPorMesa[item.id_mesa],
+                      })
+                    }
+                  />
+                )
+              }
+            />
           );
         }}
         ListFooterComponent={() => (
           <View>
-            <TouchableOpacity
-              style={[styles.button, { marginTop: 15, backgroundColor: '#444' }]}
+            <Button
+              variant="secondary"
+              label="Gastos y cuentas"
               onPress={() => navigation.navigate('Gastos')}
-            >
-              <Text style={{ color: 'white' }}>Gastos y cuentas</Text>
-            </TouchableOpacity>
+            />
             {/* Task 4 agrega aquí el botón "Registrar compra de insumo",
                 junto con la ruta `Compras` que necesita para no crashear. */}
           </View>
@@ -131,13 +139,13 @@ export default function CajaScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#F5F5F5' },
+  container: { flex: 1, padding: spacing.lg, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
-  error: { color: '#C0392B', marginBottom: 10 },
-  card: { backgroundColor: '#fff', padding: 15, marginBottom: 10, borderRadius: 10 },
-  cardPagado: { opacity: 0.6 },
-  pagado: { marginTop: 8, color: '#1F618D', fontWeight: 'bold' },
-  mesa: { fontSize: 18, fontWeight: 'bold' },
-  button: { marginTop: 10, backgroundColor: '#2E1B0F', padding: 10, borderRadius: 8, alignItems: 'center' }
+  title: {
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.lg,
+  },
+  error: { color: colors.danger, marginBottom: spacing.md },
 });

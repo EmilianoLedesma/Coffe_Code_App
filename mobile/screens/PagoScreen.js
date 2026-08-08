@@ -1,17 +1,14 @@
 import React, { useCallback, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  ActivityIndicator
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getPedido } from '../api/pedidos_caja';
 import { registrarVenta } from '../api/caja';
 import { ApiError } from '../api/client';
+import { Button } from '../components/Button';
+import { Card } from '../components/Card';
+import { Chip } from '../components/Chip';
+import { Input } from '../components/Input';
+import { colors, typography, spacing, radii } from '../theme';
 
 const METODOS = [
   { key: 'Efectivo', label: 'Efectivo' },
@@ -78,7 +75,7 @@ export default function PagoScreen({ route, navigation }) {
   if (loading && !pedido) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2E1B0F" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -86,10 +83,10 @@ export default function PagoScreen({ route, navigation }) {
   if (error && !pedido) {
     return (
       <View style={styles.center}>
-        <Text style={styles.error}>{error}</Text>
-        <TouchableOpacity style={styles.payButton} onPress={cargar}>
-          <Text style={styles.payText}>Reintentar</Text>
-        </TouchableOpacity>
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+        <Button variant="primary" label="Reintentar" onPress={cargar} />
       </View>
     );
   }
@@ -100,19 +97,17 @@ export default function PagoScreen({ route, navigation }) {
         <Text style={styles.title}>Pago registrado</Text>
         <Text style={styles.text}>Total: ${resultado.total}</Text>
         <Text style={styles.text}>Cambio: ${resultado.pago.cambio}</Text>
-        <TouchableOpacity style={styles.payButton} onPress={() => navigation.navigate('Caja')}>
-          <Text style={styles.payText}>Volver a Caja</Text>
-        </TouchableOpacity>
+        <Button variant="primary" label="Volver a Caja" onPress={() => navigation.navigate('Caja')} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: spacing.xxl }}>
 
       <Text style={styles.title}>Procesar Pago</Text>
 
-      <View style={styles.card}>
+      <Card>
         <Text style={styles.subtitle}>Mesa {numeroMesa ?? pedido.id_mesa} — Pedido #{pedido.id}</Text>
 
         {pedido.detalle.map((item) => (
@@ -122,64 +117,82 @@ export default function PagoScreen({ route, navigation }) {
         ))}
 
         <Text style={styles.total}>Subtotal (sin IVA): ${subtotalEstimado.toFixed(2)}</Text>
-        <Text style={{ color: 'gray' }}>El total final con IVA lo calcula el servidor al confirmar.</Text>
-      </View>
+        <Text style={styles.hint}>El total final con IVA lo calcula el servidor al confirmar.</Text>
+      </Card>
 
       <Text style={styles.subtitle}>Método de pago</Text>
 
       <View style={styles.row}>
         {METODOS.map((m) => (
-          <TouchableOpacity
+          <Chip
             key={m.key}
-            style={[styles.button, metodoPago === m.key && styles.buttonActive]}
-            onPress={() => setMetodoPago(m.key)}
-            disabled={procesando}
-          >
-            <Text style={styles.buttonText}>{m.label}</Text>
-          </TouchableOpacity>
+            label={m.label}
+            selected={metodoPago === m.key}
+            onPress={() => !procesando && setMetodoPago(m.key)}
+          />
         ))}
       </View>
 
-      <View style={styles.card}>
-        <Text>Monto recibido</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          placeholder="Ej. 200"
-          value={monto}
-          onChangeText={setMonto}
-          editable={!procesando}
-        />
-      </View>
+      <Input
+        label="Monto recibido"
+        keyboardType="numeric"
+        placeholder="Ej. 200"
+        value={monto}
+        onChangeText={setMonto}
+        editable={!procesando}
+      />
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
 
-      <TouchableOpacity style={styles.payButton} onPress={pagar} disabled={procesando}>
-        {procesando ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.payText}>Confirmar y Pagar</Text>
-        )}
-      </TouchableOpacity>
+      <Button
+        variant="primary"
+        label="Confirmar y Pagar"
+        onPress={pagar}
+        loading={procesando}
+        disabled={procesando}
+      />
 
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5', padding: 15 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 15 },
-  subtitle: { fontSize: 18, fontWeight: 'bold', marginTop: 10 },
-  card: { backgroundColor: 'white', padding: 15, borderRadius: 10, marginBottom: 15 },
-  text: { fontSize: 16 },
-  total: { fontSize: 18, fontWeight: 'bold', marginTop: 10 },
-  error: { color: '#C0392B', marginBottom: 10, textAlign: 'center' },
-  row: { flexDirection: 'row', flexWrap: 'wrap', marginVertical: 10 },
-  button: { backgroundColor: '#ccc', padding: 10, borderRadius: 8, width: '48%', alignItems: 'center', marginBottom: 8, marginRight: '2%' },
-  buttonActive: { backgroundColor: '#2E1B0F' },
-  buttonText: { color: 'white' },
-  input: { borderWidth: 1, borderColor: '#ccc', marginTop: 10, padding: 10, borderRadius: 8 },
-  payButton: { backgroundColor: '#2E1B0F', padding: 15, borderRadius: 10, marginTop: 10, alignItems: 'center' },
-  payText: { color: 'white', fontWeight: 'bold' }
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
+  title: {
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.lg,
+  },
+  subtitle: {
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.semibold,
+    color: colors.textPrimary,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  text: { fontSize: typography.size.lg, color: colors.textPrimary },
+  hint: { fontSize: typography.size.md, color: colors.textSecondary },
+  total: {
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    marginTop: spacing.sm,
+  },
+  errorBanner: {
+    backgroundColor: colors.dangerTint,
+    borderWidth: 1,
+    borderColor: 'rgba(192,57,43,0.3)',
+    borderRadius: radii.r8,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+  },
+  errorText: { color: colors.danger, fontSize: typography.size.md },
+  row: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.md },
 });
