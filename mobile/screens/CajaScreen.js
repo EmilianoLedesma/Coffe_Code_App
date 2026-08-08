@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getPedidosListos } from '../api/pedidos_caja';
 import { getMesas } from '../api/mesas';
 import { ApiError } from '../api/client';
+import { connectToChannel } from '../ws/client';
 
 export default function CajaScreen({ navigation }) {
   const [pedidos, setPedidos] = useState([]);
@@ -29,6 +30,33 @@ export default function CajaScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       cargar();
+    }, [cargar])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cerrar = null;
+      let cancelado = false;
+
+      connectToChannel('caja', {
+        onMessage: (evento) => {
+          if (evento.evento === 'pedido_activado') {
+            cargar();
+          }
+        },
+      }).then((unsub) => {
+        // la pantalla pudo perder el foco mientras conectábamos
+        if (cancelado) {
+          unsub();
+          return;
+        }
+        cerrar = unsub;
+      });
+
+      return () => {
+        cancelado = true;
+        if (cerrar) cerrar();
+      };
     }, [cargar])
   );
 
