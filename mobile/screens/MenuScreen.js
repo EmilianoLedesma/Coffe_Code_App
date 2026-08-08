@@ -11,6 +11,7 @@ export default function MenuScreen() {
   const [categoriaId, setCategoriaId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [aviso, setAviso] = useState('');
 
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');
@@ -23,13 +24,14 @@ export default function MenuScreen() {
       const [prods, cats] = await Promise.all([getProductos(), getCategorias()]);
       setProductos(prods);
       setCategorias(cats);
-      if (cats.length > 0 && categoriaId === null) setCategoriaId(cats[0].id);
+      // updater funcional: no necesitamos categoriaId como dependencia
+      setCategoriaId((actual) => (actual === null && cats.length > 0 ? cats[0].id : actual));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo conectar con el servidor');
     } finally {
       setLoading(false);
     }
-  }, [categoriaId]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -62,8 +64,14 @@ export default function MenuScreen() {
 
   const eliminar = async (id) => {
     setError('');
+    setAviso('');
     try {
-      await deleteProducto(id);
+      // DELETE /productos/{id} responde 200 {eliminado, mensaje}: si el
+      // producto tiene historial de pedidos NO se borra, se desactiva
+      // (api/app/routers/productos.py). Sin mostrar `mensaje` el usuario cree
+      // que borró algo que sigue ahí.
+      const resultado = await deleteProducto(id);
+      setAviso(resultado.mensaje);
       await cargar();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo eliminar el producto');
@@ -84,6 +92,7 @@ export default function MenuScreen() {
       <Text style={styles.title}>Gestión de Menú</Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      {aviso ? <Text style={styles.aviso}>{aviso}</Text> : null}
 
       <TextInput placeholder="Nombre" value={nombre} onChangeText={setNombre} style={styles.input} />
       <TextInput placeholder="Precio" value={precio} onChangeText={setPrecio} keyboardType="numeric" style={styles.input} />
@@ -128,6 +137,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
   error: { color: '#C0392B', marginBottom: 10 },
+  aviso: { color: '#1F618D', marginBottom: 10 },
   input: { backgroundColor: 'white', padding: 10, marginBottom: 10, borderRadius: 8 },
   categorias: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10 },
   categoria: { padding: 8, marginRight: 8, marginBottom: 8, borderRadius: 8, borderWidth: 1, borderColor: '#ddd', color: 'gray' },
