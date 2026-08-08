@@ -128,7 +128,7 @@ export default function MenuScreen() {
             title={item.nombre}
             subtitle={`$${item.precio_venta} · ${item.categoria.nombre}`}
             trailing={
-              <TouchableOpacity onPress={() => eliminar(item.id)}>
+              <TouchableOpacity style={styles.iconBtn} onPress={() => eliminar(item.id)}>
                 <Ionicons name="trash-outline" size={22} color={colors.danger} />
               </TouchableOpacity>
             }
@@ -153,4 +153,5 @@ const styles = StyleSheet.create({
   aviso: { color: colors.info, marginBottom: spacing.md },
   categorias: { flexDirection: 'row', flexWrap: 'wrap' },
   list: { marginTop: spacing.md },
+  iconBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });

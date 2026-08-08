@@ -5,6 +5,7 @@ import { getPedido, cambiarEstadoPedido } from '../api/pedidos_cocina';
 import { ApiError } from '../api/client';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
+import { ListItem } from '../components/ListItem';
 import { colors, typography, spacing } from '../theme';
 
 const SIGUIENTE_ESTATUS = {
@@ -89,14 +90,17 @@ export default function CocinaDetalleScreen({ route, navigation }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.xl }}>
 
-      <Text style={styles.title}>Pedido #{pedido.id} — Mesa {numeroMesa ?? pedido.id_mesa}</Text>
-      <Text style={styles.estado}>Estado: {pedido.estatus.nombre}</Text>
+      <Card style={styles.header}>
+        <Text style={styles.title}>Pedido #{pedido.id} — Mesa {numeroMesa ?? pedido.id_mesa}</Text>
+        <Text style={styles.estado}>Estado: {pedido.estatus.nombre}</Text>
+      </Card>
 
       {pedido.detalle.map((item) => (
-        <Card key={item.id} style={styles.card}>
-          <Text style={styles.producto}>{item.producto.nombre} x{item.cantidad}</Text>
-          {item.especificaciones ? <Text style={styles.especificaciones}>{item.especificaciones}</Text> : null}
-        </Card>
+        <ListItem
+          key={item.id}
+          title={`${item.producto.nombre} x${item.cantidad}`}
+          subtitle={item.especificaciones || undefined}
+        />
       ))}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -119,6 +123,7 @@ export default function CocinaDetalleScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  header: { marginBottom: spacing.lg },
   title: {
     fontSize: typography.size.xxl,
     fontWeight: typography.weight.bold,
@@ -129,15 +134,7 @@ const styles = StyleSheet.create({
     fontSize: typography.size.lg,
     fontWeight: typography.weight.bold,
     color: colors.secondary,
-    marginBottom: spacing.lg,
   },
   error: { color: colors.danger, marginBottom: spacing.lg, textAlign: 'center' },
-  card: { marginBottom: spacing.md },
-  producto: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-    color: colors.textPrimary,
-  },
-  especificaciones: { color: colors.textSecondary, marginTop: spacing.xs },
   sinTransiciones: { color: colors.textSecondary, textAlign: 'center' },
 });
