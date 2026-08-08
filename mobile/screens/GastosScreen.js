@@ -11,6 +11,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { crearGasto } from '../api/gastos';
 import { getResumenCaja } from '../api/caja';
 import { ApiError } from '../api/client';
+import { getIngredientes } from '../api/ingredientes';
+import { crearCompra } from '../api/compras';
 
 export default function GastosScreen() {
 
@@ -20,6 +22,13 @@ export default function GastosScreen() {
   const [totalPeriodo, setTotalPeriodo] = useState(null);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+
+  const [ingredientes, setIngredientes] = useState([]);
+  const [ingredienteId, setIngredienteId] = useState(null);
+  const [cantidadCompra, setCantidadCompra] = useState('');
+  const [montoCompra, setMontoCompra] = useState('');
+  const [comprando, setComprando] = useState(false);
+  const [resultadoCompra, setResultadoCompra] = useState(null);
 
   const cargarResumen = useCallback(async () => {
     try {
@@ -33,10 +42,19 @@ export default function GastosScreen() {
     }
   }, []);
 
+  const cargarIngredientes = useCallback(async () => {
+    try {
+      setIngredientes(await getIngredientes());
+    } catch (err) {
+      setIngredientes([]);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       cargarResumen();
-    }, [cargarResumen])
+      cargarIngredientes();
+    }, [cargarResumen, cargarIngredientes])
   );
 
   const agregarGasto = async () => {
@@ -59,6 +77,32 @@ export default function GastosScreen() {
       setError(err instanceof ApiError ? err.message : 'No se pudo registrar el gasto');
     } finally {
       setGuardando(false);
+    }
+  };
+
+  const registrarCompra = async () => {
+    if (!ingredienteId || !cantidadCompra || !montoCompra) {
+      setError('Selecciona un ingrediente y completa cantidad y monto');
+      return;
+    }
+
+    setComprando(true);
+    setError('');
+    setResultadoCompra(null);
+    try {
+      const resultado = await crearCompra({
+        ingredienteId,
+        cantidad: parseFloat(cantidadCompra),
+        monto: parseFloat(montoCompra),
+      });
+      setResultadoCompra(resultado);
+      setCantidadCompra('');
+      setMontoCompra('');
+      await cargarResumen();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo registrar la compra');
+    } finally {
+      setComprando(false);
     }
   };
 
@@ -88,6 +132,48 @@ export default function GastosScreen() {
 
         <TouchableOpacity style={styles.btnAgregar} onPress={agregarGasto} disabled={guardando}>
           <Text style={styles.btnText}>{guardando ? 'Guardando...' : 'Agregar gasto'}</Text>
+        </TouchableOpacity>
+
+      </View>
+
+      <View style={styles.card}>
+
+        <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>Comprar insumo</Text>
+
+        <View style={styles.categorias}>
+          {ingredientes.map((ing) => (
+            <TouchableOpacity key={ing.id} onPress={() => setIngredienteId(ing.id)}>
+              <Text style={ingredienteId === ing.id ? styles.categoriaSelected : styles.categoria}>
+                {ing.nombre}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <TextInput
+          placeholder="Cantidad"
+          value={cantidadCompra}
+          onChangeText={setCantidadCompra}
+          keyboardType="numeric"
+          style={styles.input}
+        />
+
+        <TextInput
+          placeholder="Monto"
+          value={montoCompra}
+          onChangeText={setMontoCompra}
+          keyboardType="numeric"
+          style={styles.input}
+        />
+
+        {resultadoCompra ? (
+          <Text style={{ color: 'green', marginBottom: 10 }}>
+            Compra registrada. Nuevo stock: {resultadoCompra.nuevo_stock}
+          </Text>
+        ) : null}
+
+        <TouchableOpacity style={styles.btnAgregar} onPress={registrarCompra} disabled={comprando}>
+          <Text style={styles.btnText}>{comprando ? 'Registrando...' : 'Registrar compra'}</Text>
         </TouchableOpacity>
 
       </View>
@@ -130,4 +216,7 @@ const styles = StyleSheet.create({
   item: { backgroundColor: 'white', padding: 15, borderRadius: 10, marginBottom: 10 },
   desc: { fontSize: 16, fontWeight: 'bold' },
   monto: { color: 'gray' },
+  categorias: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10 },
+  categoria: { padding: 8, marginRight: 8, marginBottom: 8, borderRadius: 8, borderWidth: 1, borderColor: '#ddd', color: 'gray' },
+  categoriaSelected: { padding: 8, marginRight: 8, marginBottom: 8, borderRadius: 8, backgroundColor: '#2E1B0F', color: 'white' },
 });
