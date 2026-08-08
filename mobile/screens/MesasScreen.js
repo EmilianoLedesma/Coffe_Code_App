@@ -40,6 +40,7 @@ export default function MesasScreen({ navigation }) {
   );
 
   const abrirMesa = async (mesa) => {
+    if (abriendo !== null) return;
     setError('');
     const nuevoPedido = () =>
       navigation.navigate('Pedido', { mesaId: mesa.id, numeroMesa: mesa.numero_mesa });
