@@ -1,14 +1,17 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMesas } from '../api/mesas';
 import { getPedidoActivoDeMesa } from '../api/pedidos';
 import { ApiError } from '../api/client';
+import { Card } from '../components/Card';
+import { Badge } from '../components/Badge';
+import { colors, typography, spacing } from '../theme';
 
-const COLOR_POR_ESTATUS = {
-  Libre: '#27AE60',
-  Ocupada: '#C0392B',
-  Reservada: '#E67E22',
+const TONE_POR_ESTATUS = {
+  Libre: 'success',
+  Ocupada: 'danger',
+  Reservada: 'warning',
 };
 
 export default function MesasScreen({ navigation }) {
@@ -64,7 +67,7 @@ export default function MesasScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2E1B0F" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -80,18 +83,14 @@ export default function MesasScreen({ navigation }) {
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.card, { borderColor: COLOR_POR_ESTATUS[item.estatus.nombre] || '#999' }]}
-            onPress={() => abrirMesa(item)}
-            disabled={abriendo !== null}
-          >
-            <Text style={styles.mesaNumero}>Mesa {item.numero_mesa}</Text>
-            <Text style={{ color: COLOR_POR_ESTATUS[item.estatus.nombre] || '#999', fontWeight: 'bold' }}>
-              {item.estatus.nombre}
-            </Text>
-            <Text style={styles.capacidad}>Capacidad: {item.capacidad}</Text>
-            {abriendo === item.id ? <Text style={styles.capacidad}>Abriendo…</Text> : null}
-          </TouchableOpacity>
+          <View style={styles.cardWrap}>
+            <Card onPress={() => abrirMesa(item)} style={item.id === abriendo ? styles.cardDisabled : null}>
+              <Text style={styles.mesaNumero}>Mesa {item.numero_mesa}</Text>
+              <Badge label={item.estatus.nombre} tone={TONE_POR_ESTATUS[item.estatus.nombre] || 'neutral'} />
+              <Text style={styles.capacidad}>Capacidad: {item.capacidad}</Text>
+              {abriendo === item.id ? <Text style={styles.capacidad}>Abriendo…</Text> : null}
+            </Card>
+          </View>
         )}
       />
     </View>
@@ -99,19 +98,23 @@ export default function MesasScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5', padding: 15 },
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
-  error: { color: '#C0392B', textAlign: 'center', marginBottom: 10 },
-  card: {
-    flex: 1,
-    backgroundColor: 'white',
-    margin: 6,
-    padding: 15,
-    borderRadius: 12,
-    borderWidth: 2,
-    elevation: 3,
+  title: {
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
   },
-  mesaNumero: { fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
-  capacidad: { color: 'gray', marginTop: 4 },
+  error: { color: colors.danger, textAlign: 'center', marginBottom: spacing.md },
+  cardWrap: { flex: 1, margin: spacing.xs },
+  cardDisabled: { opacity: 0.6 },
+  mesaNumero: {
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  capacidad: { color: colors.textSecondary, marginTop: spacing.sm, fontSize: typography.size.md },
 });

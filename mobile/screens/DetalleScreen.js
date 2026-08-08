@@ -1,10 +1,23 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getPedido, cambiarEstadoPedido } from '../api/pedidos';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { connectToChannel } from '../ws/client';
+import { Card } from '../components/Card';
+import { ListItem } from '../components/ListItem';
+import { Badge } from '../components/Badge';
+import { Button } from '../components/Button';
+import { colors, typography, spacing } from '../theme';
+
+const TONE_POR_ESTATUS_PEDIDO = {
+  Pendiente: 'neutral',
+  'En preparación': 'warning',
+  Listo: 'info',
+  Entregado: 'success',
+  Cancelado: 'danger',
+};
 
 export default function DetalleScreen({ route }) {
   const { pedidoId, numeroMesa } = route.params;
@@ -76,7 +89,7 @@ export default function DetalleScreen({ route }) {
   if (loading && !pedido) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2E1B0F" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -85,9 +98,7 @@ export default function DetalleScreen({ route }) {
     return (
       <View style={styles.center}>
         <Text style={styles.error}>{error}</Text>
-        <TouchableOpacity style={styles.button} onPress={cargar}>
-          <Text style={styles.buttonText}>Reintentar</Text>
-        </TouchableOpacity>
+        <Button variant="primary" label="Reintentar" onPress={cargar} />
       </View>
     );
   }
@@ -96,17 +107,23 @@ export default function DetalleScreen({ route }) {
     (rol === 'Mesero' || rol === 'Administrador') && pedido.estatus.nombre === 'Listo';
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
-      <Text style={styles.title}>Pedido #{pedido.id} — Mesa {numeroMesa ?? pedido.id_mesa}</Text>
-      <Text style={styles.estado}>Estado: {pedido.estatus.nombre}</Text>
+      <Card style={styles.infoCard}>
+        <Text style={styles.title}>Pedido #{pedido.id} — Mesa {numeroMesa ?? pedido.id_mesa}</Text>
+        <Badge
+          label={pedido.estatus.nombre}
+          tone={TONE_POR_ESTATUS_PEDIDO[pedido.estatus.nombre] || 'neutral'}
+        />
+      </Card>
 
       {pedido.detalle.map((item) => (
-        <View key={item.id} style={styles.card}>
-          <Text style={styles.producto}>{item.producto.nombre} x{item.cantidad}</Text>
-          <Text>${item.precio_unitario} c/u</Text>
-          <Text style={{ color: '#E67E22' }}>{item.estatus.nombre}</Text>
-        </View>
+        <ListItem
+          key={item.id}
+          title={`${item.producto.nombre} x${item.cantidad}`}
+          subtitle={`$${item.precio_unitario} c/u`}
+          trailing={<Badge label={item.estatus.nombre} tone="neutral" />}
+        />
       ))}
 
       {pedido.total !== null && (
@@ -116,31 +133,39 @@ export default function DetalleScreen({ route }) {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {puedeEntregar && (
-        <TouchableOpacity style={styles.entregar} onPress={marcarEntregado} disabled={entregando}>
-          <Text style={styles.buttonText}>
-            {entregando ? 'Actualizando...' : 'Marcar como Entregado'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.entregarWrap}>
+          <Button
+            variant="primary"
+            label={entregando ? 'Actualizando...' : 'Marcar como Entregado'}
+            onPress={marcarEntregado}
+            disabled={entregando}
+          />
+        </View>
       )}
 
-      <TouchableOpacity style={styles.button} onPress={cargar}>
-        <Text style={styles.buttonText}>Actualizar</Text>
-      </TouchableOpacity>
+      <Button variant="text" label="Actualizar" onPress={cargar} />
 
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
-  estado: { fontSize: 16, fontWeight: 'bold', color: '#E67E22', marginBottom: 15 },
-  error: { color: '#C0392B', marginBottom: 15, textAlign: 'center' },
-  card: { backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, elevation: 3 },
-  producto: { fontSize: 16, fontWeight: 'bold' },
-  total: { fontSize: 18, fontWeight: 'bold', marginTop: 10, marginBottom: 20 },
-  entregar: { backgroundColor: '#27AE60', padding: 14, borderRadius: 10, alignItems: 'center', marginBottom: 10 },
-  button: { backgroundColor: '#2E1B0F', padding: 14, borderRadius: 10, alignItems: 'center' },
-  buttonText: { color: 'white', fontWeight: 'bold' },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.xl },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl, gap: spacing.lg },
+  infoCard: { marginBottom: spacing.lg, gap: spacing.sm },
+  title: {
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+  },
+  error: { color: colors.danger, marginBottom: spacing.lg, textAlign: 'center' },
+  total: {
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    marginTop: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  entregarWrap: { marginBottom: spacing.sm },
 });
