@@ -1,8 +1,11 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getPedido, cambiarEstadoPedido } from '../api/pedidos_cocina';
 import { ApiError } from '../api/client';
+import { Card } from '../components/Card';
+import { Button } from '../components/Button';
+import { colors, typography, spacing } from '../theme';
 
 const SIGUIENTE_ESTATUS = {
   Pendiente: 'En preparación',
@@ -67,7 +70,7 @@ export default function CocinaDetalleScreen({ route, navigation }) {
   if (loading && !pedido) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2E1B0F" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -76,9 +79,7 @@ export default function CocinaDetalleScreen({ route, navigation }) {
     return (
       <View style={styles.center}>
         <Text style={styles.error}>{error}</Text>
-        <TouchableOpacity style={styles.button} onPress={cargar}>
-          <Text style={styles.buttonText}>Reintentar</Text>
-        </TouchableOpacity>
+        <Button variant="primary" label="Reintentar" onPress={cargar} />
       </View>
     );
   }
@@ -86,28 +87,29 @@ export default function CocinaDetalleScreen({ route, navigation }) {
   const siguiente = SIGUIENTE_ESTATUS[pedido.estatus.nombre];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.xl }}>
 
       <Text style={styles.title}>Pedido #{pedido.id} — Mesa {numeroMesa ?? pedido.id_mesa}</Text>
       <Text style={styles.estado}>Estado: {pedido.estatus.nombre}</Text>
 
       {pedido.detalle.map((item) => (
-        <View key={item.id} style={styles.card}>
+        <Card key={item.id} style={styles.card}>
           <Text style={styles.producto}>{item.producto.nombre} x{item.cantidad}</Text>
-          {item.especificaciones ? <Text style={{ color: 'gray' }}>{item.especificaciones}</Text> : null}
-        </View>
+          {item.especificaciones ? <Text style={styles.especificaciones}>{item.especificaciones}</Text> : null}
+        </Card>
       ))}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {siguiente ? (
-        <TouchableOpacity style={styles.button} onPress={avanzarEstado} disabled={cambiando}>
-          <Text style={styles.buttonText}>
-            {cambiando ? 'Actualizando...' : `Marcar como ${siguiente}`}
-          </Text>
-        </TouchableOpacity>
+        <Button
+          variant="primary"
+          label={cambiando ? 'Actualizando...' : `Marcar como ${siguiente}`}
+          onPress={avanzarEstado}
+          disabled={cambiando}
+        />
       ) : (
-        <Text style={{ color: 'gray', textAlign: 'center' }}>No hay más transiciones desde cocina</Text>
+        <Text style={styles.sinTransiciones}>No hay más transiciones desde cocina</Text>
       )}
 
     </ScrollView>
@@ -115,13 +117,27 @@ export default function CocinaDetalleScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
-  estado: { fontSize: 16, fontWeight: 'bold', color: '#E67E22', marginBottom: 15 },
-  error: { color: '#C0392B', marginBottom: 15, textAlign: 'center' },
-  card: { backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, elevation: 3 },
-  producto: { fontSize: 16, fontWeight: 'bold' },
-  button: { backgroundColor: '#2E1B0F', padding: 14, borderRadius: 10, alignItems: 'center', marginTop: 10 },
-  buttonText: { color: 'white', fontWeight: 'bold' },
+  title: {
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  estado: {
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.bold,
+    color: colors.secondary,
+    marginBottom: spacing.lg,
+  },
+  error: { color: colors.danger, marginBottom: spacing.lg, textAlign: 'center' },
+  card: { marginBottom: spacing.md },
+  producto: {
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
+    color: colors.textPrimary,
+  },
+  especificaciones: { color: colors.textSecondary, marginTop: spacing.xs },
+  sinTransiciones: { color: colors.textSecondary, textAlign: 'center' },
 });

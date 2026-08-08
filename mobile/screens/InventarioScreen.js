@@ -1,8 +1,15 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { getIngredientes, createIngrediente, ajustarStock, deleteIngrediente } from '../api/ingredientes';
 import { ApiError } from '../api/client';
+import { Input } from '../components/Input';
+import { Button } from '../components/Button';
+import { ListItem } from '../components/ListItem';
+import { Badge } from '../components/Badge';
+import { EmptyState } from '../components/EmptyState';
+import { colors, typography, spacing } from '../theme';
 
 export default function InventarioScreen() {
   const [items, setItems] = useState([]);
@@ -92,7 +99,7 @@ export default function InventarioScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2E1B0F" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -105,43 +112,46 @@ export default function InventarioScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {aviso ? <Text style={styles.aviso}>{aviso}</Text> : null}
 
-      <TextInput placeholder="Nombre" value={nombre} onChangeText={setNombre} style={styles.input} />
-      <TextInput placeholder="Unidad (g, ml, u)" value={unidad} onChangeText={setUnidad} style={styles.input} />
-      <TextInput placeholder="Stock mínimo" value={stockMinimo} onChangeText={setStockMinimo} keyboardType="numeric" style={styles.input} />
-      <TextInput placeholder="Costo unitario" value={costoUnitario} onChangeText={setCostoUnitario} keyboardType="numeric" style={styles.input} />
+      <Input placeholder="Nombre" value={nombre} onChangeText={setNombre} />
+      <Input placeholder="Unidad (g, ml, u)" value={unidad} onChangeText={setUnidad} />
+      <Input placeholder="Stock mínimo" value={stockMinimo} onChangeText={setStockMinimo} keyboardType="numeric" />
+      <Input placeholder="Costo unitario" value={costoUnitario} onChangeText={setCostoUnitario} keyboardType="numeric" />
 
-      <TouchableOpacity style={styles.btn} onPress={agregar}>
-        <Text style={styles.btnText}>Agregar ingrediente</Text>
-      </TouchableOpacity>
+      <Button variant="secondary" label="Agregar ingrediente" onPress={agregar} />
 
       <FlatList
         data={items}
         keyExtractor={(i) => i.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
+        style={styles.list}
+        ListEmptyComponent={<EmptyState icon="cube-outline" message="Sin ingredientes registrados." />}
+        renderItem={({ item }) => {
+          const bajoMinimo = Number(item.stock_actual) < Number(item.stock_minimo);
+          return (
+            <ListItem
+              title={item.nombre}
+              subtitle={`Stock: ${item.stock_actual} ${item.unidad} · Mínimo: ${item.stock_minimo} ${item.unidad}`}
+              trailing={
+                <View style={styles.trailing}>
+                  {bajoMinimo ? <Badge label="Bajo mínimo" tone="danger" /> : null}
 
-            <Text style={styles.name}>{item.nombre}</Text>
-            <Text>Stock: {item.stock_actual} {item.unidad}</Text>
-            <Text style={Number(item.stock_actual) < Number(item.stock_minimo) ? styles.bajo : null}>
-              Mínimo: {item.stock_minimo} {item.unidad}
-            </Text>
+                  <View style={styles.acciones}>
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => subir(item.id)}>
+                      <Ionicons name="add-circle-outline" size={24} color={colors.success} />
+                    </TouchableOpacity>
 
-            <View style={styles.row}>
-              <TouchableOpacity onPress={() => subir(item.id)}>
-                <Text style={styles.plus}>+1</Text>
-              </TouchableOpacity>
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => bajar(item.id)}>
+                      <Ionicons name="remove-circle-outline" size={24} color={colors.warning} />
+                    </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => bajar(item.id)}>
-                <Text style={styles.minus}>-1</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => eliminar(item.id)}>
-                <Text style={styles.delete}>Eliminar</Text>
-              </TouchableOpacity>
-            </View>
-
-          </View>
-        )}
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => eliminar(item.id)}>
+                      <Ionicons name="trash-outline" size={22} color={colors.danger} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              }
+            />
+          );
+        }}
       />
 
     </View>
@@ -149,19 +159,18 @@ export default function InventarioScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: '#F5F5F5' },
+  container: { flex: 1, padding: spacing.lg, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
-  error: { color: '#C0392B', marginBottom: 10 },
-  aviso: { color: '#1F618D', marginBottom: 10 },
-  input: { backgroundColor: 'white', padding: 10, marginBottom: 8, borderRadius: 8 },
-  btn: { backgroundColor: '#2E1B0F', padding: 12, borderRadius: 8, marginBottom: 10 },
-  btnText: { color: 'white', textAlign: 'center' },
-  card: { backgroundColor: 'white', padding: 10, marginBottom: 10, borderRadius: 8 },
-  name: { fontSize: 16, fontWeight: 'bold' },
-  bajo: { color: '#C0392B', fontWeight: 'bold' },
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-  plus: { color: 'green', fontSize: 16 },
-  minus: { color: 'orange', fontSize: 16 },
-  delete: { color: 'red' }
+  title: {
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    marginBottom: spacing.lg,
+  },
+  error: { color: colors.danger, marginBottom: spacing.md },
+  aviso: { color: colors.info, marginBottom: spacing.md },
+  list: { marginTop: spacing.md },
+  trailing: { alignItems: 'flex-end' },
+  acciones: { flexDirection: 'row', marginTop: spacing.xs },
+  iconBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });
