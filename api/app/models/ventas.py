@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class VentaCreate(BaseModel):
-    pedido_id: int
+    ticket_id: int
     metodo_pago: str
     monto: Decimal = Field(gt=0)
 
