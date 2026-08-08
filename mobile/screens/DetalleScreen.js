@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getPedido, cambiarEstadoPedido } from '../api/pedidos';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { connectToChannel } from '../ws/client';
 
 export default function DetalleScreen({ route }) {
   const { pedidoId, numeroMesa } = route.params;
@@ -30,6 +31,33 @@ export default function DetalleScreen({ route }) {
     useCallback(() => {
       cargar();
     }, [cargar])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cerrar = null;
+      let cancelado = false;
+
+      connectToChannel('mesero', {
+        onMessage: (evento) => {
+          if (evento.evento === 'pedido_listo' && evento.pedido_id === pedido?.id) {
+            cargar();
+          }
+        },
+      }).then((unsub) => {
+        // la pantalla pudo perder el foco mientras conectábamos
+        if (cancelado) {
+          unsub();
+          return;
+        }
+        cerrar = unsub;
+      });
+
+      return () => {
+        cancelado = true;
+        if (cerrar) cerrar();
+      };
+    }, [pedido?.id, cargar])
   );
 
   const marcarEntregado = async () => {
