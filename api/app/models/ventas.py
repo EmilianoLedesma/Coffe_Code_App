@@ -33,7 +33,7 @@ class TicketOut(BaseModel):
     fecha_emision: datetime
     id_pedido: int
     id_usuario: int
-    pago: PagoOut
+    pago: PagoOut | None = None
 
 
 class GastoCreate(BaseModel):

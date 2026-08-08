@@ -7,7 +7,8 @@ from app.data.detalle_pedidos import DetallePedido
 from app.data.estatus_pedidos import EstatusPedido
 from app.data.pedidos import Pedido
 from app.models.pedidos import CambioEstadoPedido, DetallePedidoCreate, ItemPedidoUpdate, PedidoCreate, PedidoOut
-from app.security.auth import require_rol
+from app.models.ventas import TicketOut
+from app.security.auth import TokenData, require_rol
 from app.services.pedidos import (
     actualizar_item_pedido,
     agregar_item_pedido,
@@ -15,6 +16,7 @@ from app.services.pedidos import (
     crear_pedido,
     eliminar_item_pedido,
 )
+from app.services.tickets import cerrar_cuenta
 
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
 
@@ -130,3 +132,13 @@ def eliminar_item(
     pedido = _get_pedido_o_404(db, pedido_id)
     eliminar_item_pedido(db, pedido, item_id)
     return _get_pedido_o_404(db, pedido_id)
+
+
+@router.post("/{pedido_id}/cerrar-cuenta", response_model=TicketOut, status_code=status.HTTP_201_CREATED)
+def cerrar_cuenta_endpoint(
+    pedido_id: int,
+    db: Session = Depends(get_db),
+    usuario: TokenData = Depends(require_rol(RolNombre.MESERO, RolNombre.ADMINISTRADOR)),
+):
+    pedido = _get_pedido_o_404(db, pedido_id)
+    return cerrar_cuenta(db, pedido, usuario_id=usuario.user_id)
