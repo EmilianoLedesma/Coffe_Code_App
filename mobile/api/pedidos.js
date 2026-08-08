@@ -30,14 +30,32 @@ export function cambiarEstadoPedido(pedidoId, estatus) {
   });
 }
 
-// GET /pedidos no filtra por mesa; se piden los tres estados activos y se
-// filtra client-side. Mesero tiene permiso de lectura sobre GET /pedidos
-// (api/app/routers/pedidos.py:39-49). Devuelve el más avanzado (preferencia:
-// Listo > En preparación > Pendiente) o null.
-export async function getPedidoActivoDeMesa(mesaId) {
-  const listas = await Promise.all(
-    ESTADOS_ACTIVOS.map((estado) => request(`/pedidos?estado=${encodeURIComponent(estado)}&limit=200`))
-  );
-  const activos = listas.flat().filter((p) => p.id_mesa === mesaId);
-  return activos.length ? activos[activos.length - 1] : null;
+// GET /pedidos?mesa_id= trae TODOS los pedidos de la mesa (cualquier
+// estatus); se filtra client-side a los activos para no listar pedidos ya
+// Entregados/Cancelados como si siguieran vivos.
+export async function getPedidosActivosDeMesa(mesaId) {
+  const todos = await request(`/pedidos?mesa_id=${mesaId}&limit=200`);
+  return todos.filter((p) => ESTADOS_ACTIVOS.includes(p.estatus.nombre));
+}
+
+export function agregarItemPedido(pedidoId, { idProducto, cantidad, especificaciones }) {
+  return request(`/pedidos/${pedidoId}/items`, {
+    method: 'POST',
+    body: { id_producto: idProducto, cantidad, especificaciones: especificaciones || null },
+  });
+}
+
+export function actualizarItemPedido(pedidoId, itemId, { cantidad, especificaciones }) {
+  const body = {};
+  if (cantidad !== undefined) body.cantidad = cantidad;
+  if (especificaciones !== undefined) body.especificaciones = especificaciones;
+  return request(`/pedidos/${pedidoId}/items/${itemId}`, { method: 'PUT', body });
+}
+
+export function eliminarItemPedido(pedidoId, itemId) {
+  return request(`/pedidos/${pedidoId}/items/${itemId}`, { method: 'DELETE' });
+}
+
+export function cerrarCuenta(pedidoId) {
+  return request(`/pedidos/${pedidoId}/cerrar-cuenta`, { method: 'POST' });
 }

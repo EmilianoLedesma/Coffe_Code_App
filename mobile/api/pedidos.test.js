@@ -4,7 +4,7 @@ jest.mock('../auth/session', () => ({
   clearToken: jest.fn(() => Promise.resolve()),
 }));
 
-import { getPedidoActivoDeMesa } from './pedidos';
+import { getPedidosActivosDeMesa, agregarItemPedido, actualizarItemPedido, eliminarItemPedido, cerrarCuenta } from './pedidos';
 
 function jsonResponse(body) {
   return {
@@ -14,28 +14,66 @@ function jsonResponse(body) {
   };
 }
 
-const PEDIDO_MESA_3 = { id: 10, id_mesa: 3, id_estatus: 1 };
+const PEDIDO_PENDIENTE = { id: 10, id_mesa: 3, estatus: { nombre: 'Pendiente' } };
+const PEDIDO_ENTREGADO = { id: 11, id_mesa: 3, estatus: { nombre: 'Entregado' } };
 
 beforeEach(() => {
   global.fetch = jest.fn((url) => {
-    if (url.includes('estado=Pendiente')) return Promise.resolve(jsonResponse([PEDIDO_MESA_3]));
-    if (url.includes('estado=En%20preparaci%C3%B3n')) return Promise.resolve(jsonResponse([]));
-    if (url.includes('estado=Listo')) return Promise.resolve(jsonResponse([]));
-    return Promise.resolve(jsonResponse([]));
+    if (url.includes('mesa_id=3')) return Promise.resolve(jsonResponse([PEDIDO_PENDIENTE, PEDIDO_ENTREGADO]));
+    if (url.includes('mesa_id=99')) return Promise.resolve(jsonResponse([]));
+    return Promise.resolve(jsonResponse({ id: 10 }));
   });
 });
 
 afterEach(() => jest.clearAllMocks());
 
-describe('getPedidoActivoDeMesa', () => {
-  it('filters by id_mesa and returns the matching pedido', async () => {
-    const pedido = await getPedidoActivoDeMesa(3);
-    expect(pedido).toEqual(PEDIDO_MESA_3);
-    expect(global.fetch).toHaveBeenCalledTimes(3);
+describe('getPedidosActivosDeMesa', () => {
+  it('filtra a solo los estados activos (excluye Entregado/Cancelado)', async () => {
+    const activos = await getPedidosActivosDeMesa(3);
+    expect(activos).toEqual([PEDIDO_PENDIENTE]);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
-  it('returns falsy when there is no active pedido for that mesa', async () => {
-    const pedido = await getPedidoActivoDeMesa(99);
-    expect(pedido).toBeFalsy();
+  it('devuelve lista vacía cuando la mesa no tiene pedidos', async () => {
+    const activos = await getPedidosActivosDeMesa(99);
+    expect(activos).toEqual([]);
+  });
+});
+
+describe('agregarItemPedido', () => {
+  it('manda POST a /pedidos/{id}/items con el shape correcto', async () => {
+    await agregarItemPedido(10, { idProducto: 5, cantidad: 2, especificaciones: 'Sin azúcar' });
+    const [url, options] = global.fetch.mock.calls[0];
+    expect(url).toContain('/pedidos/10/items');
+    expect(options.method).toBe('POST');
+    expect(JSON.parse(options.body)).toEqual({ id_producto: 5, cantidad: 2, especificaciones: 'Sin azúcar' });
+  });
+});
+
+describe('actualizarItemPedido', () => {
+  it('manda PUT a /pedidos/{id}/items/{itemId}', async () => {
+    await actualizarItemPedido(10, 7, { cantidad: 3 });
+    const [url, options] = global.fetch.mock.calls[0];
+    expect(url).toContain('/pedidos/10/items/7');
+    expect(options.method).toBe('PUT');
+    expect(JSON.parse(options.body)).toEqual({ cantidad: 3 });
+  });
+});
+
+describe('eliminarItemPedido', () => {
+  it('manda DELETE a /pedidos/{id}/items/{itemId}', async () => {
+    await eliminarItemPedido(10, 7);
+    const [url, options] = global.fetch.mock.calls[0];
+    expect(url).toContain('/pedidos/10/items/7');
+    expect(options.method).toBe('DELETE');
+  });
+});
+
+describe('cerrarCuenta', () => {
+  it('manda POST a /pedidos/{id}/cerrar-cuenta', async () => {
+    await cerrarCuenta(10);
+    const [url, options] = global.fetch.mock.calls[0];
+    expect(url).toContain('/pedidos/10/cerrar-cuenta');
+    expect(options.method).toBe('POST');
   });
 });
