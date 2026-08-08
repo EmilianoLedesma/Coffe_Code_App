@@ -8,10 +8,13 @@ from app.core.constants import EstatusMesaNombre, EstatusPedidoNombre
 from app.data.categorias import Categoria
 from app.data.ingredientes import Ingrediente
 from app.data.mesas import Mesa
+from app.data.pagos import Pago
 from app.data.productos import Producto
 from app.data.recetas import Receta
+from app.data.tickets import Ticket
 from app.models.pedidos import DetallePedidoCreate, ItemPedidoUpdate, PedidoCreate
 from app.services.pedidos import actualizar_item_pedido, agregar_item_pedido, cambiar_estado_pedido, crear_pedido, eliminar_item_pedido
+from app.services.tickets import cerrar_cuenta
 
 
 @pytest.fixture()
@@ -216,6 +219,11 @@ def test_entregado_libera_mesa_cuando_no_hay_mas_pedidos_activos(
     pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    ticket = cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
+    ticket.pago = Pago(
+        monto_recibido=ticket.total, cambio=Decimal("0.00"), id_metodo=catalogos["metodos_pago"]["Efectivo"].id
+    )
+    db_session.commit()
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
 
     db_session.refresh(mesa_libre)
@@ -230,6 +238,11 @@ def test_entregado_no_libera_mesa_si_hay_otro_pedido_activo(
 
     cambiar_estado_pedido(db_session, pedido_1, EstatusPedidoNombre.EN_PREPARACION)
     cambiar_estado_pedido(db_session, pedido_1, EstatusPedidoNombre.LISTO)
+    ticket = cerrar_cuenta(db_session, pedido_1, usuario_id=usuario_mesero.id)
+    ticket.pago = Pago(
+        monto_recibido=ticket.total, cambio=Decimal("0.00"), id_metodo=catalogos["metodos_pago"]["Efectivo"].id
+    )
+    db_session.commit()
     cambiar_estado_pedido(db_session, pedido_1, EstatusPedidoNombre.ENTREGADO)
 
     db_session.refresh(mesa_libre)
@@ -248,6 +261,11 @@ def test_entregado_libera_mesa_con_autoflush_desactivado(
     pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    ticket = cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
+    ticket.pago = Pago(
+        monto_recibido=ticket.total, cambio=Decimal("0.00"), id_metodo=catalogos["metodos_pago"]["Efectivo"].id
+    )
+    db_session.commit()
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
 
     db_session.refresh(mesa_libre)
@@ -346,6 +364,49 @@ def test_eliminar_ultimo_item_devuelve_409(db_session, catalogos, mesa_libre, us
         eliminar_item_pedido(db_session, pedido, item_id)
 
     assert exc_info.value.status_code == 409
+
+
+def test_entregar_sin_cerrar_cuenta_devuelve_409(db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta):
+    """Regresión directa del hallazgo #4: Listo -> Entregado no exigía pago."""
+    pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+
+    with pytest.raises(HTTPException) as exc_info:
+        cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
+
+    assert exc_info.value.status_code == 409
+
+
+def test_entregar_con_cuenta_cerrada_pero_sin_pagar_devuelve_409(
+    db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta
+):
+    pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
+
+    with pytest.raises(HTTPException) as exc_info:
+        cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
+
+    assert exc_info.value.status_code == 409
+
+
+def test_entregar_con_ticket_pagado_funciona(
+    db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta
+):
+    pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    ticket = cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
+    ticket.pago = Pago(
+        monto_recibido=ticket.total, cambio=Decimal("0.00"), id_metodo=catalogos["metodos_pago"]["Efectivo"].id
+    )
+    db_session.commit()
+
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
+
+    assert pedido.estatus.nombre == EstatusPedidoNombre.ENTREGADO
 
 
 def test_editar_item_de_pedido_en_preparacion_devuelve_409(

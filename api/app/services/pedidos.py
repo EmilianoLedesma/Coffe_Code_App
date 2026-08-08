@@ -18,6 +18,7 @@ from app.data.ingredientes import Ingrediente
 from app.data.mesas import Mesa
 from app.data.pedidos import Pedido
 from app.data.productos import Producto
+from app.data.tickets import Ticket
 from app.models.pedidos import DetallePedidoCreate, ItemPedidoUpdate, PedidoCreate
 from app.websockets.manager import manager
 
@@ -232,6 +233,19 @@ def cambiar_estado_pedido(db: Session, pedido: Pedido, nuevo_estatus_nombre: str
                 f"a '{nuevo_estatus_nombre}'"
             ),
         )
+
+    if nuevo_estatus_nombre == EstatusPedidoNombre.ENTREGADO:
+        ticket = (
+            db.query(Ticket)
+            .options(joinedload(Ticket.pago))
+            .filter(Ticket.id_pedido == pedido.id)
+            .first()
+        )
+        if not ticket or not ticket.pago:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="No se puede entregar un pedido sin cobrar",
+            )
 
     nuevo_estatus = _get_estatus_pedido_por_nombre(db, nuevo_estatus_nombre)
     alertas_stock_bajo: list[str] = []
