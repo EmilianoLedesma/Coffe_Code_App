@@ -39,6 +39,7 @@ def crear(
 @router.get("", response_model=list[PedidoOut])
 def listar(
     estado: str | None = None,
+    mesa_id: int | None = None,
     limit: int = 50,
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -51,6 +52,8 @@ def listar(
     query = db.query(Pedido).options(*_PEDIDO_LOAD_OPTIONS)
     if estado:
         query = query.join(EstatusPedido).filter(EstatusPedido.nombre == estado)
+    if mesa_id is not None:
+        query = query.filter(Pedido.id_mesa == mesa_id)
     return query.order_by(Pedido.fecha.asc()).offset(offset).limit(limit).all()
 
 
