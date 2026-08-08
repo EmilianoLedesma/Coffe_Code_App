@@ -6,9 +6,15 @@ from app.data.db import get_db
 from app.data.detalle_pedidos import DetallePedido
 from app.data.estatus_pedidos import EstatusPedido
 from app.data.pedidos import Pedido
-from app.models.pedidos import CambioEstadoPedido, DetallePedidoCreate, PedidoCreate, PedidoOut
+from app.models.pedidos import CambioEstadoPedido, DetallePedidoCreate, ItemPedidoUpdate, PedidoCreate, PedidoOut
 from app.security.auth import require_rol
-from app.services.pedidos import agregar_item_pedido, cambiar_estado_pedido, crear_pedido
+from app.services.pedidos import (
+    actualizar_item_pedido,
+    agregar_item_pedido,
+    cambiar_estado_pedido,
+    crear_pedido,
+    eliminar_item_pedido,
+)
 
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
 
@@ -98,4 +104,29 @@ def agregar_item(
 ) -> Pedido:
     pedido = _get_pedido_o_404(db, pedido_id)
     agregar_item_pedido(db, pedido, datos)
+    return _get_pedido_o_404(db, pedido_id)
+
+
+@router.put("/{pedido_id}/items/{item_id}", response_model=PedidoOut)
+def actualizar_item(
+    pedido_id: int,
+    item_id: int,
+    datos: ItemPedidoUpdate,
+    db: Session = Depends(get_db),
+    _=Depends(require_rol(RolNombre.MESERO, RolNombre.ADMINISTRADOR)),
+) -> Pedido:
+    pedido = _get_pedido_o_404(db, pedido_id)
+    actualizar_item_pedido(db, pedido, item_id, datos)
+    return _get_pedido_o_404(db, pedido_id)
+
+
+@router.delete("/{pedido_id}/items/{item_id}", response_model=PedidoOut)
+def eliminar_item(
+    pedido_id: int,
+    item_id: int,
+    db: Session = Depends(get_db),
+    _=Depends(require_rol(RolNombre.MESERO, RolNombre.ADMINISTRADOR)),
+) -> Pedido:
+    pedido = _get_pedido_o_404(db, pedido_id)
+    eliminar_item_pedido(db, pedido, item_id)
     return _get_pedido_o_404(db, pedido_id)

@@ -18,7 +18,7 @@ from app.data.ingredientes import Ingrediente
 from app.data.mesas import Mesa
 from app.data.pedidos import Pedido
 from app.data.productos import Producto
-from app.models.pedidos import DetallePedidoCreate, PedidoCreate
+from app.models.pedidos import DetallePedidoCreate, ItemPedidoUpdate, PedidoCreate
 from app.websockets.manager import manager
 
 
@@ -71,6 +71,44 @@ def agregar_item_pedido(db: Session, pedido: Pedido, datos: DetallePedidoCreate)
             id_estatus=estatus_cocina_pendiente.id,
         )
     )
+    db.commit()
+    db.refresh(pedido)
+    return pedido
+
+
+def _get_item_o_404(pedido: Pedido, item_id: int) -> DetallePedido:
+    for item in pedido.detalle:
+        if item.id == item_id:
+            return item
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ítem no encontrado en este pedido")
+
+
+def actualizar_item_pedido(db: Session, pedido: Pedido, item_id: int, datos: ItemPedidoUpdate) -> Pedido:
+    _validar_pedido_editable(pedido)
+    item = _get_item_o_404(pedido, item_id)
+
+    cambios = datos.model_dump(exclude_unset=True)
+    if "cantidad" in cambios:
+        item.cantidad = cambios["cantidad"]
+    if "especificaciones" in cambios:
+        item.especificaciones = cambios["especificaciones"]
+
+    db.commit()
+    db.refresh(pedido)
+    return pedido
+
+
+def eliminar_item_pedido(db: Session, pedido: Pedido, item_id: int) -> Pedido:
+    _validar_pedido_editable(pedido)
+    item = _get_item_o_404(pedido, item_id)
+
+    if len(pedido.detalle) <= 1:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="El pedido debe tener al menos un ítem"
+        )
+
+    pedido.detalle.remove(item)
+    db.delete(item)
     db.commit()
     db.refresh(pedido)
     return pedido
