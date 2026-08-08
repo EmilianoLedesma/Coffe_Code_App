@@ -32,11 +32,11 @@ export function cambiarEstadoPedido(pedidoId, estatus) {
 
 // GET /pedidos no filtra por mesa; se piden los tres estados activos y se
 // filtra client-side. Mesero tiene permiso de lectura sobre GET /pedidos
-// (api/app/routers/pedidos.py:39-49). Devuelve el más reciente (la API ordena
-// por fecha ascendente) o null.
+// (api/app/routers/pedidos.py:39-49). Devuelve el más avanzado (preferencia:
+// Listo > En preparación > Pendiente) o null.
 export async function getPedidoActivoDeMesa(mesaId) {
   const listas = await Promise.all(
-    ESTADOS_ACTIVOS.map((estado) => request(`/pedidos?estado=${encodeURIComponent(estado)}`))
+    ESTADOS_ACTIVOS.map((estado) => request(`/pedidos?estado=${encodeURIComponent(estado)}&limit=200`))
   );
   const activos = listas.flat().filter((p) => p.id_mesa === mesaId);
   return activos.length ? activos[activos.length - 1] : null;
