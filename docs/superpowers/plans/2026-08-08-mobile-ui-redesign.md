@@ -45,7 +45,7 @@ export const colors = {
   surface: '#FFFFFF',
 
   textPrimary: '#2B1B12',
-  textSecondary: '#8A7968',
+  textSecondary: '#6B5A48',
   textTertiary: '#C4B8AB',
   textOnPrimary: '#FFFFFF',
 
@@ -54,7 +54,7 @@ export const colors = {
 
   success: '#2E7D4F',
   successTint: '#E8F5EC',
-  warning: '#C87F0A',
+  warning: '#8F5A00',
   warningTint: '#FDF3E2',
   danger: '#C0392B',
   dangerTint: '#FBEAE8',
@@ -190,7 +190,7 @@ git commit -m "feat(mobile): design tokens (colores, tipografia, spacing/radios/
 - Consumes: `colors`, `typography`, `spacing`, `radii`, `shadows` from `../theme` (Task 1).
 - Produces:
   - `Button({ variant: 'primary'|'secondary'|'text', label, onPress, disabled, loading })`
-  - `Card({ children, size: 'default'|'hero', style })`
+  - `Card({ children, size: 'default'|'hero', style, onPress })` (optional `onPress` — when passed, renders as a `TouchableOpacity` instead of a plain `View`, same conditional pattern as `ListItem`)
   - `Input({ label, value, onChangeText, placeholder, keyboardType, secureTextEntry, error, multiline })`
   - `Badge({ label, tone: 'success'|'warning'|'danger'|'info'|'neutral' })`
   - `Chip({ label, selected, onPress })`
@@ -223,6 +223,7 @@ export function Button({ variant = 'primary', label, onPress, disabled = false, 
     <TouchableOpacity
       onPress={onPress}
       disabled={isDisabled}
+      activeOpacity={0.7}
       style={[
         styles.base,
         variant === 'primary' && styles.primary,
@@ -298,14 +299,17 @@ const styles = StyleSheet.create({
 - [ ] **Step 3: Create `mobile/components/Card.js`**
 
 ```js
-import { View, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, spacing, radii, shadows } from '../theme';
 
-export function Card({ children, size = 'default', style }) {
+export function Card({ children, size = 'default', style, onPress }) {
+  const Container = onPress ? TouchableOpacity : View;
+  const extraProps = onPress ? { activeOpacity: 0.85 } : {};
+
   return (
-    <View style={[styles.base, size === 'hero' && styles.hero, style]}>
+    <Container onPress={onPress} {...extraProps} style={[styles.base, size === 'hero' && styles.hero, style]}>
       {children}
-    </View>
+    </Container>
   );
 }
 
@@ -457,6 +461,7 @@ export function Chip({ label, selected = false, onPress }) {
   return (
     <TouchableOpacity
       onPress={onPress}
+      activeOpacity={0.7}
       style={[styles.base, selected && styles.selected]}
     >
       <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
@@ -466,6 +471,8 @@ export function Chip({ label, selected = false, onPress }) {
 
 const styles = StyleSheet.create({
   base: {
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: radii.r999,
     borderWidth: 1,
     borderColor: colors.borderVisible,
@@ -500,9 +507,10 @@ import { colors, typography, spacing, radii } from '../theme';
 
 export function ListItem({ icon, title, subtitle, trailing, onPress }) {
   const Container = onPress ? TouchableOpacity : View;
+  const extraProps = onPress ? { activeOpacity: 0.7 } : {};
 
   return (
-    <Container onPress={onPress} style={styles.container}>
+    <Container onPress={onPress} {...extraProps} style={styles.container}>
       {icon ? (
         <View style={styles.iconWrap}>
           <Ionicons name={icon} size={20} color={colors.primary} />
@@ -731,10 +739,10 @@ git commit -m "feat(mobile): rediseno visual de pantallas de Mesero (Mesas, Pedi
 - [ ] **Step 2: Replace `StyleSheet.create` blocks and JSX markup**:
 
   - **`CocinaScreen.js`** (home/landing for this role): pending-order count becomes a prominent `Card` (`size="hero"`) with a large number + label; nav buttons to Cola/Menu/Inventario become `ListItem`s with icons (`list-outline` for Cola, `restaurant-outline` for Menu, `cube-outline` for Inventario).
-  - **`ColaPedidosScreen.js`**: queue rows become `ListItem` (title = mesa/pedido identifier, subtitle = time or item count, trailing = a `Badge` for status). Empty queue state uses `EmptyState`.
+  - **`ColaPedidosScreen.js`**: queue rows become `ListItem` (title = mesa/pedido identifier, subtitle = time or item count, trailing = a `Badge` for status). Empty queue state uses `EmptyState` with an instructive message, not a bare "vacío" — e.g. "Sin pedidos pendientes. Aparecerán aquí en cuanto un mesero cree uno." (or equivalent wording matching the file's existing tone), so the screen explains what will appear and why it's empty, not just that it's empty.
   - **`CocinaDetalleScreen.js`**: order detail becomes a `Card`; item list becomes `ListItem`s; status-advance buttons (Pendiente→En preparación→Listo) become `Button variant="primary"`; low-stock alert (existing `Alert.alert`, per recon this was fixed to be blocking in a prior phase — do not change how/when it's triggered) — if there's any inline low-stock banner in the JSX besides the `Alert.alert` call, restyle it using `colors.warningTint`/`colors.warning`, matching the `Input` component's error-banner pattern.
   - **`MenuScreen.js`**: category filter row becomes a row of `Chip`s (`selected` = active category); product list becomes `ListItem`s (trailing = delete icon button using `Ionicons name="trash-outline"`); "add product" form/button becomes `Button variant="secondary"` (dashed style, matching Sway's "add new" convention) opening whatever the existing add-flow is (don't redesign the flow itself, just its trigger's visual style). The existing "aviso" soft-delete message (from a prior phase's fix) stays functionally identical, restyle its container only.
-  - **`InventarioScreen.js`**: ingredient list becomes `ListItem`s (trailing = +1/-1 stock buttons, restyled as small `Button variant="secondary"` or icon-only touchables using `Ionicons name="add-circle-outline"`/`"remove-circle-outline"` — keep the exact +1/-1 adjustment logic, only restyle the buttons); below-minimum-stock highlighting (existing, fixed in a prior phase to use `Number()` comparison — do not touch that comparison logic) becomes a `Badge tone="danger"` or a tinted `ListItem` background, implementer's reasonable choice, applied only when the existing highlight condition is already true.
+  - **`InventarioScreen.js`**: ingredient list becomes `ListItem`s (trailing = +1/-1 stock buttons, restyled as small `Button variant="secondary"` or icon-only touchables using `Ionicons name="add-circle-outline"`/`"remove-circle-outline"` — keep the exact +1/-1 adjustment logic, only restyle the buttons; whatever container you use, give it an explicit `minWidth: 44, minHeight: 44` — icon-only touch targets must meet the 44×44pt minimum, an icon alone at its natural size is too small to tap reliably); below-minimum-stock highlighting (existing, fixed in a prior phase to use `Number()` comparison — do not touch that comparison logic) becomes a `Badge tone="danger"` or a tinted `ListItem` background, implementer's reasonable choice, applied only when the existing highlight condition is already true.
 
 - [ ] **Step 3: Verify**
 
@@ -767,7 +775,7 @@ git commit -m "feat(mobile): rediseno visual de pantallas de Cocina (home, Cola,
 
 - [ ] **Step 2: Replace `StyleSheet.create` blocks and JSX markup**:
 
-  - **`CajaScreen.js`**: queue rows (orders ready to charge) become `ListItem` (title = mesa/pedido identifier, subtitle = total or item count, trailing = a `Button variant="primary"` labeled "Cobrar" navigating to Pago). Empty state uses `EmptyState`.
+  - **`CajaScreen.js`**: queue rows (orders ready to charge) become `ListItem` (title = mesa/pedido identifier, subtitle = total or item count, trailing = a `Button variant="primary"` labeled "Cobrar" navigating to Pago). Empty state uses `EmptyState` with an instructive message, not a bare "vacío" — e.g. "Sin pedidos por cobrar. Aparecerán aquí cuando cocina marque un pedido como Listo." (or equivalent wording matching the file's existing tone).
   - **`PagoScreen.js`**: order summary becomes a `Card`; payment-method picker becomes a row of `Chip`s (one per método de pago, `selected` = chosen method); amount-received field becomes `Input` (`keyboardType="numeric"`); confirm button becomes `Button variant="primary"`; the existing `error && !pedido` crash guard (fixed in a prior phase) must stay exactly as is — only its rendered error message's visual style changes, using the same error-banner pattern as `Input`'s `error` prop (`colors.dangerTint`/`colors.danger`).
   - **`GastosScreen.js`**: within `renderHeader()` — the existing gasto-form card becomes a `Card` containing `Input`s for descripcion/monto and a `Button variant="primary"` for "Agregar gasto"; the existing "Comprar insumo" card becomes a `Card` containing a row of `Chip`s for ingredient selection (replacing the current `TouchableOpacity`+`Text` chip pattern — same selection behavior, restyled), `Input`s for cantidad/monto, and `Button variant="primary"` for "Registrar compra"; the totals box becomes a `Card`. Within the `FlatList`'s `renderItem` — each session-gasto row becomes a `ListItem`.
 
