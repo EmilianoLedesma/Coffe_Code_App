@@ -21,7 +21,7 @@ const METODOS = [
 ];
 
 export default function PagoScreen({ route, navigation }) {
-  const { pedidoId } = route.params;
+  const { pedidoId, numeroMesa } = route.params;
 
   const [pedido, setPedido] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,14 +31,22 @@ export default function PagoScreen({ route, navigation }) {
   const [error, setError] = useState('');
   const [resultado, setResultado] = useState(null);
 
+  const cargar = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      setPedido(await getPedido(pedidoId));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo cargar el pedido');
+    } finally {
+      setLoading(false);
+    }
+  }, [pedidoId]);
+
   useFocusEffect(
     useCallback(() => {
-      setLoading(true);
-      getPedido(pedidoId)
-        .then(setPedido)
-        .catch((err) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el pedido'))
-        .finally(() => setLoading(false));
-    }, [pedidoId])
+      cargar();
+    }, [cargar])
   );
 
   const subtotalEstimado = pedido
@@ -67,10 +75,21 @@ export default function PagoScreen({ route, navigation }) {
     }
   };
 
-  if (loading) {
+  if (loading && !pedido) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#2E1B0F" />
+      </View>
+    );
+  }
+
+  if (error && !pedido) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.error}>{error}</Text>
+        <TouchableOpacity style={styles.payButton} onPress={cargar}>
+          <Text style={styles.payText}>Reintentar</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -94,7 +113,7 @@ export default function PagoScreen({ route, navigation }) {
       <Text style={styles.title}>Procesar Pago</Text>
 
       <View style={styles.card}>
-        <Text style={styles.subtitle}>Mesa {pedido.id_mesa} — Pedido #{pedido.id}</Text>
+        <Text style={styles.subtitle}>Mesa {numeroMesa ?? pedido.id_mesa} — Pedido #{pedido.id}</Text>
 
         {pedido.detalle.map((item) => (
           <Text key={item.id} style={styles.text}>
