@@ -43,6 +43,7 @@ export default function ColaPedidosScreen({ navigation }) {
             cargar();
           }
         },
+        onClose: cargar,
       }).then((unsub) => {
         // la pantalla pudo perder el foco mientras conectábamos
         if (cancelado) {
@@ -59,7 +60,7 @@ export default function ColaPedidosScreen({ navigation }) {
     }, [cargar])
   );
 
-  if (loading) {
+  if (loading && pedidos.length === 0) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#2E1B0F" />

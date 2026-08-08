@@ -40,10 +40,11 @@ export default function DetalleScreen({ route }) {
 
       connectToChannel('mesero', {
         onMessage: (evento) => {
-          if (evento.evento === 'pedido_listo' && evento.pedido_id === pedido?.id) {
+          if (evento.evento === 'pedido_listo' && evento.pedido_id === pedidoId) {
             cargar();
           }
         },
+        onClose: cargar,
       }).then((unsub) => {
         // la pantalla pudo perder el foco mientras conectábamos
         if (cancelado) {
@@ -57,7 +58,7 @@ export default function DetalleScreen({ route }) {
         cancelado = true;
         if (cerrar) cerrar();
       };
-    }, [pedido?.id, cargar])
+    }, [pedidoId, cargar])
   );
 
   const marcarEntregado = async () => {
