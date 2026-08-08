@@ -49,7 +49,9 @@ export default function GastosScreen() {
     setError('');
     try {
       const creado = await crearGasto({ concepto: descripcion.trim(), monto: parseFloat(monto) });
-      setGastosSesion([creado, ...gastosSesion]);
+      // updater funcional: evita perder un gasto si dos altas caen seguidas
+      // sobre el mismo `gastosSesion` capturado en el closure.
+      setGastosSesion((actual) => [creado, ...actual]);
       setDescripcion('');
       setMonto('');
       await cargarResumen();
