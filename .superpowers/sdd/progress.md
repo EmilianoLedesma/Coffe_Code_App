@@ -64,9 +64,19 @@ También se usó un script WS de prueba (`ws_flow_test.py`, ya escrito en una se
 - RecuperarPassword renderiza/funciona bien como el stub intencional que es (solo `Alert` local, sin llamada real a la API) — confirmado en dispositivo, sin crash. Sin acción necesaria.
 - Borrado de producto SIN historial de pedidos: confirmado permanente (hard delete), coincide exacto con lo esperado por el código — producto id 19 "MSI" desapareció completamente de la DB tras borrarse desde la app.
 
+## MERGE COMPLETADO (actualización tras cierre de la parte 7)
+
+El usuario aprobó explícitamente el merge y pidió retomar trabajo directo desde `main`. Ejecutado con `superpowers:finishing-a-development-branch`:
+- Tests verificados en verde antes y después del merge: API 116/116, mobile 16/16.
+- `mobile-plan-catchup` mergeado a `main` sin conflictos (merge commit `dc4e0f8`, 48 archivos).
+- **Gap real cometido por el agente y corregido tras aviso del usuario:** el merge se hizo local pero no se pusheó a `origin/main` en el primer intento — el usuario lo detectó mirando GitHub directamente (la web seguía mostrando el commit viejo + banner de "mobile-plan-catchup had recent pushes"). Corregido: `git push origin main` (ahora `origin/main` en `dc4e0f8`), rama remota `mobile-plan-catchup` borrada (ya redundante, mergeada). Lección: after a local merge, siempre confirmar el push explícitamente, no asumir que "merge completo" implica "pusheado".
+- Branch local `mobile-plan-catchup` borrada, worktree limpiado (`git worktree prune`) — quedó una carpeta `mobile/` vacía y bloqueada por el proceso de Expo Go corriendo del usuario, inofensiva, se limpia sola al cerrar esa terminal.
+- Commit adicional en `main`: `5b2b646` — tabla de credenciales seed por rol agregada al README (pedido directo del usuario, credenciales ya públicas en `api/app/seed.py`, no es una fuga nueva).
+- **Trabajo actual vive 100% en `main` ahora** — no hay más branch/worktree de por medio.
+
 ## Próximo paso exacto
 
-**Usar `superpowers:brainstorming` para decidir qué hacer con los 15 hallazgos de arriba antes de escribir cualquier código.** El punto #4 (modelo de pago/tickets: ¿Cajero como estación fija o Mesero cobra en mesa?) es la decisión más grande y debe resolverse primero ya que reordena el resto. Después de eso, agrupar el resto en specs+planes razonables (algunos son fixes de una sola línea agrupables juntos — #5, #9, #13 — otros son features medianas — #2, #3, #7, #11, #14 — y #8 ya tiene un plan viejo que solo necesita reescritura). Seguir sin mergear `mobile-plan-catchup` a `main` hasta que el usuario apruebe explícitamente — instrucción repetida varias veces en esta sesión.
+**Usar `superpowers:brainstorming` para decidir qué hacer con los 15 hallazgos de arriba antes de escribir cualquier código.** El punto #4 (modelo de pago/tickets: ¿Cajero como estación fija o Mesero cobra en mesa?) es la decisión más grande y debe resolverse primero ya que reordena el resto. Después de eso, agrupar el resto en specs+planes razonables (algunos son fixes de una sola línea agrupables juntos — #5, #9, #13 — otros son features medianas — #2, #3, #7, #11, #14 — y #8 ya tiene un plan viejo que solo necesita reescritura). Trabajo directo en `main` desde ahora — ya no hace falta crear un worktree nuevo para esto salvo que el alcance lo amerite.
 
 ---
 
