@@ -1,7 +1,15 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, FlatList } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getPedido, cambiarEstadoPedido } from '../api/pedidos';
+import {
+  getPedido,
+  cambiarEstadoPedido,
+  agregarItemPedido,
+  actualizarItemPedido,
+  eliminarItemPedido,
+  cerrarCuenta,
+} from '../api/pedidos';
+import { getProductos } from '../api/productos';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { connectToChannel } from '../ws/client';
@@ -12,12 +20,15 @@ import { Button } from '../components/Button';
 import { colors, typography, spacing } from '../theme';
 import { TONE_POR_ESTATUS_PEDIDO } from '../constants/estatusPedido';
 
-export default function DetalleScreen({ route }) {
+export default function DetalleScreen({ route, navigation }) {
   const { pedidoId, numeroMesa } = route.params;
   const { rol } = useAuth();
   const [pedido, setPedido] = useState(null);
+  const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [entregando, setEntregando] = useState(false);
+  const [cerrandoCuenta, setCerrandoCuenta] = useState(false);
+  const [editandoItemId, setEditandoItemId] = useState(null);
   const [error, setError] = useState('');
 
   const cargar = useCallback(async () => {
@@ -41,6 +52,23 @@ export default function DetalleScreen({ route }) {
 
   useFocusEffect(
     useCallback(() => {
+      let cancelado = false;
+      (async () => {
+        try {
+          const productos = await getProductos();
+          if (!cancelado) setMenu(productos.filter((p) => p.disponible !== false));
+        } catch (err) {
+          // el menú es solo para agregar items; si falla, se oculta esa sección
+        }
+      })();
+      return () => {
+        cancelado = true;
+      };
+    }, [])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
       let cerrar = null;
       let cancelado = false;
 
@@ -52,7 +80,6 @@ export default function DetalleScreen({ route }) {
         },
         onClose: cargar,
       }).then((unsub) => {
-        // la pantalla pudo perder el foco mientras conectábamos
         if (cancelado) {
           unsub();
           return;
@@ -79,6 +106,53 @@ export default function DetalleScreen({ route }) {
     }
   };
 
+  const handleCerrarCuenta = async () => {
+    setCerrandoCuenta(true);
+    setError('');
+    try {
+      await cerrarCuenta(pedidoId);
+      await cargar();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo cerrar la cuenta');
+    } finally {
+      setCerrandoCuenta(false);
+    }
+  };
+
+  const cambiarCantidad = async (itemId, nuevaCantidad) => {
+    if (nuevaCantidad < 1) return;
+    setEditandoItemId(itemId);
+    setError('');
+    try {
+      setPedido(await actualizarItemPedido(pedidoId, itemId, { cantidad: nuevaCantidad }));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo actualizar el ítem');
+    } finally {
+      setEditandoItemId(null);
+    }
+  };
+
+  const quitarItem = async (itemId) => {
+    setEditandoItemId(itemId);
+    setError('');
+    try {
+      setPedido(await eliminarItemPedido(pedidoId, itemId));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo quitar el ítem');
+    } finally {
+      setEditandoItemId(null);
+    }
+  };
+
+  const agregarProducto = async (producto) => {
+    setError('');
+    try {
+      setPedido(await agregarItemPedido(pedidoId, { idProducto: producto.id, cantidad: 1 }));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo agregar el producto');
+    }
+  };
+
   if (loading && !pedido) {
     return (
       <View style={styles.center}>
@@ -96,8 +170,12 @@ export default function DetalleScreen({ route }) {
     );
   }
 
-  const puedeEntregar =
-    (rol === 'Mesero' || rol === 'Administrador') && pedido.estatus.nombre === 'Listo';
+  const esMeseroOAdmin = rol === 'Mesero' || rol === 'Administrador';
+  const esPendiente = pedido.estatus.nombre === 'Pendiente';
+  const esListo = pedido.estatus.nombre === 'Listo';
+  const puedeEditar = esMeseroOAdmin && esPendiente;
+  const puedeCerrarCuenta = esMeseroOAdmin && esListo;
+  const puedeEntregar = esMeseroOAdmin && esListo;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -115,15 +193,69 @@ export default function DetalleScreen({ route }) {
           key={item.id}
           title={`${item.producto.nombre} x${item.cantidad}`}
           subtitle={`$${item.precio_unitario} c/u`}
-          trailing={<Badge label={item.estatus.nombre} tone="neutral" />}
+          trailing={
+            puedeEditar ? (
+              <View style={styles.editRow}>
+                <Button
+                  variant="text"
+                  label="-"
+                  onPress={() => cambiarCantidad(item.id, item.cantidad - 1)}
+                  disabled={editandoItemId === item.id}
+                />
+                <Button
+                  variant="text"
+                  label="+"
+                  onPress={() => cambiarCantidad(item.id, item.cantidad + 1)}
+                  disabled={editandoItemId === item.id}
+                />
+                <Button
+                  variant="text"
+                  label="Quitar"
+                  onPress={() => quitarItem(item.id)}
+                  disabled={editandoItemId === item.id}
+                />
+              </View>
+            ) : (
+              <Badge label={item.estatus.nombre} tone="neutral" />
+            )
+          }
         />
       ))}
+
+      {puedeEditar && (
+        <>
+          <Text style={styles.subtitle}>Agregar producto</Text>
+          <FlatList
+            data={menu}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <ListItem
+                title={item.nombre}
+                subtitle={`$${item.precio_venta}`}
+                trailing={<Text style={styles.agregar}>+</Text>}
+                onPress={() => agregarProducto(item)}
+              />
+            )}
+          />
+        </>
+      )}
 
       {pedido.total !== null && (
         <Text style={styles.total}>Total: ${pedido.total}</Text>
       )}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      {puedeCerrarCuenta && (
+        <View style={styles.entregarWrap}>
+          <Button
+            variant="secondary"
+            label={cerrandoCuenta ? 'Cerrando...' : 'Cerrar cuenta'}
+            onPress={handleCerrarCuenta}
+            disabled={cerrandoCuenta}
+          />
+        </View>
+      )}
 
       {puedeEntregar && (
         <View style={styles.entregarWrap}>
@@ -152,6 +284,13 @@ const styles = StyleSheet.create({
     fontWeight: typography.weight.bold,
     color: colors.textPrimary,
   },
+  subtitle: {
+    marginTop: spacing.lg,
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
   error: { color: colors.danger, marginBottom: spacing.lg, textAlign: 'center' },
   total: {
     fontSize: typography.size.xl,
@@ -161,4 +300,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   entregarWrap: { marginBottom: spacing.sm },
+  editRow: { flexDirection: 'row', gap: spacing.sm },
+  agregar: { fontWeight: typography.weight.bold, color: colors.primary, fontSize: typography.size.xl },
 });
