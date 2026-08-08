@@ -11,7 +11,7 @@ from app.data.mesas import Mesa
 from app.data.productos import Producto
 from app.data.recetas import Receta
 from app.models.pedidos import DetallePedidoCreate, PedidoCreate
-from app.services.pedidos import cambiar_estado_pedido, crear_pedido
+from app.services.pedidos import agregar_item_pedido, cambiar_estado_pedido, crear_pedido
 
 
 @pytest.fixture()
@@ -274,3 +274,37 @@ def test_cancelado_no_libera_mesa_si_hay_otro_pedido_activo(
 
     db_session.refresh(mesa_libre)
     assert mesa_libre.estatus.nombre == EstatusMesaNombre.OCUPADA
+
+
+def test_agregar_item_a_pedido_pendiente(db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta):
+    pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
+
+    pedido = agregar_item_pedido(
+        db_session, pedido, DetallePedidoCreate(id_producto=producto_sin_receta.id, cantidad=3)
+    )
+
+    assert len(pedido.detalle) == 2
+    assert pedido.detalle[1].cantidad == 3
+
+
+def test_agregar_item_a_pedido_no_pendiente_devuelve_409(
+    db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta
+):
+    pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
+
+    with pytest.raises(HTTPException) as exc_info:
+        agregar_item_pedido(db_session, pedido, DetallePedidoCreate(id_producto=producto_sin_receta.id, cantidad=1))
+
+    assert exc_info.value.status_code == 409
+
+
+def test_agregar_item_producto_no_disponible_devuelve_409(
+    db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta, producto_no_disponible
+):
+    pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
+
+    with pytest.raises(HTTPException) as exc_info:
+        agregar_item_pedido(db_session, pedido, DetallePedidoCreate(id_producto=producto_no_disponible.id, cantidad=1))
+
+    assert exc_info.value.status_code == 409

@@ -67,3 +67,8 @@ class PedidoOut(BaseModel):
 
 class CambioEstadoPedido(BaseModel):
     estatus: str
+
+
+class ItemPedidoUpdate(BaseModel):
+    cantidad: int | None = Field(default=None, ge=1)
+    especificaciones: str | None = None

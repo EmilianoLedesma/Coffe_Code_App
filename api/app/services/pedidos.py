@@ -18,7 +18,7 @@ from app.data.ingredientes import Ingrediente
 from app.data.mesas import Mesa
 from app.data.pedidos import Pedido
 from app.data.productos import Producto
-from app.models.pedidos import PedidoCreate
+from app.models.pedidos import DetallePedidoCreate, PedidoCreate
 from app.websockets.manager import manager
 
 
@@ -40,6 +40,40 @@ def _get_estatus_cocina_por_nombre(db: Session, nombre: str) -> EstatusCocina:
             detail=f"Catálogo de estatus de cocina incompleto: falta '{nombre}'",
         )
     return estatus
+
+
+def _validar_pedido_editable(pedido: Pedido) -> None:
+    if pedido.estatus.nombre != EstatusPedidoNombre.PENDIENTE:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se puede editar un pedido que ya está en preparación",
+        )
+
+
+def agregar_item_pedido(db: Session, pedido: Pedido, datos: DetallePedidoCreate) -> Pedido:
+    _validar_pedido_editable(pedido)
+
+    producto = db.query(Producto).filter(Producto.id == datos.id_producto).first()
+    if not producto:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
+    if not producto.disponible:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=f"Producto no disponible: {producto.nombre}"
+        )
+
+    estatus_cocina_pendiente = _get_estatus_cocina_por_nombre(db, EstatusCocinaNombre.PENDIENTE)
+    pedido.detalle.append(
+        DetallePedido(
+            id_producto=producto.id,
+            cantidad=datos.cantidad,
+            especificaciones=datos.especificaciones,
+            precio_unitario=producto.precio_venta,
+            id_estatus=estatus_cocina_pendiente.id,
+        )
+    )
+    db.commit()
+    db.refresh(pedido)
+    return pedido
 
 
 def crear_pedido(db: Session, datos: PedidoCreate) -> Pedido:
