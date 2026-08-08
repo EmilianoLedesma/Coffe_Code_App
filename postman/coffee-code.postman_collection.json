@@ -60,6 +60,14 @@
     {
       "key": "gasto_fijo_id",
       "value": ""
+    },
+    {
+      "key": "item_id",
+      "value": ""
+    },
+    {
+      "key": "ticket_id",
+      "value": ""
     }
   ],
   "item": [
@@ -291,6 +299,160 @@
                 "pedidos"
               ]
             }
+          }
+        },
+        {
+          "name": "Agregar Item a Pedido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data_agregar_item = pm.response.json();",
+                  "if (data_agregar_item.detalle && data_agregar_item.detalle.length) { pm.collectionVariables.set('item_id', data_agregar_item.detalle[data_agregar_item.detalle.length - 1].id); }",
+                  "pm.test('item agregado (201)', () => { if (!(pm.response.code === 201)) { throw new Error('item agregado (201) -- assertion failed (status ' + pm.response.code + ')'); } });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_producto\": {{producto_id}},\n  \"cantidad\": 1,\n  \"especificaciones\": null\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/pedidos/{{pedido_id}}/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedido_id}}",
+                "items"
+              ]
+            },
+            "description": "El pedido debe estar en estatus Pendiente (409 si no). 409 tambien si el producto no esta disponible, 404 si no existe."
+          }
+        },
+        {
+          "name": "Actualizar Item de Pedido",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 3,\n  \"especificaciones\": \"sin azucar, extra caliente\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/pedidos/{{pedido_id}}/items/{{item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedido_id}}",
+                "items",
+                "{{item_id}}"
+              ]
+            },
+            "description": "Actualizacion parcial: cantidad y/o especificaciones. El pedido debe estar en estatus Pendiente (409 si no), 404 si el item no existe."
+          }
+        },
+        {
+          "name": "Eliminar Item de Pedido",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/pedidos/{{pedido_id}}/items/{{item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedido_id}}",
+                "items",
+                "{{item_id}}"
+              ]
+            },
+            "description": "El pedido debe estar en estatus Pendiente (409 si no). 409 si es el ultimo item del pedido. 404 si el item no existe."
+          }
+        },
+        {
+          "name": "Cerrar Cuenta de Pedido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data_cerrar_cuenta = pm.response.json();",
+                  "if (data_cerrar_cuenta.id) { pm.collectionVariables.set('ticket_id', data_cerrar_cuenta.id); }",
+                  "pm.test('cuenta cerrada (201)', () => { if (!(pm.response.code === 201)) { throw new Error('cuenta cerrada (201) -- assertion failed (status ' + pm.response.code + ')'); } });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_mesero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/pedidos/{{pedido_id}}/cerrar-cuenta",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "{{pedido_id}}",
+                "cerrar-cuenta"
+              ]
+            },
+            "description": "El pedido debe estar en estatus Listo (409 si no). 409 si la cuenta ya fue cerrada. Crea el Ticket (sin Pago) que luego usa Registrar Venta via {{ticket_id}}."
           }
         },
         {
@@ -995,7 +1157,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"pedido_id\": {{pedido_id}},\n  \"metodo_pago\": \"Efectivo\",\n  \"monto\": 100\n}"
+              "raw": "{\n  \"ticket_id\": {{ticket_id}},\n  \"metodo_pago\": \"Efectivo\",\n  \"monto\": 100\n}"
             },
             "url": {
               "raw": "{{base_url}}/ventas",
@@ -1006,7 +1168,38 @@
                 "ventas"
               ]
             },
-            "description": "El pedido debe existir y no tener ya un pago registrado (devuelve 409 si se repite)."
+            "description": "El ticket debe existir (creado previamente via Cerrar Cuenta de Pedido) y no tener ya un pago registrado (409 si se repite). 404 si el ticket no existe. 400 si metodo_pago invalido o el monto es insuficiente."
+          }
+        },
+        {
+          "name": "Listar Tickets",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cajero}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/tickets?pagado=false",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tickets"
+              ],
+              "query": [
+                {
+                  "key": "pagado",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "Disponible para Mesero, Cajero y Admin. El parametro pagado es opcional (true/false, se omite para no filtrar). Mesero solo ve tickets de pedidos que el mismo creo; Cajero/Admin ven todos."
           }
         },
         {
