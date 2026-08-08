@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getPedido, cambiarEstadoPedido } from '../api/pedidos_cocina';
 import { ApiError } from '../api/client';
@@ -10,7 +10,7 @@ const SIGUIENTE_ESTATUS = {
 };
 
 export default function CocinaDetalleScreen({ route, navigation }) {
-  const { pedidoId } = route.params;
+  const { pedidoId, numeroMesa } = route.params;
   const [pedido, setPedido] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cambiando, setCambiando] = useState(false);
@@ -43,10 +43,18 @@ export default function CocinaDetalleScreen({ route, navigation }) {
     try {
       const actualizado = await cambiarEstadoPedido(pedidoId, siguiente);
       setPedido(actualizado);
-      if (actualizado.alertas_stock_bajo && actualizado.alertas_stock_bajo.length > 0) {
-        setError(`Alerta de stock bajo: ${actualizado.alertas_stock_bajo.join(', ')}`);
-      }
-      if (siguiente === 'Listo') {
+
+      if (siguiente !== 'Listo') return;
+
+      const alertas = actualizado.alertas_stock_bajo || [];
+
+      if (alertas.length > 0) {
+        Alert.alert(
+          'Stock bajo',
+          `Estos ingredientes quedaron bajo el mínimo: ${alertas.join(', ')}`,
+          [{ text: 'Entendido', onPress: () => navigation.goBack() }]
+        );
+      } else {
         navigation.goBack();
       }
     } catch (err) {
@@ -56,10 +64,21 @@ export default function CocinaDetalleScreen({ route, navigation }) {
     }
   };
 
-  if (loading || !pedido) {
+  if (loading && !pedido) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#2E1B0F" />
+      </View>
+    );
+  }
+
+  if (error && !pedido) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.error}>{error}</Text>
+        <TouchableOpacity style={styles.button} onPress={cargar}>
+          <Text style={styles.buttonText}>Reintentar</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -69,7 +88,7 @@ export default function CocinaDetalleScreen({ route, navigation }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
 
-      <Text style={styles.title}>Pedido #{pedido.id} — Mesa {pedido.id_mesa}</Text>
+      <Text style={styles.title}>Pedido #{pedido.id} — Mesa {numeroMesa ?? pedido.id_mesa}</Text>
       <Text style={styles.estado}>Estado: {pedido.estatus.nombre}</Text>
 
       {pedido.detalle.map((item) => (

@@ -2,10 +2,12 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getColaPendientes } from '../api/pedidos_cocina';
+import { getMesas } from '../api/mesas';
 import { ApiError } from '../api/client';
 
 export default function ColaPedidosScreen({ navigation }) {
   const [pedidos, setPedidos] = useState([]);
+  const [numeroPorMesa, setNumeroPorMesa] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -13,7 +15,9 @@ export default function ColaPedidosScreen({ navigation }) {
     setLoading(true);
     setError('');
     try {
-      setPedidos(await getColaPendientes());
+      const [lista, mesas] = await Promise.all([getColaPendientes(), getMesas()]);
+      setPedidos(lista);
+      setNumeroPorMesa(Object.fromEntries(mesas.map((m) => [m.id, m.numero_mesa])));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo conectar con el servidor');
     } finally {
@@ -48,13 +52,18 @@ export default function ColaPedidosScreen({ navigation }) {
         renderItem={({ item }) => (
           <View style={styles.card}>
 
-            <Text style={styles.mesa}>Mesa {item.id_mesa}</Text>
+            <Text style={styles.mesa}>Mesa {numeroPorMesa[item.id_mesa] ?? item.id_mesa}</Text>
             <Text>Items: {item.detalle.length}</Text>
             <Text>Estado: {item.estatus.nombre}</Text>
 
             <TouchableOpacity
               style={styles.button}
-              onPress={() => navigation.navigate('CocinaDetalle', { pedidoId: item.id })}
+              onPress={() =>
+                navigation.navigate('CocinaDetalle', {
+                  pedidoId: item.id,
+                  numeroMesa: numeroPorMesa[item.id_mesa],
+                })
+              }
             >
               <Text style={{ color: 'white' }}>Ver preparación</Text>
             </TouchableOpacity>
