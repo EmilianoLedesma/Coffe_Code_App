@@ -29,6 +29,7 @@ export default function GastosScreen() {
   const [montoCompra, setMontoCompra] = useState('');
   const [comprando, setComprando] = useState(false);
   const [resultadoCompra, setResultadoCompra] = useState(null);
+  const [errorCompra, setErrorCompra] = useState('');
 
   const cargarResumen = useCallback(async () => {
     try {
@@ -82,12 +83,12 @@ export default function GastosScreen() {
 
   const registrarCompra = async () => {
     if (!ingredienteId || !cantidadCompra || !montoCompra) {
-      setError('Selecciona un ingrediente y completa cantidad y monto');
+      setErrorCompra('Selecciona un ingrediente y completa cantidad y monto');
       return;
     }
 
     setComprando(true);
-    setError('');
+    setErrorCompra('');
     setResultadoCompra(null);
     try {
       const resultado = await crearCompra({
@@ -100,14 +101,14 @@ export default function GastosScreen() {
       setMontoCompra('');
       await cargarResumen();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo registrar la compra');
+      setErrorCompra(err instanceof ApiError ? err.message : 'No se pudo registrar la compra');
     } finally {
       setComprando(false);
     }
   };
 
-  return (
-    <View style={styles.container}>
+  const renderHeader = () => (
+    <>
 
       <Text style={styles.title}>Caja - Gastos y Cuentas</Text>
 
@@ -172,6 +173,8 @@ export default function GastosScreen() {
           </Text>
         ) : null}
 
+        {errorCompra ? <Text style={styles.error}>{errorCompra}</Text> : null}
+
         <TouchableOpacity style={styles.btnAgregar} onPress={registrarCompra} disabled={comprando}>
           <Text style={styles.btnText}>{comprando ? 'Registrando...' : 'Registrar compra'}</Text>
         </TouchableOpacity>
@@ -184,10 +187,20 @@ export default function GastosScreen() {
         </Text>
       </View>
 
+      {gastosSesion.length > 0 ? (
+        <Text style={{ marginBottom: 5, color: 'gray' }}>Registrados en esta sesión:</Text>
+      ) : null}
+
+    </>
+  );
+
+  return (
+    <View style={styles.container}>
+
       <FlatList
         data={gastosSesion}
         keyExtractor={(item) => item.id.toString()}
-        ListHeaderComponent={gastosSesion.length > 0 ? <Text style={{ marginBottom: 5, color: 'gray' }}>Registrados en esta sesión:</Text> : null}
+        ListHeaderComponent={renderHeader}
         renderItem={({ item }) => (
           <View style={styles.item}>
             <View>
