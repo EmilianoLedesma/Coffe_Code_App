@@ -122,7 +122,7 @@ export default function InventarioScreen() {
 
             <Text style={styles.name}>{item.nombre}</Text>
             <Text>Stock: {item.stock_actual} {item.unidad}</Text>
-            <Text style={item.stock_actual < item.stock_minimo ? styles.bajo : null}>
+            <Text style={Number(item.stock_actual) < Number(item.stock_minimo) ? styles.bajo : null}>
               Mínimo: {item.stock_minimo} {item.unidad}
             </Text>
 
