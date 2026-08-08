@@ -8,6 +8,7 @@ export default function InventarioScreen() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [aviso, setAviso] = useState('');
 
   const [nombre, setNombre] = useState('');
   const [unidad, setUnidad] = useState('');
@@ -78,8 +79,10 @@ export default function InventarioScreen() {
 
   const eliminar = async (id) => {
     setError('');
+    setAviso('');
     try {
-      await deleteIngrediente(id);
+      const resultado = await deleteIngrediente(id);
+      setAviso(resultado.mensaje);
       await cargar();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo eliminar el ingrediente');
@@ -100,6 +103,7 @@ export default function InventarioScreen() {
       <Text style={styles.title}>Inventario</Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      {aviso ? <Text style={styles.aviso}>{aviso}</Text> : null}
 
       <TextInput placeholder="Nombre" value={nombre} onChangeText={setNombre} style={styles.input} />
       <TextInput placeholder="Unidad (g, ml, u)" value={unidad} onChangeText={setUnidad} style={styles.input} />
@@ -149,6 +153,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
   error: { color: '#C0392B', marginBottom: 10 },
+  aviso: { color: '#1F618D', marginBottom: 10 },
   input: { backgroundColor: 'white', padding: 10, marginBottom: 8, borderRadius: 8 },
   btn: { backgroundColor: '#2E1B0F', padding: 12, borderRadius: 8, marginBottom: 10 },
   btnText: { color: 'white', textAlign: 'center' },
