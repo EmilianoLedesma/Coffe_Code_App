@@ -30,6 +30,7 @@ export async function connectToChannel(canal, { onMessage, onError, onClose } = 
     };
 
     return () => {
+      socket.onclose = null;
       socket.close();
     };
   } catch (err) {
