@@ -34,7 +34,10 @@ export default function PagoScreen({ route, navigation }) {
     setLoading(true);
     setError('');
     try {
-      const [pedidoData, ticketData] = await Promise.all([getPedido(pedidoId), getTicket(ticketId)]);
+      const [pedidoData, ticketData] = await Promise.all([
+        getPedido(pedidoId),
+        getTicket(ticketId).catch(() => null),
+      ]);
       setPedido(pedidoData);
       setTicket(ticketData);
     } catch (err) {
