@@ -37,6 +37,11 @@ _solo_admin = require_rol(RolNombre.ADMINISTRADOR)
 
 def _rango_por_defecto(desde: datetime | None, hasta: datetime | None) -> tuple[datetime, datetime]:
     hasta = hasta or datetime.now(timezone.utc)
+    if hasta.time() == datetime.min.time():
+        # `hasta` llegó como fecha pelada (ej. "2026-08-08"), que FastAPI
+        # parsea a medianoche — sin este ajuste, las ventas del propio día
+        # `hasta` quedan excluidas silenciosamente del reporte.
+        hasta = hasta.replace(hour=23, minute=59, second=59, microsecond=999999)
     desde = desde or (hasta - timedelta(days=30))
     return desde, hasta
 

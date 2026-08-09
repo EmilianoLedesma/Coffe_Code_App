@@ -105,6 +105,54 @@ def test_financiero_json_devuelve_ranking_y_margen(client, catalogos, venta_de_j
     assert cuerpo["ranking_margen"][0]["nombre"] == "Latte"
 
 
+def test_financiero_json_hasta_sin_hora_incluye_ventas_del_dia(
+    client, db_session, catalogos, mesa_libre, usuario_mesero, producto_con_receta
+):
+    """Regresión del hallazgo real: hasta=2026-06-15 (sin hora) se interpretaba
+    como medianoche 00:00:00, excluyendo silenciosamente las ventas ocurridas
+    más tarde ese mismo día."""
+    producto, _ = producto_con_receta
+    fecha_tarde = datetime(2026, 6, 15, 18, 30, tzinfo=timezone.utc)
+    pedido = Pedido(
+        fecha=fecha_tarde,
+        id_mesa=mesa_libre.id,
+        id_usuario=usuario_mesero.id,
+        id_estatus=catalogos["estatus_pedidos"][EstatusPedidoNombre.ENTREGADO].id,
+    )
+    db_session.add(pedido)
+    db_session.flush()
+    detalle = DetallePedido(
+        cantidad=10,
+        precio_unitario=Decimal("55.00"),
+        id_producto=producto.id,
+        id_pedido=pedido.id,
+        id_estatus=catalogos["estatus_cocina"][EstatusCocinaNombre.LISTO].id,
+    )
+    db_session.add(detalle)
+    db_session.flush()
+    ticket = Ticket(
+        subtotal=Decimal("550.00"), iva=Decimal("88.00"), total=Decimal("638.00"),
+        fecha_emision=fecha_tarde, id_pedido=pedido.id, id_usuario=usuario_mesero.id,
+    )
+    db_session.add(ticket)
+    db_session.flush()
+    pago = Pago(
+        monto_recibido=ticket.total, cambio=Decimal("0.00"),
+        id_ticket=ticket.id, id_metodo=catalogos["metodos_pago"]["Efectivo"].id,
+    )
+    db_session.add(pago)
+    db_session.flush()
+
+    token = _token(catalogos, RolNombre.ADMINISTRADOR)
+    respuesta = client.get(
+        "/api/reportes/financiero?desde=2026-06-01&hasta=2026-06-15",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["total_ventas"] == "638.00"
+
+
 def test_financiero_json_rechaza_rol_no_administrador(client, catalogos, venta_de_junio):
     token = _token(catalogos, RolNombre.MESERO)
 
