@@ -17,6 +17,7 @@ import GastosScreen from './screens/GastosScreen';
 import MenuScreen from './screens/MenuScreen';
 import RecetaScreen from './screens/RecetaScreen';
 import InventarioScreen from './screens/InventarioScreen';
+import IngredienteDetalleScreen from './screens/IngredienteDetalleScreen';
 import RecuperarPassword from './screens/RecuperarPassword';
 import CocinaScreen from './screens/CocinaScreen';
 import CocinaDetalleScreen from './screens/CocinaDetalleScreen';
@@ -111,9 +112,14 @@ export default function App() {
           component={RecetaScreen}
         />
 
-        <Stack.Screen 
-          name="Inventario" 
-          component={InventarioScreen} 
+        <Stack.Screen
+          name="Inventario"
+          component={InventarioScreen}
+        />
+
+        <Stack.Screen
+          name="IngredienteDetalle"
+          component={IngredienteDetalleScreen}
         />
 
         <Stack.Screen 

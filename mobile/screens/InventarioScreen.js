@@ -14,7 +14,7 @@ import { colors, typography, spacing } from '../theme';
 
 const UNIDADES = ['g', 'ml', 'u', 'kg', 'l'];
 
-export default function InventarioScreen() {
+export default function InventarioScreen({ navigation }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -144,6 +144,7 @@ export default function InventarioScreen() {
             <ListItem
               title={item.nombre}
               subtitle={`Stock: ${item.stock_actual} ${item.unidad} · Mínimo: ${item.stock_minimo} ${item.unidad}`}
+              onPress={() => navigation.navigate('IngredienteDetalle', { ingrediente: item })}
               trailing={
                 <View style={styles.trailing}>
                   {bajoMinimo ? <Badge label="Bajo mínimo" tone="danger" /> : null}

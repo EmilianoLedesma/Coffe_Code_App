@@ -127,80 +127,78 @@ export default function MenuScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-
-      <Text style={styles.title}>Gestión de Menú</Text>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {aviso ? <Text style={styles.aviso}>{aviso}</Text> : null}
-
-      <Text style={styles.label}>Filtrar por categoría</Text>
-      <View style={styles.categorias}>
-        <Chip label="Todas" selected={categoriaFiltro === null} onPress={() => setCategoriaFiltro(null)} />
-        {categorias.map((cat) => (
-          <Chip
-            key={cat.id}
-            label={cat.nombre}
-            selected={categoriaFiltro === cat.id}
-            onPress={() => setCategoriaFiltro(cat.id)}
-          />
-        ))}
-      </View>
-
-      <Text style={styles.subtitle}>{editandoId ? 'Editar producto' : 'Agregar producto'}</Text>
-
-      <Input placeholder="Nombre" value={nombre} onChangeText={setNombre} />
-      <Input placeholder="Precio" value={precio} onChangeText={setPrecio} keyboardType="numeric" />
-      <Input placeholder="Descripción" value={descripcion} onChangeText={setDescripcion} />
-
-      <View style={styles.categorias}>
-        {categorias.map((cat) => (
-          <Chip
-            key={cat.id}
-            label={cat.nombre}
-            selected={categoriaId === cat.id}
-            onPress={() => setCategoriaId(cat.id)}
-          />
-        ))}
-      </View>
-
-      {editandoId ? (
-        <View style={styles.categorias}>
-          <Chip label="Disponible" selected={disponible} onPress={() => setDisponible(true)} />
-          <Chip label="No disponible" selected={!disponible} onPress={() => setDisponible(false)} />
-        </View>
-      ) : null}
-
-      <View style={styles.formBotones}>
-        <Button
-          variant="secondary"
-          label={editandoId ? 'Guardar cambios' : 'Agregar producto'}
-          onPress={guardarProducto}
-        />
-        {editandoId ? (
-          <Button variant="text" label="Cancelar" onPress={limpiarFormulario} />
-        ) : null}
-      </View>
-
       <FlatList
         data={productosVisibles}
         keyExtractor={(item) => item.id.toString()}
         style={styles.list}
+        ListHeaderComponent={
+          <>
+            <Text style={styles.title}>Gestión de Menú</Text>
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {aviso ? <Text style={styles.aviso}>{aviso}</Text> : null}
+
+            <Text style={styles.label}>Filtrar por categoría</Text>
+            <View style={styles.categorias}>
+              <Chip label="Todas" selected={categoriaFiltro === null} onPress={() => setCategoriaFiltro(null)} />
+              {categorias.map((cat) => (
+                <Chip
+                  key={cat.id}
+                  label={cat.nombre}
+                  selected={categoriaFiltro === cat.id}
+                  onPress={() => setCategoriaFiltro(cat.id)}
+                />
+              ))}
+            </View>
+
+            <Text style={styles.subtitle}>{editandoId ? 'Editar producto' : 'Agregar producto'}</Text>
+
+            <Input placeholder="Nombre" value={nombre} onChangeText={setNombre} />
+            <Input placeholder="Precio" value={precio} onChangeText={setPrecio} keyboardType="numeric" />
+            <Input placeholder="Descripción" value={descripcion} onChangeText={setDescripcion} />
+
+            <View style={styles.categorias}>
+              {categorias.map((cat) => (
+                <Chip
+                  key={cat.id}
+                  label={cat.nombre}
+                  selected={categoriaId === cat.id}
+                  onPress={() => setCategoriaId(cat.id)}
+                />
+              ))}
+            </View>
+
+            {editandoId ? (
+              <View style={styles.categorias}>
+                <Chip label="Disponible" selected={disponible} onPress={() => setDisponible(true)} />
+                <Chip label="No disponible" selected={!disponible} onPress={() => setDisponible(false)} />
+              </View>
+            ) : null}
+
+            <View style={styles.formBotones}>
+              <Button
+                variant="secondary"
+                label={editandoId ? 'Guardar cambios' : 'Agregar producto'}
+                onPress={guardarProducto}
+              />
+              {editandoId ? (
+                <Button variant="text" label="Cancelar" onPress={limpiarFormulario} />
+              ) : null}
+            </View>
+
+            <Text style={styles.subtitle}>Menú actual</Text>
+          </>
+        }
         ListEmptyComponent={<EmptyState icon="restaurant-outline" message="Sin productos registrados." />}
         renderItem={({ item }) => (
           <ListItem
             title={item.nombre}
             subtitle={`$${item.precio_venta} · ${item.categoria.nombre}`}
+            onPress={() => navigation.navigate('Receta', { productoId: item.id, productoNombre: item.nombre })}
             trailing={
               <View style={styles.acciones}>
                 <TouchableOpacity style={styles.iconBtn} onPress={() => iniciarEdicion(item)}>
                   <Ionicons name="create-outline" size={22} color={colors.primary} />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.iconBtn}
-                  onPress={() => navigation.navigate('Receta', { productoId: item.id, productoNombre: item.nombre })}
-                >
-                  <Ionicons name="list-outline" size={22} color={colors.primary} />
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.iconBtn} onPress={() => eliminar(item.id)}>
@@ -237,7 +235,7 @@ const styles = StyleSheet.create({
   aviso: { color: colors.info, marginBottom: spacing.md },
   categorias: { flexDirection: 'row', flexWrap: 'wrap' },
   formBotones: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  list: { marginTop: spacing.md },
+  list: { flex: 1, marginTop: spacing.md },
   acciones: { flexDirection: 'row' },
   iconBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });

@@ -18,6 +18,18 @@ export function createIngrediente({ nombre, unidad, stockMinimo, costoUnitario, 
   });
 }
 
+export function updateIngrediente(id, { nombre, unidad, stockMinimo, costoUnitario }) {
+  return request(`/ingredientes/${id}`, {
+    method: 'PUT',
+    body: {
+      nombre,
+      unidad,
+      stock_minimo: stockMinimo,
+      costo_unitario: costoUnitario,
+    },
+  });
+}
+
 export function ajustarStock(id, cantidad) {
   return request(`/ingredientes/${id}/stock`, {
     method: 'PUT',

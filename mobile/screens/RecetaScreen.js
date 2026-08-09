@@ -132,16 +132,51 @@ export default function RecetaScreen({ route }) {
 
   return (
     <View style={styles.container}>
-
-      <Text style={styles.title}>Receta: {productoNombre}</Text>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
       <FlatList
         data={receta}
         keyExtractor={(item) => item.id_ingrediente.toString()}
         style={styles.list}
+        ListHeaderComponent={
+          <>
+            <Text style={styles.title}>Receta: {productoNombre}</Text>
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+          </>
+        }
         ListEmptyComponent={<EmptyState icon="list-outline" message="Sin ingredientes en la receta aún." />}
+        ListFooterComponent={
+          <>
+            <Text style={styles.subtitle}>Agregar ingrediente</Text>
+
+            <View style={styles.chipsRow}>
+              {ingredientes.map((ing) => (
+                <Chip
+                  key={ing.id}
+                  label={ing.nombre}
+                  selected={ingredienteId === ing.id}
+                  onPress={() => setIngredienteId(ing.id)}
+                />
+              ))}
+            </View>
+
+            <Input
+              placeholder="Cantidad requerida"
+              value={cantidad}
+              onChangeText={setCantidad}
+              keyboardType="numeric"
+            />
+
+            <Button
+              variant="secondary"
+              label={guardando ? 'Guardando...' : 'Agregar'}
+              onPress={agregarIngrediente}
+              disabled={guardando}
+            />
+
+            <View style={styles.eliminarWrap}>
+              <Button variant="text" label="Eliminar receta completa" onPress={confirmarEliminarTodo} />
+            </View>
+          </>
+        }
         renderItem={({ item }) => (
           <Card style={styles.card}>
             <Text style={styles.name}>{item.ingrediente.nombre}</Text>
@@ -170,38 +205,6 @@ export default function RecetaScreen({ route }) {
           </Card>
         )}
       />
-
-      <Text style={styles.subtitle}>Agregar ingrediente</Text>
-
-      <View style={styles.chipsRow}>
-        {ingredientes.map((ing) => (
-          <Chip
-            key={ing.id}
-            label={ing.nombre}
-            selected={ingredienteId === ing.id}
-            onPress={() => setIngredienteId(ing.id)}
-          />
-        ))}
-      </View>
-
-      <Input
-        placeholder="Cantidad requerida"
-        value={cantidad}
-        onChangeText={setCantidad}
-        keyboardType="numeric"
-      />
-
-      <Button
-        variant="secondary"
-        label={guardando ? 'Guardando...' : 'Agregar'}
-        onPress={agregarIngrediente}
-        disabled={guardando}
-      />
-
-      <View style={styles.eliminarWrap}>
-        <Button variant="text" label="Eliminar receta completa" onPress={confirmarEliminarTodo} />
-      </View>
-
     </View>
   );
 }
@@ -223,7 +226,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   error: { color: colors.danger, marginBottom: spacing.md },
-  list: { marginBottom: spacing.md },
+  list: { flex: 1, marginBottom: spacing.md },
   card: { marginBottom: spacing.sm },
   name: { fontSize: typography.size.lg, fontWeight: typography.weight.bold, color: colors.textPrimary },
   cantidad: { color: colors.textSecondary, marginTop: spacing.xs },
