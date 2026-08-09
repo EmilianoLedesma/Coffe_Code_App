@@ -1,3 +1,30 @@
+# Sesión 2026-08-09 (parte 2) — WS pago al mesero + prueba en vivo como Cocinero: CRUD ingredientes por tarjeta, fixes de scroll en Menu/Receta
+
+Continuación directa de la sesión de reordenamiento del flujo entrega/cobro (commits `6198e34`..`924497c`, ya pusheados esa misma sesión). Arrancó implementando el gap pendiente documentado ahí (WS de pago), luego prueba en vivo en dispositivo Android real con el usuario como **Cocinero** (sesión anterior fue como Mesero). Metodología igual que sesiones previas: usuario actúa en la app, agente verifica cada paso contra `coffee_code_db` vía `psql` y logcat filtrado a Expo Go vía `adb`, con capturas de pantalla (`adb exec-out screencap`) cuando un reporte de "no veo X" necesitaba ver el layout real para diagnosticar.
+
+**WS `pedido_pagado` al mesero — implementado y commiteado (`fb20ea8`).** `registrar_venta` (`api/app/services/ventas.py`) ahora emite el evento al canal `mesero` con `mesa_liberada: bool`; `PedidosMesaScreen` navega directo a Mesas si la mesa liberó, o solo refresca si no. `_liberar_mesa_si_no_hay_pedidos_activos` (`api/app/services/pedidos.py`) cambiada para devolver `bool` en vez de `None`. Backend 143/143, mobile 22/22 verdes.
+
+**Bug operativo de Docker encontrado hoy:** `coffee_code_db` había quedado `Exited (255)`. `docker start` lo arrancaba a `healthy` pero `docker port` mostraba el binding vacío (`5432/tcp -> []`) pese a que `docker inspect`/`HostConfig.PortBindings` sí tenían `5434` configurado — pytest fallaba con `Connection refused` pese a que Docker reportaba el contenedor sano. Fix real: `docker compose up -d coffee_code_db` (recrea el contenedor) sí aplicó el port mapping correctamente. Anotado en session-data para no repetir el diagnóstico.
+
+**CRUD completo de ingredientes por tarjeta — implementado y commiteado (`850f8ad`).** El backend ya tenía el CRUD completo (`GET/POST/PUT/DELETE /ingredientes` + `PUT .../stock`), pero mobile solo usaba lectura/creación/ajuste-de-stock/borrado — sin edición de nombre/unidad/mínimo/costo. Agregado: `updateIngrediente()` en `mobile/api/ingredientes.js`, pantalla nueva `IngredienteDetalleScreen.js` (nombre/unidad/stock actual/mínimo/costo + eliminar), tarjeta de `InventarioScreen` ahora tocable → navega ahí. **Decisión del usuario:** el stock actual se edita como input libre de texto, no con los botones +1/-1 — como el backend (`PUT /ingredientes/{id}/stock`) solo acepta un delta, no un valor absoluto, el cliente calcula `delta = nuevoValor - valorOriginal` al guardar. Verificado en vivo: usuario creó, vio y borró un ingrediente de prueba (id 20, hard-delete confirmado en DB por no tener receta asociada, coincide con el diseño ya documentado de sesiones previas).
+
+**2 bugs reales de layout encontrados y corregidos: `MenuScreen` y `RecetaScreen` no mostraban su `FlatList` principal.** En ambos casos el formulario (filtros de categoría + campos de alta + chips) era más alto que el viewport, y el contenedor (`View` simple, no scrolleable como unidad) dejaba el `FlatList` de contenido real sin altura útil — la lista existía en el árbol de componentes pero quedaba invisible/inalcanzable debajo del formulario. Confirmado con screenshot (`adb exec-out screencap`) antes del fix: se veía el form completo y el botón "Agregar producto" pegado al fondo, sin rastro de los 13 productos existentes. **Mi primer intento de fix (solo `flex:1` en el `FlatList`) no alcanzó** — el form ya consumía toda la altura disponible, dejando 0px reales al FlatList. Fix real: mover header+form dentro de `ListHeaderComponent`/`ListFooterComponent` del `FlatList`, para que toda la pantalla sea un único elemento scrolleable (evita el antipatrón de anidar `ScrollView` alrededor de `FlatList`). Usuario confirmó ver los 13 productos en Menu tras el fix; RecetaScreen recibió el mismo fix pero la sesión cerró antes de que el usuario recargara y confirmara visualmente.
+
+**Cambio de UX pedido explícito por el usuario en MenuScreen:** tarjeta de producto ahora tocable → abre Receta directo (antes era un ícono aparte). `RecetaScreen` ya hacía `getRecetasPorProducto` real contra el backend, no hizo falta tocar el fetch — el bug era puramente de layout, no de datos (confirmado con `psql`: Café Americano sí tenía receta real, "Café molido 18g", que no se veía por el bug de scroll).
+
+**Todo pusheado a `origin/main`:** `fb20ea8`, `850f8ad`.
+
+**Próximo paso exacto (pedido explícito del usuario — la próxima sesión sigue probando como Cocinero):**
+1. Confirmar visualmente que RecetaScreen ya scrollea bien y muestra la receta existente (fix aplicado, no visto aún).
+2. Seguir cubriendo el resto de Cocinero en vivo: crear/editar/eliminar líneas de receta tocando el chip-picker real, botón "Eliminar receta completa", editar un producto vía el ícono de lápiz de MenuScreen.
+3. Después: Cajero y Administrador siguen sin probarse desde el dispositivo real (pendiente de sesiones anteriores también).
+4. Riesgo a vigilar, no confirmado como bug: `InventarioScreen` tiene el mismo patrón de fondo (`FlatList` sin `flex` en un container no-scrolleable) que tenían Menu/Receta — no se manifestó hoy porque la lista era corta, pero con más ingredientes podría repetirse.
+5. Brainstorm de "ticket agrupado por mesa" (mencionado en sesiones previas) sigue sin arrancar — solo cuando el usuario lo pida explícito.
+
+Sesión guardada: `~/.claude/session-data/2026-08-09-cocinero-testing-session.tmp`.
+
+---
+
 # Sesión 2026-08-08 (parte 7) — Prueba real en dispositivo (Expo Go + adb), 15 hallazgos/pendientes documentados, requiere brainstorm antes de implementar nada
 
 Continuación directa de la parte 6, mismo worktree `mobile-plan-catchup`, mismo branch (`341821e` al cierre). El usuario probó la app real por primera vez en un dispositivo Android físico vía Expo Go, con el agente monitoreando logs nativos (`adb logcat` filtrado al proceso de Expo Go) y verificando cada acción contra la API/DB real en paralelo — no solo confiando en lo que se veía en pantalla.
