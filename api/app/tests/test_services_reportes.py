@@ -19,6 +19,7 @@ from app.services.reportes import (
     calcular_listado_pedidos,
     calcular_margen_pct,
     calcular_ranking_consumo,
+    calcular_resumen_caja,
     calcular_riesgo_inventario,
     calcular_ranking_margen,
     calcular_ventas_por_categoria,
@@ -122,7 +123,7 @@ def test_calcular_riesgo_inventario_vacio_si_stock_suficiente(db_session, produc
     assert resultado == []
 
 
-def _crear_venta(db_session, catalogos, mesa_libre, usuario_mesero, producto, cantidad, precio_unitario, fecha):
+def _crear_venta(db_session, catalogos, mesa_libre, usuario_mesero, producto, cantidad, precio_unitario, fecha, con_pago=True):
     pedido = Pedido(
         fecha=fecha,
         id_mesa=mesa_libre.id,
@@ -153,6 +154,8 @@ def _crear_venta(db_session, catalogos, mesa_libre, usuario_mesero, producto, ca
     )
     db_session.add(ticket)
     db_session.flush()
+    if con_pago:
+        _crear_pago(db_session, ticket, MetodoPagoNombre.EFECTIVO, catalogos, ticket.total)
     return ticket
 
 
@@ -212,14 +215,14 @@ def test_calcular_ventas_por_metodo_pago_agrupa_correctamente(
     fecha = datetime(2026, 6, 15, tzinfo=timezone.utc)
 
     ticket_efectivo = _crear_venta(
-        db_session, catalogos, mesa_libre, usuario_mesero, producto, cantidad=1, precio_unitario=Decimal("100.00"), fecha=fecha
+        db_session, catalogos, mesa_libre, usuario_mesero, producto, cantidad=1, precio_unitario=Decimal("100.00"), fecha=fecha, con_pago=False
     )
     ticket_efectivo.total = Decimal("100.00")
     db_session.flush()
     _crear_pago(db_session, ticket_efectivo, MetodoPagoNombre.EFECTIVO, catalogos, Decimal("100.00"))
 
     ticket_tarjeta = _crear_venta(
-        db_session, catalogos, mesa_libre, usuario_mesero, producto, cantidad=1, precio_unitario=Decimal("50.00"), fecha=fecha
+        db_session, catalogos, mesa_libre, usuario_mesero, producto, cantidad=1, precio_unitario=Decimal("50.00"), fecha=fecha, con_pago=False
     )
     ticket_tarjeta.total = Decimal("50.00")
     db_session.flush()
@@ -477,3 +480,24 @@ def test_construir_reporte_pedidos_vacio_fuera_de_rango(db_session, catalogos):
     assert resultado["total_pedidos"] == 0
     assert resultado["total_ventas"] == Decimal("0")
     assert resultado["pedidos"] == []
+
+
+def test_calcular_resumen_caja_excluye_ticket_sin_pago(
+    db_session, catalogos, mesa_libre, usuario_mesero, producto_con_receta
+):
+    producto, _ = producto_con_receta
+    fecha = datetime(2026, 6, 15, tzinfo=timezone.utc)
+    ticket = _crear_venta(
+        db_session, catalogos, mesa_libre, usuario_mesero, producto, cantidad=1, precio_unitario=Decimal("55.00"), fecha=fecha, con_pago=False
+    )
+
+    desde = datetime(2026, 6, 1, tzinfo=timezone.utc)
+    hasta = datetime(2026, 6, 30, tzinfo=timezone.utc)
+
+    resumen = calcular_resumen_caja(db_session, desde, hasta)
+    assert resumen["total_ventas"] == Decimal("0")
+
+    _crear_pago(db_session, ticket, MetodoPagoNombre.EFECTIVO, catalogos, ticket.total)
+
+    resumen = calcular_resumen_caja(db_session, desde, hasta)
+    assert resumen["total_ventas"] == ticket.total

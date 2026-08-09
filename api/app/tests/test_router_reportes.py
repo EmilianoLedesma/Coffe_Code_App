@@ -7,6 +7,7 @@ from app.core.constants import EstatusCocinaNombre, EstatusPedidoNombre, RolNomb
 from app.data.categorias import Categoria
 from app.data.detalle_pedidos import DetallePedido
 from app.data.ingredientes import Ingrediente
+from app.data.pagos import Pago
 from app.data.pedidos import Pedido
 from app.data.productos import Producto
 from app.data.recetas import Receta
@@ -77,6 +78,14 @@ def venta_de_junio(db_session, catalogos, mesa_libre, usuario_mesero, producto_c
         id_usuario=usuario_mesero.id,
     )
     db_session.add(ticket)
+    db_session.flush()
+    pago = Pago(
+        monto_recibido=ticket.total,
+        cambio=Decimal("0.00"),
+        id_ticket=ticket.id,
+        id_metodo=catalogos["metodos_pago"]["Efectivo"].id,
+    )
+    db_session.add(pago)
     db_session.flush()
     return ticket
 

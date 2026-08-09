@@ -22,6 +22,7 @@ def _calcular_totales(db: Session, fecha: date) -> dict:
 
     tickets = (
         db.query(func.coalesce(func.sum(Ticket.total), 0), func.count(Ticket.id))
+        .join(Pago, Pago.id_ticket == Ticket.id)
         .filter(Ticket.fecha_emision >= inicio, Ticket.fecha_emision <= fin)
         .one()
     )
@@ -36,6 +37,7 @@ def _calcular_totales(db: Session, fecha: date) -> dict:
 
     num_pedidos = (
         db.query(func.count(func.distinct(Ticket.id_pedido)))
+        .join(Pago, Pago.id_ticket == Ticket.id)
         .filter(Ticket.fecha_emision >= inicio, Ticket.fecha_emision <= fin)
         .scalar()
     )
