@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, FlatList } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   getPedido,
@@ -20,7 +20,7 @@ import { Button } from '../components/Button';
 import { colors, typography, spacing } from '../theme';
 import { TONE_POR_ESTATUS_PEDIDO } from '../constants/estatusPedido';
 
-export default function DetalleScreen({ route, navigation }) {
+export default function DetalleScreen({ route }) {
   const { pedidoId, numeroMesa } = route.params;
   const { rol } = useAuth();
   const [pedido, setPedido] = useState(null);
@@ -177,9 +177,8 @@ export default function DetalleScreen({ route, navigation }) {
   const puedeCerrarCuenta = esMeseroOAdmin && esListo;
   const puedeEntregar = esMeseroOAdmin && esListo;
 
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-
+  const cabecera = (
+    <>
       <Card style={styles.infoCard}>
         <Text style={styles.title}>Pedido #{pedido.id} — Mesa {numeroMesa ?? pedido.id_mesa}</Text>
         <Badge
@@ -222,28 +221,16 @@ export default function DetalleScreen({ route, navigation }) {
         />
       ))}
 
-      {puedeEditar && (
-        <>
-          <Text style={styles.subtitle}>Agregar producto</Text>
-          <FlatList
-            data={menu}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <ListItem
-                title={item.nombre}
-                subtitle={`$${item.precio_venta}`}
-                trailing={<Text style={styles.agregar}>+</Text>}
-                onPress={() => agregarProducto(item)}
-              />
-            )}
-          />
-        </>
-      )}
+      {puedeEditar && <Text style={styles.subtitle}>Agregar producto</Text>}
 
       {pedido.total !== null && (
         <Text style={styles.total}>Total: ${pedido.total}</Text>
       )}
+    </>
+  );
 
+  const pie = (
+    <>
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {puedeCerrarCuenta && (
@@ -269,8 +256,26 @@ export default function DetalleScreen({ route, navigation }) {
       )}
 
       <Button variant="text" label="Actualizar" onPress={cargar} />
+    </>
+  );
 
-    </ScrollView>
+  return (
+    <FlatList
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      data={puedeEditar ? menu : []}
+      keyExtractor={(item) => item.id.toString()}
+      renderItem={({ item }) => (
+        <ListItem
+          title={item.nombre}
+          subtitle={`$${item.precio_venta}`}
+          trailing={<Text style={styles.agregar}>+</Text>}
+          onPress={() => agregarProducto(item)}
+        />
+      )}
+      ListHeaderComponent={cabecera}
+      ListFooterComponent={pie}
+    />
   );
 }
 
