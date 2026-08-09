@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { getProductos, createProducto, deleteProducto } from '../api/productos';
+import { getProductos, createProducto, updateProducto, deleteProducto } from '../api/productos';
 import { getCategorias } from '../api/categorias';
 import { ApiError } from '../api/client';
 import { Input } from '../components/Input';
@@ -12,10 +12,11 @@ import { ListItem } from '../components/ListItem';
 import { EmptyState } from '../components/EmptyState';
 import { colors, typography, spacing } from '../theme';
 
-export default function MenuScreen() {
+export default function MenuScreen({ navigation }) {
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [categoriaId, setCategoriaId] = useState(null);
+  const [categoriaFiltro, setCategoriaFiltro] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [aviso, setAviso] = useState('');
@@ -23,6 +24,8 @@ export default function MenuScreen() {
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [disponible, setDisponible] = useState(true);
+  const [editandoId, setEditandoId] = useState(null);
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -46,7 +49,24 @@ export default function MenuScreen() {
     }, [cargar])
   );
 
-  const agregarProducto = async () => {
+  const limpiarFormulario = () => {
+    setNombre('');
+    setPrecio('');
+    setDescripcion('');
+    setDisponible(true);
+    setEditandoId(null);
+  };
+
+  const iniciarEdicion = (producto) => {
+    setEditandoId(producto.id);
+    setNombre(producto.nombre);
+    setPrecio(String(producto.precio_venta));
+    setDescripcion(producto.descripcion || '');
+    setDisponible(producto.disponible);
+    setCategoriaId(producto.categoria.id);
+  };
+
+  const guardarProducto = async () => {
     if (!nombre.trim() || !precio || !categoriaId) {
       setError('Completa nombre, precio y categoría');
       return;
@@ -54,18 +74,26 @@ export default function MenuScreen() {
 
     setError('');
     try {
-      await createProducto({
-        nombre: nombre.trim(),
-        descripcion: descripcion.trim(),
-        precioVenta: parseFloat(precio),
-        idCategoria: categoriaId,
-      });
-      setNombre('');
-      setPrecio('');
-      setDescripcion('');
+      if (editandoId) {
+        await updateProducto(editandoId, {
+          nombre: nombre.trim(),
+          descripcion: descripcion.trim() || null,
+          precio_venta: parseFloat(precio),
+          disponible,
+          id_categoria: categoriaId,
+        });
+      } else {
+        await createProducto({
+          nombre: nombre.trim(),
+          descripcion: descripcion.trim(),
+          precioVenta: parseFloat(precio),
+          idCategoria: categoriaId,
+        });
+      }
+      limpiarFormulario();
       await cargar();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo crear el producto');
+      setError(err instanceof ApiError ? err.message : 'No se pudo guardar el producto');
     }
   };
 
@@ -93,6 +121,10 @@ export default function MenuScreen() {
     );
   }
 
+  const productosVisibles = categoriaFiltro
+    ? productos.filter((p) => p.categoria.id === categoriaFiltro)
+    : productos;
+
   return (
     <View style={styles.container}>
 
@@ -100,6 +132,21 @@ export default function MenuScreen() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {aviso ? <Text style={styles.aviso}>{aviso}</Text> : null}
+
+      <Text style={styles.label}>Filtrar por categoría</Text>
+      <View style={styles.categorias}>
+        <Chip label="Todas" selected={categoriaFiltro === null} onPress={() => setCategoriaFiltro(null)} />
+        {categorias.map((cat) => (
+          <Chip
+            key={cat.id}
+            label={cat.nombre}
+            selected={categoriaFiltro === cat.id}
+            onPress={() => setCategoriaFiltro(cat.id)}
+          />
+        ))}
+      </View>
+
+      <Text style={styles.subtitle}>{editandoId ? 'Editar producto' : 'Agregar producto'}</Text>
 
       <Input placeholder="Nombre" value={nombre} onChangeText={setNombre} />
       <Input placeholder="Precio" value={precio} onChangeText={setPrecio} keyboardType="numeric" />
@@ -116,10 +163,26 @@ export default function MenuScreen() {
         ))}
       </View>
 
-      <Button variant="secondary" label="Agregar producto" onPress={agregarProducto} />
+      {editandoId ? (
+        <View style={styles.categorias}>
+          <Chip label="Disponible" selected={disponible} onPress={() => setDisponible(true)} />
+          <Chip label="No disponible" selected={!disponible} onPress={() => setDisponible(false)} />
+        </View>
+      ) : null}
+
+      <View style={styles.formBotones}>
+        <Button
+          variant="secondary"
+          label={editandoId ? 'Guardar cambios' : 'Agregar producto'}
+          onPress={guardarProducto}
+        />
+        {editandoId ? (
+          <Button variant="text" label="Cancelar" onPress={limpiarFormulario} />
+        ) : null}
+      </View>
 
       <FlatList
-        data={productos}
+        data={productosVisibles}
         keyExtractor={(item) => item.id.toString()}
         style={styles.list}
         ListEmptyComponent={<EmptyState icon="restaurant-outline" message="Sin productos registrados." />}
@@ -128,9 +191,22 @@ export default function MenuScreen() {
             title={item.nombre}
             subtitle={`$${item.precio_venta} · ${item.categoria.nombre}`}
             trailing={
-              <TouchableOpacity style={styles.iconBtn} onPress={() => eliminar(item.id)}>
-                <Ionicons name="trash-outline" size={22} color={colors.danger} />
-              </TouchableOpacity>
+              <View style={styles.acciones}>
+                <TouchableOpacity style={styles.iconBtn} onPress={() => iniciarEdicion(item)}>
+                  <Ionicons name="create-outline" size={22} color={colors.primary} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.iconBtn}
+                  onPress={() => navigation.navigate('Receta', { productoId: item.id, productoNombre: item.nombre })}
+                >
+                  <Ionicons name="list-outline" size={22} color={colors.primary} />
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.iconBtn} onPress={() => eliminar(item.id)}>
+                  <Ionicons name="trash-outline" size={22} color={colors.danger} />
+                </TouchableOpacity>
+              </View>
             }
           />
         )}
@@ -149,9 +225,19 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: spacing.lg,
   },
+  label: { color: colors.textSecondary, marginBottom: spacing.xs, fontSize: typography.size.md },
+  subtitle: {
+    marginTop: spacing.md,
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
   error: { color: colors.danger, marginBottom: spacing.md },
   aviso: { color: colors.info, marginBottom: spacing.md },
   categorias: { flexDirection: 'row', flexWrap: 'wrap' },
+  formBotones: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   list: { marginTop: spacing.md },
+  acciones: { flexDirection: 'row' },
   iconBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });
