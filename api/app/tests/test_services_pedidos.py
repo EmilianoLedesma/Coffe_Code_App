@@ -409,6 +409,37 @@ def test_entregar_con_ticket_pagado_funciona(
     assert pedido.estatus.nombre == EstatusPedidoNombre.ENTREGADO
 
 
+def test_cancelar_pedido_con_ticket_pagado_devuelve_409(
+    db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta
+):
+    pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    ticket = cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
+    ticket.pago = Pago(
+        monto_recibido=ticket.total, cambio=Decimal("0.00"), id_metodo=catalogos["metodos_pago"]["Efectivo"].id
+    )
+    db_session.commit()
+
+    with pytest.raises(HTTPException) as exc_info:
+        cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.CANCELADO)
+
+    assert exc_info.value.status_code == 409
+
+
+def test_cancelar_pedido_con_cuenta_cerrada_sin_pagar_permite_cancelar(
+    db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta
+):
+    pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
+
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.CANCELADO)
+
+    assert pedido.estatus.nombre == EstatusPedidoNombre.CANCELADO
+
+
 def test_editar_item_de_pedido_en_preparacion_devuelve_409(
     db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta
 ):

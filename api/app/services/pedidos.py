@@ -247,6 +247,19 @@ def cambiar_estado_pedido(db: Session, pedido: Pedido, nuevo_estatus_nombre: str
                 detail="No se puede entregar un pedido sin cobrar",
             )
 
+    if nuevo_estatus_nombre == EstatusPedidoNombre.CANCELADO:
+        ticket = (
+            db.query(Ticket)
+            .options(joinedload(Ticket.pago))
+            .filter(Ticket.id_pedido == pedido.id)
+            .first()
+        )
+        if ticket and ticket.pago:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="No se puede cancelar un pedido ya cobrado",
+            )
+
     nuevo_estatus = _get_estatus_pedido_por_nombre(db, nuevo_estatus_nombre)
     alertas_stock_bajo: list[str] = []
 
