@@ -99,6 +99,7 @@ export default function CajaScreen({ navigation }) {
                 onPress={() =>
                   navigation.navigate('Pago', {
                     ticketId: item.id,
+                    pedidoId: item.id_pedido,
                     numeroMesa: numeroPorMesa[item.id_mesa],
                   })
                 }

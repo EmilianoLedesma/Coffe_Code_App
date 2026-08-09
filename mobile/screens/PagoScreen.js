@@ -18,7 +18,7 @@ const METODOS = [
 ];
 
 export default function PagoScreen({ route, navigation }) {
-  const { pedidoId, numeroMesa } = route.params;
+  const { ticketId, pedidoId, numeroMesa } = route.params;
 
   const [pedido, setPedido] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -46,10 +46,6 @@ export default function PagoScreen({ route, navigation }) {
     }, [cargar])
   );
 
-  const subtotalEstimado = pedido
-    ? pedido.detalle.reduce((acc, item) => acc + Number(item.precio_unitario) * item.cantidad, 0)
-    : 0;
-
   const pagar = async () => {
     if (!metodoPago) {
       setError('Selecciona un método de pago');
@@ -63,7 +59,7 @@ export default function PagoScreen({ route, navigation }) {
     setProcesando(true);
     setError('');
     try {
-      const ticket = await registrarVenta({ pedidoId, metodoPago, monto: Number(monto) });
+      const ticket = await registrarVenta({ ticketId, metodoPago, monto: Number(monto) });
       setResultado(ticket);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo procesar el pago');
@@ -115,9 +111,6 @@ export default function PagoScreen({ route, navigation }) {
             {item.producto.nombre} x{item.cantidad} — ${item.precio_unitario}
           </Text>
         ))}
-
-        <Text style={styles.total}>Subtotal (sin IVA): ${subtotalEstimado.toFixed(2)}</Text>
-        <Text style={styles.hint}>El total final con IVA lo calcula el servidor al confirmar.</Text>
       </Card>
 
       <Text style={styles.subtitle}>Método de pago</Text>
@@ -177,13 +170,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   text: { fontSize: typography.size.lg, color: colors.textPrimary },
-  hint: { fontSize: typography.size.md, color: colors.textSecondary },
-  total: {
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    color: colors.textPrimary,
-    marginTop: spacing.sm,
-  },
   errorBanner: {
     backgroundColor: colors.dangerTint,
     borderWidth: 1,
