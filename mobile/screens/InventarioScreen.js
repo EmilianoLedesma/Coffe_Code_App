@@ -6,10 +6,13 @@ import { getIngredientes, createIngrediente, ajustarStock, deleteIngrediente } f
 import { ApiError } from '../api/client';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
+import { Chip } from '../components/Chip';
 import { ListItem } from '../components/ListItem';
 import { Badge } from '../components/Badge';
 import { EmptyState } from '../components/EmptyState';
 import { colors, typography, spacing } from '../theme';
+
+const UNIDADES = ['g', 'ml', 'u', 'kg', 'l'];
 
 export default function InventarioScreen() {
   const [items, setItems] = useState([]);
@@ -18,9 +21,10 @@ export default function InventarioScreen() {
   const [aviso, setAviso] = useState('');
 
   const [nombre, setNombre] = useState('');
-  const [unidad, setUnidad] = useState('');
+  const [unidad, setUnidad] = useState(null);
   const [stockMinimo, setStockMinimo] = useState('');
   const [costoUnitario, setCostoUnitario] = useState('');
+  const [stockInicial, setStockInicial] = useState('');
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -41,7 +45,7 @@ export default function InventarioScreen() {
   );
 
   const agregar = async () => {
-    if (!nombre.trim() || !unidad.trim() || !stockMinimo || !costoUnitario) {
+    if (!nombre.trim() || !unidad || !stockMinimo || !costoUnitario) {
       setError('Completa nombre, unidad, stock mínimo y costo unitario');
       return;
     }
@@ -50,14 +54,16 @@ export default function InventarioScreen() {
     try {
       await createIngrediente({
         nombre: nombre.trim(),
-        unidad: unidad.trim(),
+        unidad,
         stockMinimo: parseFloat(stockMinimo),
         costoUnitario: parseFloat(costoUnitario),
+        stockInicial: stockInicial ? parseFloat(stockInicial) : 0,
       });
       setNombre('');
-      setUnidad('');
+      setUnidad(null);
       setStockMinimo('');
       setCostoUnitario('');
+      setStockInicial('');
       await cargar();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo crear el ingrediente');
@@ -113,9 +119,17 @@ export default function InventarioScreen() {
       {aviso ? <Text style={styles.aviso}>{aviso}</Text> : null}
 
       <Input placeholder="Nombre" value={nombre} onChangeText={setNombre} />
-      <Input placeholder="Unidad (g, ml, u)" value={unidad} onChangeText={setUnidad} />
+
+      <Text style={styles.label}>Unidad</Text>
+      <View style={styles.chipsRow}>
+        {UNIDADES.map((u) => (
+          <Chip key={u} label={u} selected={unidad === u} onPress={() => setUnidad(u)} />
+        ))}
+      </View>
+
       <Input placeholder="Stock mínimo" value={stockMinimo} onChangeText={setStockMinimo} keyboardType="numeric" />
       <Input placeholder="Costo unitario" value={costoUnitario} onChangeText={setCostoUnitario} keyboardType="numeric" />
+      <Input placeholder="Stock inicial (opcional)" value={stockInicial} onChangeText={setStockInicial} keyboardType="numeric" />
 
       <Button variant="secondary" label="Agregar ingrediente" onPress={agregar} />
 
@@ -167,8 +181,10 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: spacing.lg,
   },
+  label: { color: colors.textSecondary, marginBottom: spacing.xs, fontSize: typography.size.md },
   error: { color: colors.danger, marginBottom: spacing.md },
   aviso: { color: colors.info, marginBottom: spacing.md },
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.sm },
   list: { marginTop: spacing.md },
   trailing: { alignItems: 'flex-end' },
   acciones: { flexDirection: 'row', marginTop: spacing.xs },

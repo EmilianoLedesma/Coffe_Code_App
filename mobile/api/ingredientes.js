@@ -4,13 +4,13 @@ export function getIngredientes() {
   return request('/ingredientes');
 }
 
-export function createIngrediente({ nombre, unidad, stockMinimo, costoUnitario }) {
+export function createIngrediente({ nombre, unidad, stockMinimo, costoUnitario, stockInicial }) {
   return request('/ingredientes', {
     method: 'POST',
     body: {
       nombre,
       unidad,
-      stock_actual: 0,
+      stock_actual: stockInicial || 0,
       stock_minimo: stockMinimo,
       costo_unitario: costoUnitario,
       activo: true,
