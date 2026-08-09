@@ -11,7 +11,6 @@ import {
 import { getIngredientes } from '../api/ingredientes';
 import { ApiError } from '../api/client';
 import { Card } from '../components/Card';
-import { ListItem } from '../components/ListItem';
 import { Chip } from '../components/Chip';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
