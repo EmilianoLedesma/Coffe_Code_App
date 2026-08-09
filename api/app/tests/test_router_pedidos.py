@@ -40,3 +40,59 @@ def test_listar_pedidos_filtra_por_mesa_id(client, db_session, catalogos, usuari
     assert respuesta.status_code == 200
     ids_mesa = {p["id_mesa"] for p in respuesta.json()}
     assert ids_mesa == {mesa_1.id}
+
+
+def test_cocinero_no_puede_agregar_item(client, db_session, catalogos, usuario_mesero):
+    mesa, producto = _crear_mesa_y_producto(db_session, catalogos)
+    pedido = crear_pedido(db_session, PedidoCreate(mesa_id=mesa.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
+
+    token = _token(catalogos, RolNombre.COCINERO)
+    respuesta = client.post(
+        f"/pedidos/{pedido.id}/items",
+        json={"id_producto": producto.id, "cantidad": 1},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert respuesta.status_code == 403
+
+
+def test_cocinero_no_puede_actualizar_item(client, db_session, catalogos, usuario_mesero):
+    mesa, producto = _crear_mesa_y_producto(db_session, catalogos)
+    pedido = crear_pedido(db_session, PedidoCreate(mesa_id=mesa.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
+    item_id = pedido.detalle[0].id
+
+    token = _token(catalogos, RolNombre.COCINERO)
+    respuesta = client.put(
+        f"/pedidos/{pedido.id}/items/{item_id}",
+        json={"cantidad": 2},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert respuesta.status_code == 403
+
+
+def test_cocinero_no_puede_eliminar_item(client, db_session, catalogos, usuario_mesero):
+    mesa, producto = _crear_mesa_y_producto(db_session, catalogos)
+    pedido = crear_pedido(db_session, PedidoCreate(mesa_id=mesa.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
+    item_id = pedido.detalle[0].id
+
+    token = _token(catalogos, RolNombre.COCINERO)
+    respuesta = client.delete(
+        f"/pedidos/{pedido.id}/items/{item_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert respuesta.status_code == 403
+
+
+def test_cocinero_no_puede_cerrar_cuenta(client, db_session, catalogos, usuario_mesero):
+    mesa, producto = _crear_mesa_y_producto(db_session, catalogos)
+    pedido = crear_pedido(db_session, PedidoCreate(mesa_id=mesa.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
+
+    token = _token(catalogos, RolNombre.COCINERO)
+    respuesta = client.post(
+        f"/pedidos/{pedido.id}/cerrar-cuenta",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert respuesta.status_code == 403
