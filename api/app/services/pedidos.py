@@ -4,7 +4,6 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.constants import (
-    ESTATUS_PEDIDO_ACTIVOS,
     TRANSICIONES_PEDIDO_VALIDAS,
     EstatusCocinaNombre,
     EstatusMesaNombre,
@@ -209,13 +208,13 @@ def _descontar_inventario_por_receta(db: Session, pedido: Pedido) -> list[str]:
 
 
 def _liberar_mesa_si_no_hay_pedidos_activos(db: Session, mesa: Mesa) -> None:
-    pedidos_activos = (
+    pedidos = (
         db.query(Pedido)
-        .join(EstatusPedido)
-        .filter(Pedido.id_mesa == mesa.id, EstatusPedido.nombre.in_(ESTATUS_PEDIDO_ACTIVOS))
-        .count()
+        .options(joinedload(Pedido.estatus), joinedload(Pedido.ticket).joinedload(Ticket.pago))
+        .filter(Pedido.id_mesa == mesa.id)
+        .all()
     )
-    if pedidos_activos == 0:
+    if not any(p.ocupa_mesa for p in pedidos):
         estatus_libre = db.query(EstatusMesa).filter(EstatusMesa.nombre == EstatusMesaNombre.LIBRE).first()
         if estatus_libre:
             mesa.id_estatus = estatus_libre.id
@@ -233,32 +232,6 @@ def cambiar_estado_pedido(db: Session, pedido: Pedido, nuevo_estatus_nombre: str
                 f"a '{nuevo_estatus_nombre}'"
             ),
         )
-
-    if nuevo_estatus_nombre == EstatusPedidoNombre.ENTREGADO:
-        ticket = (
-            db.query(Ticket)
-            .options(joinedload(Ticket.pago))
-            .filter(Ticket.id_pedido == pedido.id)
-            .first()
-        )
-        if not ticket or not ticket.pago:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="No se puede entregar un pedido sin cobrar",
-            )
-
-    if nuevo_estatus_nombre == EstatusPedidoNombre.CANCELADO:
-        ticket = (
-            db.query(Ticket)
-            .options(joinedload(Ticket.pago))
-            .filter(Ticket.id_pedido == pedido.id)
-            .first()
-        )
-        if ticket and ticket.pago:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="No se puede cancelar un pedido ya cobrado",
-            )
 
     nuevo_estatus = _get_estatus_pedido_por_nombre(db, nuevo_estatus_nombre)
     alertas_stock_bajo: list[str] = []

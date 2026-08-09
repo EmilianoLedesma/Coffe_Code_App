@@ -63,6 +63,7 @@ class PedidoOut(BaseModel):
     estatus: EstatusPedidoOut
     detalle: list[DetallePedidoOut]
     alertas_stock_bajo: list[str] = []
+    ocupa_mesa: bool = True
 
 
 class CambioEstadoPedido(BaseModel):

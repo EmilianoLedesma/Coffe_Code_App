@@ -174,8 +174,9 @@ export default function DetalleScreen({ route }) {
   const esMeseroOAdmin = rol === 'Mesero' || rol === 'Administrador';
   const esPendiente = pedido.estatus.nombre === 'Pendiente';
   const esListo = pedido.estatus.nombre === 'Listo';
+  const esEntregado = pedido.estatus.nombre === 'Entregado';
   const puedeEditar = esMeseroOAdmin && esPendiente;
-  const puedeCerrarCuenta = esMeseroOAdmin && esListo;
+  const puedeCerrarCuenta = esMeseroOAdmin && esEntregado;
   const puedeEntregar = esMeseroOAdmin && esListo;
 
   const cabecera = (

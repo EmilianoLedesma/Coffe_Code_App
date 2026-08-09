@@ -22,10 +22,10 @@ def calcular_totales(pedido: Pedido) -> tuple[Decimal, Decimal, Decimal]:
 
 
 def cerrar_cuenta(db: Session, pedido: Pedido, usuario_id: int) -> Ticket:
-    if pedido.estatus.nombre != EstatusPedidoNombre.LISTO:
+    if pedido.estatus.nombre != EstatusPedidoNombre.ENTREGADO:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Solo se puede cerrar la cuenta de un pedido Listo",
+            detail="Solo se puede cerrar la cuenta de un pedido Entregado",
         )
 
     ticket_existente = db.query(Ticket).filter(Ticket.id_pedido == pedido.id).first()

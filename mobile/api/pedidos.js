@@ -1,9 +1,5 @@
 import { request } from './client';
 
-// Estados en los que un pedido sigue "vivo" — espejo de
-// ESTATUS_PEDIDO_ACTIVOS en api/app/core/constants.py:43-47
-const ESTADOS_ACTIVOS = ['Pendiente', 'En preparación', 'Listo'];
-
 export function crearPedido({ mesaId, usuarioId, items }) {
   return request('/pedidos', {
     method: 'POST',
@@ -31,11 +27,11 @@ export function cambiarEstadoPedido(pedidoId, estatus) {
 }
 
 // GET /pedidos?mesa_id= trae TODOS los pedidos de la mesa (cualquier
-// estatus); se filtra client-side a los activos para no listar pedidos ya
-// Entregados/Cancelados como si siguieran vivos.
+// estatus); se filtra client-side por ocupa_mesa (calculado por el
+// backend) para seguir mostrando un pedido Entregado hasta que se pague.
 export async function getPedidosActivosDeMesa(mesaId) {
   const todos = await request(`/pedidos?mesa_id=${mesaId}&limit=200`);
-  return todos.filter((p) => ESTADOS_ACTIVOS.includes(p.estatus.nombre));
+  return todos.filter((p) => p.ocupa_mesa);
 }
 
 export function agregarItemPedido(pedidoId, { idProducto, cantidad, especificaciones }) {

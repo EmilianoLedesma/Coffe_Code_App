@@ -14,8 +14,8 @@ function jsonResponse(body) {
   };
 }
 
-const PEDIDO_PENDIENTE = { id: 10, id_mesa: 3, estatus: { nombre: 'Pendiente' } };
-const PEDIDO_ENTREGADO = { id: 11, id_mesa: 3, estatus: { nombre: 'Entregado' } };
+const PEDIDO_PENDIENTE = { id: 10, id_mesa: 3, estatus: { nombre: 'Pendiente' }, ocupa_mesa: true };
+const PEDIDO_ENTREGADO = { id: 11, id_mesa: 3, estatus: { nombre: 'Entregado' }, ocupa_mesa: false };
 
 beforeEach(() => {
   global.fetch = jest.fn((url) => {
@@ -28,7 +28,7 @@ beforeEach(() => {
 afterEach(() => jest.clearAllMocks());
 
 describe('getPedidosActivosDeMesa', () => {
-  it('filtra a solo los estados activos (excluye Entregado/Cancelado)', async () => {
+  it('filtra por ocupa_mesa (excluye Entregado ya pagado/Cancelado)', async () => {
     const activos = await getPedidosActivosDeMesa(3);
     expect(activos).toEqual([PEDIDO_PENDIENTE]);
     expect(global.fetch).toHaveBeenCalledTimes(1);

@@ -24,3 +24,11 @@ class Pedido(Base):
         back_populates="pedido", cascade="all, delete-orphan"
     )
     ticket: Mapped["Ticket"] = relationship(back_populates="pedido", uselist=False)
+
+    @property
+    def ocupa_mesa(self) -> bool:
+        if self.estatus.nombre == "Cancelado":
+            return False
+        if self.estatus.nombre == "Entregado":
+            return not (self.ticket and self.ticket.pago)
+        return True
