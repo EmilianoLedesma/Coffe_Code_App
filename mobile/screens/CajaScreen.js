@@ -43,7 +43,7 @@ export default function CajaScreen({ navigation }) {
 
       connectToChannel('caja', {
         onMessage: (evento) => {
-          if (evento.evento === 'pedido_activado') {
+          if (evento.evento === 'pedido_activado' || evento.evento === 'cuenta_cerrada') {
             cargar();
           }
         },

@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.core.constants import EstatusPedidoNombre
 from app.data.pedidos import Pedido
 from app.data.tickets import Ticket
+from app.websockets.manager import manager
 
 
 def _redondear(valor: Decimal) -> Decimal:
@@ -38,4 +39,9 @@ def cerrar_cuenta(db: Session, pedido: Pedido, usuario_id: int) -> Ticket:
     db.add(ticket)
     db.commit()
     db.refresh(ticket)
+
+    manager.emitir(
+        "caja",
+        {"evento": "cuenta_cerrada", "pedido_id": pedido.id, "mesa_id": pedido.id_mesa},
+    )
     return ticket
