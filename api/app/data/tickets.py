@@ -21,3 +21,7 @@ class Ticket(Base):
     pedido: Mapped["Pedido"] = relationship(back_populates="ticket")
     usuario: Mapped["Usuario"] = relationship(back_populates="tickets")
     pago: Mapped["Pago"] = relationship(back_populates="ticket", uselist=False)
+
+    @property
+    def id_mesa(self) -> int:
+        return self.pedido.id_mesa

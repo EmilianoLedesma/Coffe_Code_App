@@ -35,7 +35,7 @@ def crear_venta(
     ticket = registrar_venta(db, datos, usuario_id=usuario.user_id)
     return (
         db.query(Ticket)
-        .options(joinedload(Ticket.pago).joinedload(Pago.metodo))
+        .options(joinedload(Ticket.pago).joinedload(Pago.metodo), joinedload(Ticket.pedido))
         .filter(Ticket.id == ticket.id)
         .first()
     )

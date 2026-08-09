@@ -11,7 +11,10 @@ from app.security.auth import TokenData, require_rol
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
-_TICKET_LOAD_OPTIONS = (joinedload(Ticket.pago).joinedload(Pago.metodo),)
+_TICKET_LOAD_OPTIONS = (
+    joinedload(Ticket.pago).joinedload(Pago.metodo),
+    joinedload(Ticket.pedido),
+)
 
 
 @router.get("", response_model=list[TicketOut])

@@ -47,6 +47,7 @@ def test_cerrar_cuenta_calcula_totales_y_no_crea_pago(db_session, catalogos, mes
     assert ticket.iva == Decimal("11.20")
     assert ticket.total == Decimal("81.20")
     assert ticket.pago is None
+    assert ticket.id_mesa == mesa_libre.id
 
 
 def test_cerrar_cuenta_de_pedido_no_listo_devuelve_409(db_session, catalogos, mesa_libre, usuario_mesero, producto):

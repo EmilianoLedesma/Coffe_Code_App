@@ -1,18 +1,17 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getPedidosListos } from '../api/pedidos_caja';
+import { getTickets } from '../api/tickets';
 import { getMesas } from '../api/mesas';
 import { ApiError } from '../api/client';
 import { connectToChannel } from '../ws/client';
 import { Button } from '../components/Button';
 import { ListItem } from '../components/ListItem';
-import { Badge } from '../components/Badge';
 import { EmptyState } from '../components/EmptyState';
 import { colors, typography, spacing } from '../theme';
 
 export default function CajaScreen({ navigation }) {
-  const [pedidos, setPedidos] = useState([]);
+  const [tickets, setTickets] = useState([]);
   const [numeroPorMesa, setNumeroPorMesa] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -21,9 +20,8 @@ export default function CajaScreen({ navigation }) {
     setLoading(true);
     setError('');
     try {
-      // PedidoOut solo trae id_mesa (PK); el número visible vive en MesaOut.
-      const [lista, mesas] = await Promise.all([getPedidosListos(), getMesas()]);
-      setPedidos(lista);
+      const [lista, mesas] = await Promise.all([getTickets({ pagado: false }), getMesas()]);
+      setTickets(lista);
       setNumeroPorMesa(Object.fromEntries(mesas.map((m) => [m.id, m.numero_mesa])));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo conectar con el servidor');
@@ -51,7 +49,6 @@ export default function CajaScreen({ navigation }) {
         },
         onClose: cargar,
       }).then((unsub) => {
-        // la pantalla pudo perder el foco mientras conectábamos
         if (cancelado) {
           unsub();
           return;
@@ -66,7 +63,7 @@ export default function CajaScreen({ navigation }) {
     }, [cargar])
   );
 
-  if (loading && pedidos.length === 0) {
+  if (loading && tickets.length === 0) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -82,44 +79,33 @@ export default function CajaScreen({ navigation }) {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <FlatList
-        data={pedidos}
+        data={tickets}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{ paddingBottom: spacing.xxl }}
         ListEmptyComponent={
           <EmptyState
             icon="cash-outline"
-            message="Sin pedidos por cobrar. Aparecerán aquí cuando cocina marque un pedido como Listo."
+            message="Sin cuentas por cobrar. Aparecerán aquí cuando el Mesero cierre la cuenta de un pedido Listo."
           />
         }
-        renderItem={({ item }) => {
-          // registrar_venta pone `total` pero deja el estatus en `Listo`
-          // (api/app/services/ventas.py:63): el pedido sigue en esta cola
-          // hasta que el Mesero lo marque Entregado. Ofrecerle "Cobrar" otra
-          // vez garantiza un 409 de pago duplicado.
-          const pagado = item.total !== null;
-          return (
-            <ListItem
-              title={`Mesa ${numeroPorMesa[item.id_mesa] ?? item.id_mesa}`}
-              subtitle={`Pedido #${item.id} — ${item.detalle.length} ítem(s)`}
-              trailing={
-                pagado ? (
-                  <Badge label="Cobrado" tone="info" />
-                ) : (
-                  <Button
-                    variant="primary"
-                    label="Cobrar"
-                    onPress={() =>
-                      navigation.navigate('Pago', {
-                        pedidoId: item.id,
-                        numeroMesa: numeroPorMesa[item.id_mesa],
-                      })
-                    }
-                  />
-                )
-              }
-            />
-          );
-        }}
+        renderItem={({ item }) => (
+          <ListItem
+            title={`Mesa ${numeroPorMesa[item.id_mesa] ?? item.id_mesa}`}
+            subtitle={`Ticket #${item.id} — Total $${item.total}`}
+            trailing={
+              <Button
+                variant="primary"
+                label="Cobrar"
+                onPress={() =>
+                  navigation.navigate('Pago', {
+                    ticketId: item.id,
+                    numeroMesa: numeroPorMesa[item.id_mesa],
+                  })
+                }
+              />
+            }
+          />
+        )}
         ListFooterComponent={() => (
           <View>
             <Button
@@ -127,8 +113,6 @@ export default function CajaScreen({ navigation }) {
               label="Gastos y cuentas"
               onPress={() => navigation.navigate('Gastos')}
             />
-            {/* Task 4 agrega aquí el botón "Registrar compra de insumo",
-                junto con la ruta `Compras` que necesita para no crashear. */}
           </View>
         )}
       />

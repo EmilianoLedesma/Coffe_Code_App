@@ -32,6 +32,7 @@ class TicketOut(BaseModel):
     total: Decimal
     fecha_emision: datetime
     id_pedido: int
+    id_mesa: int
     id_usuario: int
     pago: PagoOut | None = None
 
