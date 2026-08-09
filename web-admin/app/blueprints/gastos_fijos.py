@@ -1,3 +1,5 @@
+from datetime import date, datetime, time, timedelta
+
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from app.api_client import (
@@ -8,8 +10,10 @@ from app.api_client import (
     crear_gasto_fijo,
     eliminar_gasto_fijo,
     listar_gastos_fijos,
+    obtener_reporte_financiero,
 )
 from app.auth import api_base_url, current_token, login_required
+from app.utils import parsear_fecha, parsear_fechas_detalle
 
 bp = Blueprint("gastos_fijos", __name__, url_prefix="/gastos-fijos")
 
@@ -19,8 +23,31 @@ CATEGORIAS = ["Nómina", "Servicios", "Renta", "Otro"]
 @bp.route("")
 @login_required
 def listar():
-    gastos_fijos = listar_gastos_fijos(api_base_url(), current_token(), incluir_inactivos=True)
-    return render_template("gastos_fijos.html", gastos_fijos=gastos_fijos, categorias=CATEGORIAS)
+    base_url = api_base_url()
+    token = current_token()
+
+    hoy = date.today()
+    hasta = parsear_fecha(request.args.get("hasta"), hoy)
+    desde = parsear_fecha(request.args.get("desde"), hoy - timedelta(days=30))
+
+    gastos_fijos = listar_gastos_fijos(base_url, token, incluir_inactivos=True)
+    financiero = obtener_reporte_financiero(
+        base_url,
+        token,
+        datetime.combine(desde, time.min).isoformat(),
+        datetime.combine(hasta, time.max).isoformat(),
+    )
+    detalle_gastos = financiero.get("detalle_gastos", [])
+    parsear_fechas_detalle(detalle_gastos, "fecha_gasto")
+
+    return render_template(
+        "gastos_fijos.html",
+        gastos_fijos=gastos_fijos,
+        categorias=CATEGORIAS,
+        detalle_gastos=detalle_gastos,
+        desde=desde,
+        hasta=hasta,
+    )
 
 
 @bp.route("/nuevo", methods=["POST"])

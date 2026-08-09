@@ -5,13 +5,9 @@ from flask import Blueprint, render_template, request
 from app.api_client import obtener_reporte_financiero, obtener_reporte_inventario
 from app.auth import api_base_url, current_token, login_required
 from app.utils import parsear_fecha as _parsear_fecha
+from app.utils import parsear_fechas_detalle as _parsear_fechas_detalle
 
 bp = Blueprint("dashboard", __name__)
-
-
-def _parsear_fechas_detalle(filas: list[dict], campo: str) -> None:
-    for fila in filas:
-        fila[campo] = datetime.fromisoformat(fila[campo])
 
 
 @bp.route("/")

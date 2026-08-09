@@ -70,6 +70,40 @@
     </table>
   </div>
 
+  <div class="mt-8">
+    <h2 class="text-lg font-semibold mb-3">Gastos registrados</h2>
+    <form method="get" class="flex items-center gap-2 text-sm mb-4">
+      <input type="date" name="desde" value="{{ desde.isoformat() }}" class="input-field !w-auto py-1.5">
+      <span class="text-black/58">a</span>
+      <input type="date" name="hasta" value="{{ hasta.isoformat() }}" class="input-field !w-auto py-1.5">
+      <button type="submit" class="btn btn-primary">Filtrar</button>
+    </form>
+    <div class="card overflow-hidden">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Concepto</th>
+            <th>Monto</th>
+            <th>Registrado por</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for gasto in detalle_gastos %}
+          <tr>
+            <td>{{ gasto.fecha_gasto.strftime("%d/%m/%Y %H:%M") }}</td>
+            <td>{{ gasto.concepto }}</td>
+            <td>${{ "%.2f"|format(gasto.monto|float) }}</td>
+            <td>{{ gasto.usuario }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-sm p-5" style="color: rgba(0,0,0,0.58);">Sin gastos registrados en este periodo.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <div x-show="modalAbierto" x-cloak class="fixed inset-0 modal-overlay flex items-center justify-center z-50">
     <div class="modal-panel p-6 w-full max-w-md" @click.outside="modalAbierto = false">
       <h2 class="text-lg font-semibold text-starbucks mb-4" x-text="editando ? 'Editar gasto fijo' : 'Nuevo gasto fijo'"></h2>
