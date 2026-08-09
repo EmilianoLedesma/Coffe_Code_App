@@ -95,13 +95,60 @@ export default function PagoScreen({ route, navigation }) {
   }
 
   if (resultado) {
+    const fecha = new Date(resultado.fecha_emision);
     return (
-      <View style={styles.center}>
-        <Text style={styles.title}>Pago registrado</Text>
-        <Text style={styles.text}>Total: ${resultado.total}</Text>
-        <Text style={styles.text}>Cambio: ${resultado.pago.cambio}</Text>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: spacing.xxl }}>
+        <View style={styles.receipt}>
+          <Text style={styles.receiptHeader}>COFFEE CODE</Text>
+          <Text style={styles.receiptSub}>Folio #{resultado.id} — Mesa {numeroMesa ?? resultado.id_mesa}</Text>
+          <Text style={styles.receiptSub}>{fecha.toLocaleString()}</Text>
+
+          <View style={styles.dashedLine} />
+
+          {pedido?.detalle.map((item) => (
+            <View key={item.id} style={styles.receiptRow}>
+              <Text style={styles.receiptItem} numberOfLines={1}>
+                {item.cantidad}x {item.producto.nombre}
+              </Text>
+              <Text style={styles.receiptAmount}>
+                ${(item.cantidad * Number(item.precio_unitario)).toFixed(2)}
+              </Text>
+            </View>
+          ))}
+
+          <View style={styles.dashedLine} />
+
+          <View style={styles.receiptRow}>
+            <Text style={styles.receiptItem}>Subtotal</Text>
+            <Text style={styles.receiptAmount}>${resultado.subtotal}</Text>
+          </View>
+          <View style={styles.receiptRow}>
+            <Text style={styles.receiptItem}>IVA</Text>
+            <Text style={styles.receiptAmount}>${resultado.iva}</Text>
+          </View>
+          <View style={styles.receiptRow}>
+            <Text style={styles.receiptTotalLabel}>TOTAL</Text>
+            <Text style={styles.receiptTotalAmount}>${resultado.total}</Text>
+          </View>
+
+          <View style={styles.dashedLine} />
+
+          <View style={styles.receiptRow}>
+            <Text style={styles.receiptItem}>Método</Text>
+            <Text style={styles.receiptAmount}>{resultado.pago.metodo.nombre}</Text>
+          </View>
+          <View style={styles.receiptRow}>
+            <Text style={styles.receiptItem}>Recibido</Text>
+            <Text style={styles.receiptAmount}>${resultado.pago.monto_recibido}</Text>
+          </View>
+          <View style={styles.receiptRow}>
+            <Text style={styles.receiptItem}>Cambio</Text>
+            <Text style={styles.receiptAmount}>${resultado.pago.cambio}</Text>
+          </View>
+        </View>
+
         <Button variant="primary" label="Volver a Caja" onPress={() => navigation.navigate('Caja')} />
-      </View>
+      </ScrollView>
     );
   }
 
@@ -203,4 +250,38 @@ const styles = StyleSheet.create({
   },
   errorText: { color: colors.danger, fontSize: typography.size.md },
   row: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.md },
+  receipt: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.r12,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  receiptHeader: {
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    letterSpacing: 1,
+  },
+  receiptSub: {
+    fontSize: typography.size.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  dashedLine: {
+    borderBottomWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.borderSubtle,
+    marginVertical: spacing.md,
+  },
+  receiptRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  receiptItem: { fontSize: typography.size.md, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
+  receiptAmount: { fontSize: typography.size.md, color: colors.textPrimary },
+  receiptTotalLabel: { fontSize: typography.size.lg, fontWeight: typography.weight.bold, color: colors.textPrimary },
+  receiptTotalAmount: { fontSize: typography.size.lg, fontWeight: typography.weight.bold, color: colors.textPrimary },
 });

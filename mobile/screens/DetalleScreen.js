@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, FlatList, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, FlatList, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import {
   getPedido,
   cambiarEstadoPedido,
@@ -197,24 +198,27 @@ export default function DetalleScreen({ route }) {
           trailing={
             puedeEditar ? (
               <View style={styles.editRow}>
-                <Button
-                  variant="text"
-                  label="-"
+                <TouchableOpacity
+                  style={styles.iconBtn}
                   onPress={() => cambiarCantidad(item.id, item.cantidad - 1)}
                   disabled={editandoItemId === item.id}
-                />
-                <Button
-                  variant="text"
-                  label="+"
+                >
+                  <Ionicons name="remove-circle-outline" size={28} color={colors.warning} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.iconBtn}
                   onPress={() => cambiarCantidad(item.id, item.cantidad + 1)}
                   disabled={editandoItemId === item.id}
-                />
-                <Button
-                  variant="text"
-                  label="Quitar"
+                >
+                  <Ionicons name="add-circle-outline" size={28} color={colors.success} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.iconBtn}
                   onPress={() => quitarItem(item.id)}
                   disabled={editandoItemId === item.id}
-                />
+                >
+                  <Ionicons name="trash-outline" size={24} color={colors.danger} />
+                </TouchableOpacity>
               </View>
             ) : (
               <Badge label={item.estatus.nombre} tone="neutral" />
@@ -305,6 +309,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   entregarWrap: { marginBottom: spacing.sm },
-  editRow: { flexDirection: 'row', gap: spacing.sm },
+  editRow: { flexDirection: 'row', gap: spacing.xs },
+  iconBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   agregar: { fontWeight: typography.weight.bold, color: colors.primary, fontSize: typography.size.xl },
 });

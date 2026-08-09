@@ -198,7 +198,7 @@ export default function GastosScreen() {
 
       <Card style={styles.card}>
         <Text style={styles.totalText}>
-          Total gastos de hoy (servidor): {totalPeriodo !== null ? `$${totalPeriodo}` : 'no disponible'}
+          Total gastos de hoy: {totalPeriodo !== null ? `$${totalPeriodo}` : 'no disponible'}
         </Text>
       </Card>
 
@@ -215,7 +215,7 @@ export default function GastosScreen() {
       <FlatList
         data={gastosSesion}
         keyExtractor={(item) => item.id.toString()}
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={renderHeader()}
         renderItem={({ item }) => (
           <ListItem title={item.concepto} subtitle={`$${item.monto}`} />
         )}

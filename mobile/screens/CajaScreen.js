@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { getTickets } from '../api/tickets';
 import { getMesas } from '../api/mesas';
 import { ApiError } from '../api/client';
@@ -92,19 +93,14 @@ export default function CajaScreen({ navigation }) {
           <ListItem
             title={`Mesa ${numeroPorMesa[item.id_mesa] ?? item.id_mesa}`}
             subtitle={`Ticket #${item.id} — Total $${item.total}`}
-            trailing={
-              <Button
-                variant="primary"
-                label="Cobrar"
-                onPress={() =>
-                  navigation.navigate('Pago', {
-                    ticketId: item.id,
-                    pedidoId: item.id_pedido,
-                    numeroMesa: numeroPorMesa[item.id_mesa],
-                  })
-                }
-              />
+            onPress={() =>
+              navigation.navigate('Pago', {
+                ticketId: item.id,
+                pedidoId: item.id_pedido,
+                numeroMesa: numeroPorMesa[item.id_mesa],
+              })
             }
+            trailing={<Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />}
           />
         )}
         ListFooterComponent={() => (
