@@ -6,11 +6,11 @@ import { ListItem } from '../components/ListItem';
 import { Button } from '../components/Button';
 
 const BOTONES_POR_ROL = {
-  Mesero: [{ label: 'Mesero', target: 'Mesas', icon: 'restaurant-outline' }],
+  Mesero: [{ label: 'Mesas', target: 'Mesas', icon: 'restaurant-outline' }],
   Cocinero: [{ label: 'Cocina', target: 'Cocina', icon: 'flame-outline' }],
   Cajero: [{ label: 'Caja', target: 'Caja', icon: 'cash-outline' }],
   Administrador: [
-    { label: 'Mesero', target: 'Mesas', icon: 'restaurant-outline' },
+    { label: 'Mesas', target: 'Mesas', icon: 'restaurant-outline' },
     { label: 'Cocina', target: 'Cocina', icon: 'flame-outline' },
     { label: 'Caja', target: 'Caja', icon: 'cash-outline' },
   ],
