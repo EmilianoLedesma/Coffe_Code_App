@@ -48,7 +48,8 @@ def test_mesero_solo_ve_sus_propios_tickets(client, db_session, catalogos, mesa_
 
     pedido_propio = crear_pedido(db_session, PedidoCreate(mesa_id=mesa_libre.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
     cambiar_estado_pedido(db_session, pedido_propio, EstatusPedidoNombre.EN_PREPARACION)
-    pedido_propio, _ = cambiar_estado_pedido(db_session, pedido_propio, EstatusPedidoNombre.LISTO)
+    cambiar_estado_pedido(db_session, pedido_propio, EstatusPedidoNombre.LISTO)
+    pedido_propio, _ = cambiar_estado_pedido(db_session, pedido_propio, EstatusPedidoNombre.ENTREGADO)
     cerrar_cuenta(db_session, pedido_propio, usuario_id=otro_mesero.id)
 
     from app.data.mesas import Mesa
@@ -57,7 +58,8 @@ def test_mesero_solo_ve_sus_propios_tickets(client, db_session, catalogos, mesa_
     db_session.flush()
     pedido_ajeno = crear_pedido(db_session, PedidoCreate(mesa_id=mesa_2.id, usuario_id=otro_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
     cambiar_estado_pedido(db_session, pedido_ajeno, EstatusPedidoNombre.EN_PREPARACION)
-    pedido_ajeno, _ = cambiar_estado_pedido(db_session, pedido_ajeno, EstatusPedidoNombre.LISTO)
+    cambiar_estado_pedido(db_session, pedido_ajeno, EstatusPedidoNombre.LISTO)
+    pedido_ajeno, _ = cambiar_estado_pedido(db_session, pedido_ajeno, EstatusPedidoNombre.ENTREGADO)
     cerrar_cuenta(db_session, pedido_ajeno, usuario_id=usuario_mesero.id)
 
     token = _token(usuario_mesero.id, RolNombre.MESERO)
@@ -72,7 +74,8 @@ def test_cajero_ve_todos_los_tickets(client, db_session, catalogos, mesa_libre, 
     producto = _crear_producto(db_session)
     pedido = crear_pedido(db_session, PedidoCreate(mesa_id=mesa_libre.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
-    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
     cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
 
     token = _token(999, RolNombre.CAJERO)
@@ -86,7 +89,8 @@ def test_cajero_filtra_pagado_false_solo_ve_cuentas_abiertas(client, db_session,
     producto = _crear_producto(db_session)
     pedido = crear_pedido(db_session, PedidoCreate(mesa_id=mesa_libre.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
-    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
     ticket = cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
     registrar_venta(db_session, VentaCreate(ticket_id=ticket.id, metodo_pago=MetodoPagoNombre.EFECTIVO, monto=Decimal("100.00")), usuario_id=999)
 
@@ -102,7 +106,8 @@ def test_cajero_filtra_pagado_true_solo_ve_cuentas_pagadas(client, db_session, c
 
     pedido_pagado = crear_pedido(db_session, PedidoCreate(mesa_id=mesa_libre.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
     cambiar_estado_pedido(db_session, pedido_pagado, EstatusPedidoNombre.EN_PREPARACION)
-    pedido_pagado, _ = cambiar_estado_pedido(db_session, pedido_pagado, EstatusPedidoNombre.LISTO)
+    cambiar_estado_pedido(db_session, pedido_pagado, EstatusPedidoNombre.LISTO)
+    pedido_pagado, _ = cambiar_estado_pedido(db_session, pedido_pagado, EstatusPedidoNombre.ENTREGADO)
     ticket_pagado = cerrar_cuenta(db_session, pedido_pagado, usuario_id=usuario_mesero.id)
     registrar_venta(db_session, VentaCreate(ticket_id=ticket_pagado.id, metodo_pago=MetodoPagoNombre.EFECTIVO, monto=Decimal("100.00")), usuario_id=999)
 
@@ -112,7 +117,8 @@ def test_cajero_filtra_pagado_true_solo_ve_cuentas_pagadas(client, db_session, c
     db_session.flush()
     pedido_sin_pagar = crear_pedido(db_session, PedidoCreate(mesa_id=mesa_2.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
     cambiar_estado_pedido(db_session, pedido_sin_pagar, EstatusPedidoNombre.EN_PREPARACION)
-    pedido_sin_pagar, _ = cambiar_estado_pedido(db_session, pedido_sin_pagar, EstatusPedidoNombre.LISTO)
+    cambiar_estado_pedido(db_session, pedido_sin_pagar, EstatusPedidoNombre.LISTO)
+    pedido_sin_pagar, _ = cambiar_estado_pedido(db_session, pedido_sin_pagar, EstatusPedidoNombre.ENTREGADO)
     cerrar_cuenta(db_session, pedido_sin_pagar, usuario_id=usuario_mesero.id)
 
     token = _token(999, RolNombre.CAJERO)
@@ -127,7 +133,8 @@ def test_obtener_ticket_por_id_mesero_propio(client, db_session, catalogos, mesa
     producto = _crear_producto(db_session)
     pedido = crear_pedido(db_session, PedidoCreate(mesa_id=mesa_libre.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
-    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
     ticket = cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
 
     token = _token(usuario_mesero.id, RolNombre.MESERO)
@@ -142,7 +149,8 @@ def test_obtener_ticket_por_id_mesero_ajeno_403(client, db_session, catalogos, m
     otro_mesero = _otro_mesero(db_session, catalogos)
     pedido = crear_pedido(db_session, PedidoCreate(mesa_id=mesa_libre.id, usuario_id=otro_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
-    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
     ticket = cerrar_cuenta(db_session, pedido, usuario_id=otro_mesero.id)
 
     token = _token(usuario_mesero.id, RolNombre.MESERO)
@@ -162,7 +170,8 @@ def test_obtener_ticket_por_id_cajero_ve_cualquiera(client, db_session, catalogo
     producto = _crear_producto(db_session)
     pedido = crear_pedido(db_session, PedidoCreate(mesa_id=mesa_libre.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
-    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
     ticket = cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
 
     token = _token(999, RolNombre.CAJERO)

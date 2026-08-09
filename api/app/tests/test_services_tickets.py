@@ -33,7 +33,8 @@ def _pedido_listo(db_session, mesa, usuario, producto, cantidad=2):
         PedidoCreate(mesa_id=mesa.id, usuario_id=usuario.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=cantidad)]),
     )
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
-    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
     return pedido
 
 

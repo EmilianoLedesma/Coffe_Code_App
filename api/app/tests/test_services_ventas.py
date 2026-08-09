@@ -36,7 +36,8 @@ def ticket_cuenta_cerrada(db_session, catalogos, mesa_libre, usuario_mesero, pro
         PedidoCreate(mesa_id=mesa_libre.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=2)]),
     )
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
-    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
     return cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
 
 

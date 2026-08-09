@@ -4,17 +4,18 @@ import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-from app.core.constants import EstatusMesaNombre, EstatusPedidoNombre
+from app.core.constants import EstatusMesaNombre, EstatusPedidoNombre, MetodoPagoNombre
 from app.data.categorias import Categoria
 from app.data.ingredientes import Ingrediente
 from app.data.mesas import Mesa
-from app.data.pagos import Pago
 from app.data.productos import Producto
 from app.data.recetas import Receta
 from app.data.tickets import Ticket
 from app.models.pedidos import DetallePedidoCreate, ItemPedidoUpdate, PedidoCreate
+from app.models.ventas import VentaCreate
 from app.services.pedidos import actualizar_item_pedido, agregar_item_pedido, cambiar_estado_pedido, crear_pedido, eliminar_item_pedido
 from app.services.tickets import cerrar_cuenta
+from app.services.ventas import registrar_venta
 
 
 @pytest.fixture()
@@ -213,18 +214,27 @@ def test_marcar_listo_genera_alerta_si_stock_queda_bajo_minimo(
     assert "Leche" in alertas
 
 
+def _pagar(db_session, ticket, usuario_id):
+    return registrar_venta(
+        db_session,
+        VentaCreate(ticket_id=ticket.id, metodo_pago=MetodoPagoNombre.EFECTIVO, monto=ticket.total),
+        usuario_id=usuario_id,
+    )
+
+
 def test_entregado_libera_mesa_cuando_no_hay_mas_pedidos_activos(
     db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta
 ):
     pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
+
+    db_session.refresh(mesa_libre)
+    assert mesa_libre.estatus.nombre == EstatusMesaNombre.OCUPADA
+
     ticket = cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
-    ticket.pago = Pago(
-        monto_recibido=ticket.total, cambio=Decimal("0.00"), id_metodo=catalogos["metodos_pago"]["Efectivo"].id
-    )
-    db_session.commit()
-    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
+    _pagar(db_session, ticket, usuario_mesero.id)
 
     db_session.refresh(mesa_libre)
     assert mesa_libre.estatus.nombre == EstatusMesaNombre.LIBRE
@@ -238,12 +248,9 @@ def test_entregado_no_libera_mesa_si_hay_otro_pedido_activo(
 
     cambiar_estado_pedido(db_session, pedido_1, EstatusPedidoNombre.EN_PREPARACION)
     cambiar_estado_pedido(db_session, pedido_1, EstatusPedidoNombre.LISTO)
+    pedido_1, _ = cambiar_estado_pedido(db_session, pedido_1, EstatusPedidoNombre.ENTREGADO)
     ticket = cerrar_cuenta(db_session, pedido_1, usuario_id=usuario_mesero.id)
-    ticket.pago = Pago(
-        monto_recibido=ticket.total, cambio=Decimal("0.00"), id_metodo=catalogos["metodos_pago"]["Efectivo"].id
-    )
-    db_session.commit()
-    cambiar_estado_pedido(db_session, pedido_1, EstatusPedidoNombre.ENTREGADO)
+    _pagar(db_session, ticket, usuario_mesero.id)
 
     db_session.refresh(mesa_libre)
     assert mesa_libre.estatus.nombre == EstatusMesaNombre.OCUPADA
@@ -261,12 +268,9 @@ def test_entregado_libera_mesa_con_autoflush_desactivado(
     pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
     ticket = cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
-    ticket.pago = Pago(
-        monto_recibido=ticket.total, cambio=Decimal("0.00"), id_metodo=catalogos["metodos_pago"]["Efectivo"].id
-    )
-    db_session.commit()
-    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
+    _pagar(db_session, ticket, usuario_mesero.id)
 
     db_session.refresh(mesa_libre)
     assert mesa_libre.estatus.nombre == EstatusMesaNombre.LIBRE
@@ -366,78 +370,28 @@ def test_eliminar_ultimo_item_devuelve_409(db_session, catalogos, mesa_libre, us
     assert exc_info.value.status_code == 409
 
 
-def test_entregar_sin_cerrar_cuenta_devuelve_409(db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta):
-    """Regresión directa del hallazgo #4: Listo -> Entregado no exigía pago."""
+def test_entregado_es_incondicional_pero_mesa_solo_libera_tras_cobrar(
+    db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta
+):
+    """El pedido llega a Entregado sin necesidad de pago (el gate se
+    eliminó), pero la mesa permanece Ocupada hasta que se cierra la cuenta
+    y se registra el pago."""
     pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
     cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
-
-    with pytest.raises(HTTPException) as exc_info:
-        cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
-
-    assert exc_info.value.status_code == 409
-
-
-def test_entregar_con_cuenta_cerrada_pero_sin_pagar_devuelve_409(
-    db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta
-):
-    pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
-    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
-    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
-    cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
-
-    with pytest.raises(HTTPException) as exc_info:
-        cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
-
-    assert exc_info.value.status_code == 409
-
-
-def test_entregar_con_ticket_pagado_funciona(
-    db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta
-):
-    pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
-    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
-    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
-    ticket = cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
-    ticket.pago = Pago(
-        monto_recibido=ticket.total, cambio=Decimal("0.00"), id_metodo=catalogos["metodos_pago"]["Efectivo"].id
-    )
-    db_session.commit()
-
     pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
 
     assert pedido.estatus.nombre == EstatusPedidoNombre.ENTREGADO
+    db_session.refresh(mesa_libre)
+    assert mesa_libre.estatus.nombre == EstatusMesaNombre.OCUPADA
 
-
-def test_cancelar_pedido_con_ticket_pagado_devuelve_409(
-    db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta
-):
-    pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
-    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
-    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
     ticket = cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
-    ticket.pago = Pago(
-        monto_recibido=ticket.total, cambio=Decimal("0.00"), id_metodo=catalogos["metodos_pago"]["Efectivo"].id
-    )
-    db_session.commit()
+    db_session.refresh(mesa_libre)
+    assert mesa_libre.estatus.nombre == EstatusMesaNombre.OCUPADA
 
-    with pytest.raises(HTTPException) as exc_info:
-        cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.CANCELADO)
-
-    assert exc_info.value.status_code == 409
-
-
-def test_cancelar_pedido_con_cuenta_cerrada_sin_pagar_permite_cancelar(
-    db_session, catalogos, mesa_libre, usuario_mesero, producto_sin_receta
-):
-    pedido = _crear_pedido_simple(db_session, mesa_libre, usuario_mesero, producto_sin_receta)
-    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
-    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
-    cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
-
-    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.CANCELADO)
-
-    assert pedido.estatus.nombre == EstatusPedidoNombre.CANCELADO
+    _pagar(db_session, ticket, usuario_mesero.id)
+    db_session.refresh(mesa_libre)
+    assert mesa_libre.estatus.nombre == EstatusMesaNombre.LIBRE
 
 
 def test_editar_item_de_pedido_en_preparacion_devuelve_409(
