@@ -121,3 +121,51 @@ def test_cajero_filtra_pagado_true_solo_ve_cuentas_pagadas(client, db_session, c
     assert respuesta.status_code == 200
     ids_pedido = {t["id_pedido"] for t in respuesta.json()}
     assert ids_pedido == {pedido_pagado.id}
+
+
+def test_obtener_ticket_por_id_mesero_propio(client, db_session, catalogos, mesa_libre, usuario_mesero):
+    producto = _crear_producto(db_session)
+    pedido = crear_pedido(db_session, PedidoCreate(mesa_id=mesa_libre.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    ticket = cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
+
+    token = _token(usuario_mesero.id, RolNombre.MESERO)
+    respuesta = client.get(f"/tickets/{ticket.id}", headers={"Authorization": f"Bearer {token}"})
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["id"] == ticket.id
+
+
+def test_obtener_ticket_por_id_mesero_ajeno_403(client, db_session, catalogos, mesa_libre, usuario_mesero):
+    producto = _crear_producto(db_session)
+    otro_mesero = _otro_mesero(db_session, catalogos)
+    pedido = crear_pedido(db_session, PedidoCreate(mesa_id=mesa_libre.id, usuario_id=otro_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    ticket = cerrar_cuenta(db_session, pedido, usuario_id=otro_mesero.id)
+
+    token = _token(usuario_mesero.id, RolNombre.MESERO)
+    respuesta = client.get(f"/tickets/{ticket.id}", headers={"Authorization": f"Bearer {token}"})
+
+    assert respuesta.status_code == 403
+
+
+def test_obtener_ticket_por_id_inexistente_404(client, db_session, catalogos, usuario_mesero):
+    token = _token(usuario_mesero.id, RolNombre.MESERO)
+    respuesta = client.get("/tickets/99999", headers={"Authorization": f"Bearer {token}"})
+
+    assert respuesta.status_code == 404
+
+
+def test_obtener_ticket_por_id_cajero_ve_cualquiera(client, db_session, catalogos, mesa_libre, usuario_mesero):
+    producto = _crear_producto(db_session)
+    pedido = crear_pedido(db_session, PedidoCreate(mesa_id=mesa_libre.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    ticket = cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
+
+    token = _token(999, RolNombre.CAJERO)
+    respuesta = client.get(f"/tickets/{ticket.id}", headers={"Authorization": f"Bearer {token}"})
+
+    assert respuesta.status_code == 200

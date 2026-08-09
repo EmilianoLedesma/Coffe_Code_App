@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.constants import RolNombre
@@ -38,3 +38,23 @@ def listar(
         query = query.outerjoin(Pago, Ticket.id == Pago.id_ticket).filter(Pago.id.is_(None))
 
     return query.order_by(Ticket.fecha_emision.desc()).all()
+
+
+@router.get("/{ticket_id}", response_model=TicketOut)
+def obtener(
+    ticket_id: int,
+    db: Session = Depends(get_db),
+    usuario: TokenData = Depends(
+        require_rol(RolNombre.MESERO, RolNombre.CAJERO, RolNombre.ADMINISTRADOR)
+    ),
+) -> Ticket:
+    ticket = db.query(Ticket).options(*_TICKET_LOAD_OPTIONS).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket no encontrado")
+
+    if usuario.rol == RolNombre.MESERO and ticket.pedido.id_usuario != usuario.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para ver este ticket"
+        )
+
+    return ticket
