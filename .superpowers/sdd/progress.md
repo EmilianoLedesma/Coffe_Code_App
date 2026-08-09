@@ -1,3 +1,34 @@
+# Sesión 2026-08-09 (parte 3) — Cierre del ciclo Cajero/Mesero en vivo, Tickets/PDF en web-admin, listado de gastos reales, KeyboardAvoidingView global, revisión de especificaciones con Opus
+
+Continuación directa de la parte 2 (Cocinero). Cubrió los pendientes que quedaron: Cajero (cobro de tickets ya existentes, gastos, compras) y Mesero (cerrar cuenta REAL vía UI por primera vez, no simulado por API; 2do pedido concurrente en mesa Ocupada confirmado por el usuario) — con el agente jugando los roles que el usuario no controlaba en cada momento, vía `curl` + JWT real contra la API.
+
+**Ciclo completo entrega-antes-de-cobro verificado end-to-end en vivo:** pedido #55 creado por el usuario como Mesero real → avanzado por API (Cocinero) a Listo → usuario marcó Entregado y tocó "Cerrar cuenta" real en la UI (ticket 47 creado) → pagado por API (Cajero): $87.00, recibido $100, cambio $13.00, mesa liberada. Cada paso confirmado contra `coffee_code_db` — DB real usa usuario `coffee_user`/base `coffee_code` (no `postgres` ni `coffee_code_db`, esos fallan con "role does not exist").
+
+**4 bugs reales de UI encontrados y corregidos durante la prueba:**
+1. `CajaScreen`: solo el botón "Cobrar" era tocable, no toda la fila — fix: `onPress` movido al `ListItem` completo, botón reemplazado por ícono chevron.
+2. `PagoScreen`: confirmación de pago era texto plano (2 líneas) pese a que el usuario ya había pedido explícitamente en una sesión anterior un recibo estilo ticket — implementado: folio, mesa, fecha, items, subtotal/IVA/total, método/recibido/cambio, líneas punteadas.
+3. `GastosScreen`: el teclado se cerraba tras 1 caracter. Causa raíz: `ListHeaderComponent={renderHeader}` pasaba una función (recreada cada render) como TIPO de componente, no como elemento — React remontaba el subárbol completo en cada tecla. Fix: `ListHeaderComponent={renderHeader()}`.
+4. `DetalleScreen` (Mesero): botones +/-/quitar de cantidad eran texto pequeño sin touch target — reemplazados por íconos de 44×44 (mismo patrón que `InventarioScreen`).
+
+**3 features nuevas dispatchadas como subagentes en background** (pedido explícito del usuario: "dispatch subagents to not block revision flow"), cada una revisada de forma independiente (diff + suite de tests) antes de aceptar el reporte:
+- **KeyboardAvoidingView en las 7 pantallas mobile con inputs que no lo tenían** (Gastos, IngredienteDetalle, Inventario, Menu, Pago, Receta, RecuperarPassword — LoginScreen ya lo tenía). 22/22 tests mobile en verde.
+- **`GET /tickets/{id}/pdf`** (reportlab, recibo estilo ticket idéntico al de mobile, reusa `_get_ticket_autorizado` sin duplicar lógica de permisos) + página web-admin `/tickets` con preview en modal. Iteración en vivo con el usuario: primero solo agrandar el modal, luego zoom por defecto (`#zoom=175` en preview, intento de 200% en descarga que no es técnicamente posible en un PDF ya descargado por una app externa — limitación real explicada al usuario), y finalmente **se eliminó el botón de descarga forzada por completo** a pedido del usuario ("el visor nativo ya trae su propio botón de descarga"), dejando solo la ruta `/preview`. 146/146 tests API + 50/50 web-admin en verde.
+- **Listado "Gastos registrados" (reales, no solo plantillas) en la página Gastos fijos** — reutiliza `GET /api/reportes/financiero` (`detalle_gastos`), que ya cubre gastos de origen app y web por ser la misma tabla; se extrajo `_parsear_fechas_detalle` de `dashboard.py` a `app/utils.py` para reuso. 46/46 tests web-admin en verde.
+
+**Revisión de especificaciones con subagente en Opus (read-only, sin tocar Docker):** cruzó specs/plans reales contra código real (no contra este mismo `progress.md`), corrió las 3 suites de tests, auditó la feature nueva de Tickets/PDF por seguridad, verificó nombres de eventos WS backend↔mobile 1:1. **Resultado: A-/91% general** (Cocina 92, Caja 88, Mesero 93). 218 tests automatizados en verde, cero fallos, pero cero cobertura de las 17 pantallas mobile en sí. El controlador verificó independientemente los 3 hallazgos principales antes de aceptarlos (no confió a ciegas en el subagente):
+1. `mobile/screens/GastosScreen.js:37` guardaba solo `total_gastos` del resumen, descartando `total_ventas`/`ganancia_neta` — "Ganancias" es un requisito literal del módulo Caja del enunciado del evaluador y nunca se mostraba. **Corregido esta sesión**: ahora muestra Ventas/Gastos/Ganancia neta de hoy.
+2. `api/app/services/pedidos.py:203` — descuento de stock al marcar "Listo" sin piso en cero ni row lock, contradice el 409 que sí aplica `ingredientes.py:129` para el mismo caso. **Sin corregir.**
+3. `api/app/routers/pedidos.py:47-134` — sin filtro de propiedad (`id_usuario`) para Mesero en listar/editar/cerrar pedidos; cualquier Mesero puede ver/editar el pedido de otro. Patrón correcto ya existe en `tickets.py:30` para copiar. **Sin corregir.**
+También encontró que `CLAUDE.md:89` describe el contrato viejo de `/ventas` (pre-reorder), no el actual — doc desactualizado, no bug de código. Reporte completo commiteado en `docs/superpowers/GRADED-REVIEW-2026-08-09.md`.
+
+**Todo pusheado a `origin/main`:** `b704669`, `6c1d8fc`, `061fe9c`, `18ec552`, `f6e2ac9`, `3016fd8`.
+
+**Próximo paso exacto:** decidir si se corrigen los hallazgos #2 y #3 de la revisión Opus (ambos reales, verificados por el controlador); actualizar `CLAUDE.md:89` al contrato actual de `/ventas`; probar Administrador desde el navegador real (Usuarios, Productos, Categorías, Recetas, Corte diario — sin tocar esta sesión); considerar cobertura de tests para las pantallas mobile críticas (brecha señalada por la revisión); re-medir NFRs de tiempo si se quiere evidencia fresca.
+
+Sesión guardada: `~/.claude/session-data/2026-08-09-mesero-cajero-testing-session.tmp`.
+
+---
+
 # Sesión 2026-08-09 (parte 2) — WS pago al mesero + prueba en vivo como Cocinero: CRUD ingredientes por tarjeta, fixes de scroll en Menu/Receta
 
 Continuación directa de la sesión de reordenamiento del flujo entrega/cobro (commits `6198e34`..`924497c`, ya pusheados esa misma sesión). Arrancó implementando el gap pendiente documentado ahí (WS de pago), luego prueba en vivo en dispositivo Android real con el usuario como **Cocinero** (sesión anterior fue como Mesero). Metodología igual que sesiones previas: usuario actúa en la app, agente verifica cada paso contra `coffee_code_db` vía `psql` y logcat filtrado a Expo Go vía `adb`, con capturas de pantalla (`adb exec-out screencap`) cuando un reporte de "no veo X" necesitaba ver el layout real para diagnosticar.
