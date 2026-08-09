@@ -254,8 +254,6 @@ export default function DetalleScreen({ route }) {
           />
         </View>
       )}
-
-      <Button variant="text" label="Actualizar" onPress={cargar} />
     </>
   );
 
