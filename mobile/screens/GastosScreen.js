@@ -18,7 +18,7 @@ export default function GastosScreen() {
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState('');
   const [gastosSesion, setGastosSesion] = useState([]);
-  const [totalPeriodo, setTotalPeriodo] = useState(null);
+  const [resumen, setResumen] = useState(null);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
@@ -33,11 +33,10 @@ export default function GastosScreen() {
     try {
       const hoy = new Date();
       const desde = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).toISOString();
-      const resumen = await getResumenCaja(desde);
-      setTotalPeriodo(resumen.total_gastos);
+      setResumen(await getResumenCaja(desde));
     } catch (err) {
       // el resumen es informativo; si falla no bloquea el registro de gastos
-      setTotalPeriodo(null);
+      setResumen(null);
     }
   }, []);
 
@@ -198,7 +197,13 @@ export default function GastosScreen() {
 
       <Card style={styles.card}>
         <Text style={styles.totalText}>
-          Total gastos de hoy: {totalPeriodo !== null ? `$${totalPeriodo}` : 'no disponible'}
+          Ventas de hoy: {resumen ? `$${resumen.total_ventas}` : 'no disponible'}
+        </Text>
+        <Text style={styles.totalText}>
+          Gastos de hoy: {resumen ? `$${resumen.total_gastos}` : 'no disponible'}
+        </Text>
+        <Text style={styles.totalText}>
+          Ganancia neta: {resumen ? `$${resumen.ganancia_neta}` : 'no disponible'}
         </Text>
       </Card>
 
@@ -261,6 +266,7 @@ const styles = StyleSheet.create({
     fontSize: typography.size.lg,
     fontWeight: typography.weight.bold,
     color: colors.textPrimary,
+    marginBottom: spacing.xs,
   },
   sesionLabel: { marginBottom: spacing.sm, color: colors.textSecondary },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap' },
