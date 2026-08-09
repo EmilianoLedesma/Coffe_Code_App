@@ -25,7 +25,6 @@ export default function GastosScreen() {
   const [ingredientes, setIngredientes] = useState([]);
   const [ingredienteId, setIngredienteId] = useState(null);
   const [cantidadCompra, setCantidadCompra] = useState('');
-  const [montoCompra, setMontoCompra] = useState('');
   const [comprando, setComprando] = useState(false);
   const [resultadoCompra, setResultadoCompra] = useState(null);
   const [errorCompra, setErrorCompra] = useState('');
@@ -81,8 +80,8 @@ export default function GastosScreen() {
   };
 
   const registrarCompra = async () => {
-    if (!ingredienteId || !cantidadCompra || !montoCompra) {
-      setErrorCompra('Selecciona un ingrediente y completa cantidad y monto');
+    if (!ingredienteId || !cantidadCompra) {
+      setErrorCompra('Selecciona un ingrediente y completa la cantidad');
       return;
     }
 
@@ -90,14 +89,15 @@ export default function GastosScreen() {
     setErrorCompra('');
     setResultadoCompra(null);
     try {
+      const ingrediente = ingredientes.find((i) => i.id === ingredienteId);
+      const monto = parseFloat(cantidadCompra) * Number(ingrediente.costo_unitario);
       const resultado = await crearCompra({
         ingredienteId,
         cantidad: parseFloat(cantidadCompra),
-        monto: parseFloat(montoCompra),
+        monto,
       });
       setResultadoCompra(resultado);
       setCantidadCompra('');
-      setMontoCompra('');
       await cargarResumen();
     } catch (err) {
       setErrorCompra(err instanceof ApiError ? err.message : 'No se pudo registrar la compra');
@@ -164,12 +164,15 @@ export default function GastosScreen() {
           keyboardType="numeric"
         />
 
-        <Input
-          placeholder="Monto"
-          value={montoCompra}
-          onChangeText={setMontoCompra}
-          keyboardType="numeric"
-        />
+        {ingredienteId && cantidadCompra ? (
+          <Text style={styles.montoCalculado}>
+            Monto: $
+            {(
+              parseFloat(cantidadCompra) *
+              Number(ingredientes.find((i) => i.id === ingredienteId)?.costo_unitario || 0)
+            ).toFixed(2)}
+          </Text>
+        ) : null}
 
         {resultadoCompra ? (
           <Text style={styles.successText}>
@@ -249,6 +252,7 @@ const styles = StyleSheet.create({
   },
   errorText: { color: colors.danger, fontSize: typography.size.md },
   successText: { color: colors.success, marginBottom: spacing.md, fontSize: typography.size.md },
+  montoCalculado: { color: colors.textPrimary, fontWeight: typography.weight.semibold, marginBottom: spacing.md },
   totalText: {
     fontSize: typography.size.lg,
     fontWeight: typography.weight.bold,
