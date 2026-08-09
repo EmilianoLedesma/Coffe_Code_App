@@ -8,6 +8,7 @@ from app.data.pagos import Pago
 from app.data.pedidos import Pedido
 from app.data.tickets import Ticket
 from app.models.ventas import VentaCreate
+from app.services.pedidos import _liberar_mesa_si_no_hay_pedidos_activos
 
 
 def _redondear(valor: Decimal) -> Decimal:
@@ -50,6 +51,9 @@ def registrar_venta(db: Session, datos: VentaCreate, usuario_id: int) -> Ticket:
 
     pedido = db.query(Pedido).filter(Pedido.id == ticket.id_pedido).first()
     pedido.total = ticket.total
+
+    db.flush()
+    _liberar_mesa_si_no_hay_pedidos_activos(db, pedido.mesa)
 
     db.commit()
     db.refresh(ticket)

@@ -210,6 +210,7 @@ def _descontar_inventario_por_receta(db: Session, pedido: Pedido) -> list[str]:
 def _liberar_mesa_si_no_hay_pedidos_activos(db: Session, mesa: Mesa) -> None:
     pedidos = (
         db.query(Pedido)
+        .populate_existing()
         .options(joinedload(Pedido.estatus), joinedload(Pedido.ticket).joinedload(Ticket.pago))
         .filter(Pedido.id_mesa == mesa.id)
         .all()
