@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-nativ
 import { useFocusEffect } from '@react-navigation/native';
 import { getPedidosActivosDeMesa } from '../api/pedidos';
 import { ApiError } from '../api/client';
+import { connectToChannel } from '../ws/client';
 import { ListItem } from '../components/ListItem';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
@@ -32,6 +33,37 @@ export default function PedidosMesaScreen({ route, navigation }) {
     useCallback(() => {
       cargar();
     }, [cargar])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cerrar = null;
+      let cancelado = false;
+
+      connectToChannel('mesero', {
+        onMessage: (evento) => {
+          if (
+            (evento.evento === 'pedido_activado' || evento.evento === 'pedido_listo') &&
+            evento.mesa_id === mesaId
+          ) {
+            cargar();
+          }
+        },
+        onClose: cargar,
+      }).then((unsub) => {
+        // la pantalla pudo perder el foco mientras conectábamos
+        if (cancelado) {
+          unsub();
+          return;
+        }
+        cerrar = unsub;
+      });
+
+      return () => {
+        cancelado = true;
+        if (cerrar) cerrar();
+      };
+    }, [mesaId, cargar])
   );
 
   if (loading) {
