@@ -1,49 +1,38 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getMesas } from '../api/mesas';
+import { getPedidosActivosDeMesa } from '../api/pedidos';
 import { ApiError } from '../api/client';
-import { Card } from '../components/Card';
+import { ListItem } from '../components/ListItem';
 import { Badge } from '../components/Badge';
+import { Button } from '../components/Button';
+import { EmptyState } from '../components/EmptyState';
 import { colors, typography, spacing } from '../theme';
+import { TONE_POR_ESTATUS_PEDIDO } from '../constants/estatusPedido';
 
-const TONE_POR_ESTATUS = {
-  Libre: 'success',
-  Ocupada: 'danger',
-  Reservada: 'warning',
-};
-
-export default function MesasScreen({ navigation }) {
-  const [mesas, setMesas] = useState([]);
+export default function PedidosMesaScreen({ route, navigation }) {
+  const { mesaId, numeroMesa } = route.params;
+  const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const cargarMesas = useCallback(async () => {
+  const cargar = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await getMesas();
-      setMesas(data);
+      setPedidos(await getPedidosActivosDeMesa(mesaId));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo conectar con el servidor');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [mesaId]);
 
   useFocusEffect(
     useCallback(() => {
-      cargarMesas();
-    }, [cargarMesas])
+      cargar();
+    }, [cargar])
   );
-
-  const abrirMesa = (mesa) => {
-    if (mesa.estatus.nombre !== 'Ocupada') {
-      navigation.navigate('Pedido', { mesaId: mesa.id, numeroMesa: mesa.numero_mesa });
-      return;
-    }
-    navigation.navigate('PedidosMesa', { mesaId: mesa.id, numeroMesa: mesa.numero_mesa });
-  };
 
   if (loading) {
     return (
@@ -55,23 +44,35 @@ export default function MesasScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Mesas</Text>
+      <Text style={styles.title}>Mesa {numeroMesa}</Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <FlatList
-        data={mesas}
+        data={pedidos}
         keyExtractor={(item) => item.id.toString()}
-        numColumns={2}
+        ListEmptyComponent={
+          <EmptyState icon="receipt-outline" message="Sin pedidos activos en esta mesa." />
+        }
         renderItem={({ item }) => (
-          <View style={styles.cardWrap}>
-            <Card onPress={() => abrirMesa(item)}>
-              <Text style={styles.mesaNumero}>Mesa {item.numero_mesa}</Text>
-              <Badge label={item.estatus.nombre} tone={TONE_POR_ESTATUS[item.estatus.nombre] || 'neutral'} />
-              <Text style={styles.capacidad}>Capacidad: {item.capacidad}</Text>
-            </Card>
-          </View>
+          <ListItem
+            title={`Pedido #${item.id}`}
+            subtitle={`${item.detalle.length} ítem(s)`}
+            trailing={
+              <Badge
+                label={item.estatus.nombre}
+                tone={TONE_POR_ESTATUS_PEDIDO[item.estatus.nombre] || 'neutral'}
+              />
+            }
+            onPress={() => navigation.navigate('Detalle', { pedidoId: item.id, numeroMesa })}
+          />
         )}
+      />
+
+      <Button
+        variant="primary"
+        label="Nuevo pedido"
+        onPress={() => navigation.navigate('Pedido', { mesaId, numeroMesa })}
       />
     </View>
   );
@@ -88,12 +89,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   error: { color: colors.danger, textAlign: 'center', marginBottom: spacing.md },
-  cardWrap: { flex: 1, margin: spacing.xs },
-  mesaNumero: {
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-  },
-  capacidad: { color: colors.textSecondary, marginTop: spacing.sm, fontSize: typography.size.md },
 });
