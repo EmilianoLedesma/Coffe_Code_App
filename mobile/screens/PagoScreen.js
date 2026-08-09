@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getPedido } from '../api/pedidos_caja';
+import { getTicket } from '../api/tickets';
 import { registrarVenta } from '../api/caja';
 import { ApiError } from '../api/client';
 import { Button } from '../components/Button';
@@ -21,6 +22,7 @@ export default function PagoScreen({ route, navigation }) {
   const { ticketId, pedidoId, numeroMesa } = route.params;
 
   const [pedido, setPedido] = useState(null);
+  const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [metodoPago, setMetodoPago] = useState('');
   const [monto, setMonto] = useState('');
@@ -32,13 +34,15 @@ export default function PagoScreen({ route, navigation }) {
     setLoading(true);
     setError('');
     try {
-      setPedido(await getPedido(pedidoId));
+      const [pedidoData, ticketData] = await Promise.all([getPedido(pedidoId), getTicket(ticketId)]);
+      setPedido(pedidoData);
+      setTicket(ticketData);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo cargar el pedido');
     } finally {
       setLoading(false);
     }
-  }, [pedidoId]);
+  }, [pedidoId, ticketId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -59,8 +63,8 @@ export default function PagoScreen({ route, navigation }) {
     setProcesando(true);
     setError('');
     try {
-      const ticket = await registrarVenta({ ticketId, metodoPago, monto: Number(monto) });
-      setResultado(ticket);
+      const ticketPagado = await registrarVenta({ ticketId, metodoPago, monto: Number(monto) });
+      setResultado(ticketPagado);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo procesar el pago');
     } finally {
@@ -111,6 +115,14 @@ export default function PagoScreen({ route, navigation }) {
             {item.producto.nombre} x{item.cantidad} — ${item.precio_unitario}
           </Text>
         ))}
+
+        {ticket ? (
+          <>
+            <Text style={styles.totalLine}>Subtotal: ${ticket.subtotal}</Text>
+            <Text style={styles.totalLine}>IVA: ${ticket.iva}</Text>
+            <Text style={styles.total}>Total a cobrar: ${ticket.total}</Text>
+          </>
+        ) : null}
       </Card>
 
       <Text style={styles.subtitle}>Método de pago</Text>
@@ -170,6 +182,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   text: { fontSize: typography.size.lg, color: colors.textPrimary },
+  totalLine: { fontSize: typography.size.md, color: colors.textSecondary, marginTop: spacing.xs },
+  total: {
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+    marginTop: spacing.sm,
+  },
   errorBanner: {
     backgroundColor: colors.dangerTint,
     borderWidth: 1,
