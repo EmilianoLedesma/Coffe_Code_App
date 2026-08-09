@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getColaPendientes } from '../api/pedidos_cocina';
+import { connectToChannel } from '../ws/client';
 import { Card } from '../components/Card';
 import { ListItem } from '../components/ListItem';
 import { colors, typography, spacing } from '../theme';
@@ -9,12 +10,44 @@ import { colors, typography, spacing } from '../theme';
 export default function CocinaScreen({ navigation }) {
   const [pendientes, setPendientes] = useState(0);
 
+  const cargarPendientes = useCallback(() => {
+    getColaPendientes()
+      .then((data) => setPendientes(data.length))
+      .catch(() => setPendientes(0));
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
-      getColaPendientes()
-        .then((data) => setPendientes(data.length))
-        .catch(() => setPendientes(0));
-    }, [])
+      cargarPendientes();
+    }, [cargarPendientes])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cerrar = null;
+      let cancelado = false;
+
+      connectToChannel('cocina', {
+        onMessage: (evento) => {
+          if (evento.evento === 'nuevo_pedido') {
+            cargarPendientes();
+          }
+        },
+        onClose: cargarPendientes,
+      }).then((unsub) => {
+        // la pantalla pudo perder el foco mientras conectábamos
+        if (cancelado) {
+          unsub();
+          return;
+        }
+        cerrar = unsub;
+      });
+
+      return () => {
+        cancelado = true;
+        if (cerrar) cerrar();
+      };
+    }, [cargarPendientes])
   );
 
   return (
@@ -23,7 +56,7 @@ export default function CocinaScreen({ navigation }) {
       <Text style={styles.title}>Cocina</Text>
       <Text style={styles.subtitle}>Gestión operativa de pedidos</Text>
 
-      <Card size="hero" style={styles.heroCard}>
+      <Card size="hero" style={styles.heroCard} onPress={() => navigation.navigate('ColaPedidos')}>
         <Text style={styles.heroNumber}>{pendientes}</Text>
         <Text style={styles.heroLabel}>Pedidos en espera</Text>
       </Card>
