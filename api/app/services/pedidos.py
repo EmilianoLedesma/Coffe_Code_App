@@ -207,7 +207,7 @@ def _descontar_inventario_por_receta(db: Session, pedido: Pedido) -> list[str]:
     return alertas_stock_bajo
 
 
-def _liberar_mesa_si_no_hay_pedidos_activos(db: Session, mesa: Mesa) -> None:
+def _liberar_mesa_si_no_hay_pedidos_activos(db: Session, mesa: Mesa) -> bool:
     pedidos = (
         db.query(Pedido)
         .populate_existing()
@@ -219,6 +219,8 @@ def _liberar_mesa_si_no_hay_pedidos_activos(db: Session, mesa: Mesa) -> None:
         estatus_libre = db.query(EstatusMesa).filter(EstatusMesa.nombre == EstatusMesaNombre.LIBRE).first()
         if estatus_libre:
             mesa.id_estatus = estatus_libre.id
+            return True
+    return False
 
 
 def cambiar_estado_pedido(db: Session, pedido: Pedido, nuevo_estatus_nombre: str) -> tuple[Pedido, list[str]]:

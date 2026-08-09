@@ -433,3 +433,58 @@ Al terminar la Parte 4, se descubrió que el índice de git tenía mezclado (sta
 Antes de comitear se hizo una verificación completa: rebuild de contenedores, `alembic upgrade head` (hasta `f3b8c1a9d4e6`), y se encontraron **6 fallas de test preexistentes** (4 en `api/app/tests/test_reportes_export.py`, 2 en `web-admin/tests/`) causadas por fixtures desactualizados de la Parte 3 (faltaban las claves `detalle_ventas`/`detalle_gastos`/`gastos_por_tipo`/`gastos_por_usuario` en los dicts de prueba del reporte financiero, y dos mocks de `DELETE` seguían esperando `204` sin body en vez del nuevo `200 {eliminado, mensaje}`). Se corrigieron todas — la API/servicio real ya funcionaba bien, solo los fixtures de prueba estaban desactualizados.
 
 **Estado final verificado:** API 110/110 tests, web-admin 44/44 tests, las 7 colecciones de Postman en verde contra el stack Docker real reconstruido (general 64/64 requests, fuego-rol-admin 34/34 requests/40/40 assertions — coincide exacto con lo reportado por la otra sesión), migraciones al día, 8/8 mesas Libre. Todo comiteado en un solo commit combinado: `352a0b7`.
+
+---
+
+# Sesión 2026-08-09 — Reordenar entrega/cobro, encontrado en vivo durante prueba de dispositivo
+
+Continuación directa de la sesión 2026-08-08 (partes 7+, cierre-cuenta-tickets mergeado a main, luego hallazgos-restantes mergeado a main). Todo mergeado y pusheado a `origin/main` al arrancar esta sesión.
+
+## Fix de infraestructura: IP hardcodeada → dinámica
+
+`mobile/app.config.js`/`mobile/config.js` ya no hardcodean la IP LAN. `config.js` deriva la IP en runtime de `Constants.expoConfig.hostUri` (el mismo host que Expo usó para conectar el celular al bundler), con fallback a un valor fijo solo si hostUri no está disponible. Bug real encontrado en el camino: Expo serializa `extra.apiUrl: null` como `{}` (objeto vacío, truthy) en el manifest — el chequeo `if (override)` lo tomaba como override válido y crasheaba (`{}.replace is not a function`). Fix: chequeo de tipo estricto (`typeof === 'string'`) + `app.config.js` omite la clave del todo en vez de poner `null`. 2 commits (`4149571`, `6d5788b`), ambos en `main`.
+
+## Prueba en dispositivo real (mismo método que sesión anterior: usuario en el celular como Mesero, agente actuando Cocinero/Cajero/Admin vía curl + verificación directa contra `coffee_code_db`, logcat filtrado a Expo Go vía `adb`)
+
+Confirmado en vivo funcionando: `PedidosMesaScreen` (multi-pedido por mesa), edición de items en Pendiente, transición Pendiente→En preparación→Listo con descuento de inventario y alerta de stock bajo, cierre de cuenta (Ticket sin pago), cola de Caja (`GET /tickets?pagado=false`), cobro (`POST /ventas`), WebSocket en vivo en `CocinaScreen`/`PedidosMesaScreen`.
+
+**2 gaps de UX reales encontrados y corregidos en el momento:**
+- `PedidosMesaScreen` no tenía WebSocket — solo refrescaba al cambiar de pantalla. Agregado: suscripción a canal `mesero`, reload en `pedido_activado`/`pedido_listo` filtrado por `mesa_id`. Commit `dab53c2`.
+- `DetalleScreen` — "Cerrar cuenta" no daba ningún feedback visual de éxito. Agregado `Alert.alert('Cuenta cerrada', ...)`. Commit `bbe773f`. De paso se eliminó el botón "Actualizar" viejo (ya redundante con WS) — commit `714396b`.
+
+## CAMBIO GRANDE: reordenar entrega y cobro (hallazgo en vivo, no estaba en los 15 originales)
+
+El usuario, probando el flujo real como Mesero, señaló que el gate de pago que bloqueaba "Marcar como Entregado" (agregado ayer como fix del bug #4 original) no refleja el flujo real de una cafetería: Mesero entrega la comida apenas Cocina la termina (Listo→Entregado), **sin depender de que ya se haya cobrado**. Recién después cierra la cuenta. La mesa debe liberarse solo cuando TODOS sus pedidos están Entregado **y pagados**.
+
+**Brainstorm corto + spec formal** (`docs/superpowers/specs/2026-08-09-reordenar-entrega-cobro-design.md`, commit `5beee01`) — decisiones: orden fijo Entregado→Cerrar cuenta (no al revés ni libre), y exponer un campo `ocupa_mesa: bool` calculado por el backend en `PedidoOut` (un solo lugar de verdad, reusado por liberación de mesa y por el filtro de `PedidosMesaScreen`) en vez de que el mobile reimplemente la regla cruzando contra `GET /tickets`.
+
+**Implementado directo** (sin SDD completo, cambio chico y bien especificado, dado el contexto ajustado de la sesión):
+1. `Pedido.ocupa_mesa` (property en `api/app/data/pedidos.py`): `False` si Cancelado; si Entregado, `True` solo si NO tiene ticket pagado; si no, `True`.
+2. `PedidoOut.ocupa_mesa: bool` expuesto (`api/app/models/pedidos.py`).
+3. `cambiar_estado_pedido` (`api/app/services/pedidos.py`): se **elimina** el gate de pago en Entregado (vuelve a ser transición incondicional) y se **elimina** el guard de "no cancelar pedido pagado" (quedaba inalcanzable con el nuevo orden: Cancelado nunca es alcanzable desde Entregado, y cerrar-cuenta ahora exige Entregado, así que un pedido Cancelado nunca puede tener Ticket).
+4. `_liberar_mesa_si_no_hay_pedidos_activos` reescrita: cuenta `ocupa_mesa` en vez de una lista fija de estados. Se agregó `.populate_existing()` a la query (bug real encontrado por el subagente que arregló los tests: sin esto, SQLAlchemy podía devolver objetos `Pedido`/`Ticket`/`Pago` cacheados en el identity map, viendo estado viejo).
+5. `cerrar_cuenta` (`api/app/services/tickets.py`): precondición cambia de `Listo` a `Entregado`.
+6. **Gap real encontrado por el subagente de tests, no estaba en el spec original:** nada volvía a chequear si la mesa debía liberarse **al momento de pagar** (`registrar_venta` en `api/app/services/ventas.py`) — solo se chequeaba en la transición a Entregado, pero en ese momento el pedido todavía no está pagado bajo el nuevo orden. Sin este fix la mesa se hubiera quedado Ocupada para siempre después de cobrar. Se agregó la llamada a `_liberar_mesa_si_no_hay_pedidos_activos` también ahí.
+7. Mobile: `getPedidosActivosDeMesa` (`mobile/api/pedidos.js`) filtra por `p.ocupa_mesa` en vez de una lista fija de estados — un pedido Entregado-sin-pagar sigue visible en "Pedidos mesa" hasta que se paga. `DetalleScreen.js`: `puedeCerrarCuenta` pasa de `esListo` a `esEntregado`.
+
+**Tests backend:** delegado a un subagente (`fix-tests-reorder`, dado el contexto ajustado del controller) — actualizó/borró tests que asumían el gate de pago o el guard de cancelación ya removidos, agregó test nuevo de `ocupa_mesa`/liberación de mesa end-to-end. **143/143 verde.** Mobile: 22/22 verde (fixture de `pedidos.test.js` actualizado con el campo `ocupa_mesa`).
+
+**Commits de esta sesión (todos en `main`, NINGUNO PUSHEADO A ORIGIN TODAVÍA):**
+`4149571`, `6d5788b` (IP dinámica), `dab53c2` (WS PedidosMesaScreen), `bbe773f` (feedback cerrar cuenta), `714396b` (quitar botón Actualizar), `5beee01` (spec reordenar), `6198e34` (implementación reordenar), `2623863`+`924497c` (tests + fix real de liberar-mesa-al-pagar).
+
+## Pendiente para la próxima sesión
+
+1. **Push a origin** — nada de esta sesión está pusheado, confirmar con el usuario y pushear.
+2. **Volver a probar en vivo** el flujo completo reordenado (Entregado sin pagar → mesa sigue Ocupada → cerrar cuenta → cobrar → mesa libera) — se implementó pero no se alcanzó a re-probar en el dispositivo antes de que se llenara el contexto.
+3. **Brainstorm pendiente, pedido explícito del usuario:** indagar la opción de "un ticket real que agrupe todos los pedidos de una mesa" (un solo cobro para toda la mesa en vez de N tickets independientes). Ya se le explicó la complejidad en el chat (rompe el `Tickets 1:1 Pedidos` ya cerrado en `CLAUDE.md`, necesitaría tabla nueva tipo "cuenta de mesa" + migración) — el usuario pidió NO implementar todavía, solo dejar anotado para cuando se pida cerrar un brainstorm sobre esto específicamente.
+4. Seguir la prueba en dispositivo real donde quedó (Mesero en mesa 1, con pedidos #48/51/52 ya en distintos estados de ayer/hoy) — todavía no se probó Cocinero/Cajero/Administrador desde la app real, solo Mesero (los otros roles se simularon vía curl).
+
+## Cierre de sesión 2026-08-09 (actualización final)
+
+Prueba en vivo del flujo reordenado completada con éxito: pedido #53 avanzado a Listo→Entregado (sin bloqueo de pago, quedó visible en "Pedidos mesa" con badge Entregado, confirmado por el usuario en el dispositivo real) → cuenta cerrada (Ticket #43) → pedido #47 (dato viejo de ayer sin ticket, entregado antes de que existiera este flujo) también cerrado (Ticket #44) → ambos cobrados como Cajero → **mesa 1 pasó a Libre automáticamente** tras el último pago, confirmado en DB (`SELECT ... estatus_mesas` → `Libre`). El flujo completo diseñado hoy (Entregado incondicional → visible hasta pagar → cerrar cuenta → cobrar → liberar mesa) queda **verificado end-to-end en dispositivo real**.
+
+**Nuevo gap real encontrado, PENDIENTE para la próxima sesión:** al pagar (evento que ocurre en `registrar_venta`, `api/app/services/ventas.py`), no se emite ningún WebSocket al Mesero. `PedidosMesaScreen` solo escucha `pedido_activado`/`pedido_listo` en el canal `mesero` — el mesero no ve que la cuenta se pagó ni que la mesa se liberó hasta volver manualmente a la pantalla de Mesas. Se necesita:
+1. Backend: `registrar_venta` debe emitir un evento WS al canal `mesero` cuando paga (ej. `{"evento": "pedido_pagado", "pedido_id":..., "mesa_id":...}`), y sería bueno que indique explícitamente si la mesa quedó liberada tras ese pago (ya se calcula `ocupa_mesa`/liberación en el mismo flujo, solo falta exponerlo en el evento).
+2. Mobile: `PedidosMesaScreen` debe escuchar ese evento; si la mesa quedó liberada (todos sus pedidos Entregado+pagados o Cancelados), navegar automáticamente de vuelta a la pantalla de Mesas en vez de solo refrescar la lista (que quedaría vacía sin explicación).
+
+**Próximo paso exacto:** diseñar e implementar este WS de pago (chico, mismo patrón que los eventos ya existentes) al arrancar la próxima sesión, después seguir probando Cocinero/Cajero/Administrador desde la app real (hasta ahora solo Mesero se probó desde el dispositivo, los demás roles se simularon vía curl). El brainstorm pendiente de "ticket agrupado por mesa" (ver nota anterior) sigue pendiente también, sin fecha fija.

@@ -9,6 +9,7 @@ from app.data.pedidos import Pedido
 from app.data.tickets import Ticket
 from app.models.ventas import VentaCreate
 from app.services.pedidos import _liberar_mesa_si_no_hay_pedidos_activos
+from app.websockets.manager import manager
 
 
 def _redondear(valor: Decimal) -> Decimal:
@@ -53,8 +54,18 @@ def registrar_venta(db: Session, datos: VentaCreate, usuario_id: int) -> Ticket:
     pedido.total = ticket.total
 
     db.flush()
-    _liberar_mesa_si_no_hay_pedidos_activos(db, pedido.mesa)
+    mesa_liberada = _liberar_mesa_si_no_hay_pedidos_activos(db, pedido.mesa)
 
     db.commit()
     db.refresh(ticket)
+
+    manager.emitir(
+        "mesero",
+        {
+            "evento": "pedido_pagado",
+            "pedido_id": pedido.id,
+            "mesa_id": pedido.id_mesa,
+            "mesa_liberada": mesa_liberada,
+        },
+    )
     return ticket

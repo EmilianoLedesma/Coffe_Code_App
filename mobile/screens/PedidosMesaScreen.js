@@ -42,9 +42,17 @@ export default function PedidosMesaScreen({ route, navigation }) {
 
       connectToChannel('mesero', {
         onMessage: (evento) => {
+          if (evento.mesa_id !== mesaId) return;
+
+          if (evento.evento === 'pedido_pagado' && evento.mesa_liberada) {
+            navigation.navigate('Mesas');
+            return;
+          }
+
           if (
-            (evento.evento === 'pedido_activado' || evento.evento === 'pedido_listo') &&
-            evento.mesa_id === mesaId
+            evento.evento === 'pedido_activado' ||
+            evento.evento === 'pedido_listo' ||
+            evento.evento === 'pedido_pagado'
           ) {
             cargar();
           }
