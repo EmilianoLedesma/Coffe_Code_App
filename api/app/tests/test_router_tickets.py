@@ -178,3 +178,50 @@ def test_obtener_ticket_por_id_cajero_ve_cualquiera(client, db_session, catalogo
     respuesta = client.get(f"/tickets/{ticket.id}", headers={"Authorization": f"Bearer {token}"})
 
     assert respuesta.status_code == 200
+
+
+def test_pdf_ticket_pagado_admin(client, db_session, catalogos, mesa_libre, usuario_mesero):
+    producto = _crear_producto(db_session)
+    pedido = crear_pedido(db_session, PedidoCreate(mesa_id=mesa_libre.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=2)]))
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
+    ticket = cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
+    registrar_venta(db_session, VentaCreate(ticket_id=ticket.id, metodo_pago=MetodoPagoNombre.EFECTIVO, monto=Decimal("100.00")), usuario_id=999)
+
+    token = _token(999, RolNombre.ADMINISTRADOR)
+    respuesta = client.get(f"/tickets/{ticket.id}/pdf", headers={"Authorization": f"Bearer {token}"})
+
+    assert respuesta.status_code == 200
+    assert respuesta.headers["content-type"] == "application/pdf"
+    assert respuesta.content[:4] == b"%PDF"
+
+
+def test_pdf_ticket_sin_pago_tambien_se_genera(client, db_session, catalogos, mesa_libre, usuario_mesero):
+    producto = _crear_producto(db_session)
+    pedido = crear_pedido(db_session, PedidoCreate(mesa_id=mesa_libre.id, usuario_id=usuario_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
+    ticket = cerrar_cuenta(db_session, pedido, usuario_id=usuario_mesero.id)
+
+    token = _token(999, RolNombre.ADMINISTRADOR)
+    respuesta = client.get(f"/tickets/{ticket.id}/pdf", headers={"Authorization": f"Bearer {token}"})
+
+    assert respuesta.status_code == 200
+    assert respuesta.content[:4] == b"%PDF"
+
+
+def test_pdf_ticket_mesero_ajeno_403(client, db_session, catalogos, mesa_libre, usuario_mesero):
+    producto = _crear_producto(db_session)
+    otro_mesero = _otro_mesero(db_session, catalogos)
+    pedido = crear_pedido(db_session, PedidoCreate(mesa_id=mesa_libre.id, usuario_id=otro_mesero.id, items=[DetallePedidoCreate(id_producto=producto.id, cantidad=1)]))
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.EN_PREPARACION)
+    cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.LISTO)
+    pedido, _ = cambiar_estado_pedido(db_session, pedido, EstatusPedidoNombre.ENTREGADO)
+    ticket = cerrar_cuenta(db_session, pedido, usuario_id=otro_mesero.id)
+
+    token = _token(usuario_mesero.id, RolNombre.MESERO)
+    respuesta = client.get(f"/tickets/{ticket.id}/pdf", headers={"Authorization": f"Bearer {token}"})
+
+    assert respuesta.status_code == 403

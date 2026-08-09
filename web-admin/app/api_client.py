@@ -229,6 +229,33 @@ def descargar_reporte(
     return respuesta
 
 
+def listar_mesas(base_url: str, token: str) -> list[dict]:
+    return _request("GET", base_url, "/mesas", token=token)
+
+
+def listar_tickets(base_url: str, token: str, pagado: bool | None = None) -> list[dict]:
+    params = {} if pagado is None else {"pagado": "true" if pagado else "false"}
+    return _request("GET", base_url, "/tickets", token=token, params=params)
+
+
+def descargar_ticket_pdf(base_url: str, token: str, ticket_id: int) -> requests.Response:
+    try:
+        respuesta = requests.get(
+            f"{base_url}/tickets/{ticket_id}/pdf", headers=_headers(token), timeout=_TIMEOUT
+        )
+    except requests.RequestException as exc:
+        raise ApiError(None, f"No se pudo conectar con la API: {exc}") from exc
+
+    if respuesta.status_code >= 400:
+        try:
+            detalle = respuesta.json().get("detail", respuesta.text)
+        except ValueError:
+            detalle = respuesta.text
+        raise ApiError(respuesta.status_code, detalle)
+
+    return respuesta
+
+
 def generar_corte_diario(base_url: str, token: str, fecha: str | None = None) -> dict:
     params = {"fecha": fecha} if fecha else {}
     return _request("POST", base_url, "/api/cortes-diarios", token=token, params=params)

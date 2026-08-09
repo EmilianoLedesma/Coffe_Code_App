@@ -27,6 +27,7 @@ def create_app(config_overrides: dict | None = None) -> Flask:
     from app.blueprints.reportes import bp as reportes_bp
     from app.blueprints.cortes_diarios import bp as cortes_diarios_bp
     from app.blueprints.gastos_fijos import bp as gastos_fijos_bp
+    from app.blueprints.tickets import bp as tickets_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -38,6 +39,7 @@ def create_app(config_overrides: dict | None = None) -> Flask:
     app.register_blueprint(reportes_bp)
     app.register_blueprint(cortes_diarios_bp)
     app.register_blueprint(gastos_fijos_bp)
+    app.register_blueprint(tickets_bp)
 
     @app.get("/health")
     def health():

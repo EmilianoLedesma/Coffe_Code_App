@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Tickets — Coffee Code Admin{% endblock %}
+{% block content %}
+<div x-data="{ previewId: null }">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-semibold text-starbucks">Tickets emitidos</h1>
+    <div class="flex gap-2 text-sm">
+      <a href="{{ url_for('tickets.listar') }}" class="btn {{ 'btn-primary' if not filtro else 'btn-outline' }}">Todos</a>
+      <a href="{{ url_for('tickets.listar', pagado='si') }}" class="btn {{ 'btn-primary' if filtro == 'si' else 'btn-outline' }}">Pagados</a>
+      <a href="{{ url_for('tickets.listar', pagado='no') }}" class="btn {{ 'btn-primary' if filtro == 'no' else 'btn-outline' }}">Pendientes</a>
+    </div>
+  </div>
+
+  <div class="card overflow-hidden">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Folio</th>
+          <th>Mesa</th>
+          <th>Fecha</th>
+          <th>Total</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ticket in tickets %}
+        <tr @click="previewId = {{ ticket.id }}" class="cursor-pointer hover:bg-black/5">
+          <td>#{{ ticket.id }}</td>
+          <td>{{ ticket.numero_mesa }}</td>
+          <td>{{ ticket.fecha_emision.strftime("%d/%m/%Y %H:%M") }}</td>
+          <td>${{ "%.2f"|format(ticket.total|float) }}</td>
+          <td>
+            {% if ticket.pago %}
+              <span class="badge badge-success">Pagado</span>
+            {% else %}
+              <span class="badge badge-warning">Pendiente</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-sm p-5" style="color: rgba(0,0,0,0.58);">Sin tickets registrados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div x-show="previewId" x-cloak class="fixed inset-0 modal-overlay flex items-center justify-center z-50" @keydown.escape.window="previewId = null">
+    <div class="modal-panel p-4 w-full max-w-2xl" @click.outside="previewId = null">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold text-starbucks">Ticket <span x-text="'#' + previewId"></span></h2>
+        <button @click="previewId = null" class="btn-link">Cerrar</button>
+      </div>
+      <iframe :src="previewId ? `/tickets/${previewId}/preview#zoom=175` : ''" class="w-full" style="height: 85vh; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px;"></iframe>
+    </div>
+  </div>
+</div>
+{% endblock %}

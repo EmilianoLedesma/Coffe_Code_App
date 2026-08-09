@@ -103,6 +103,10 @@ h1, h2, h3, .brand-mark {
   background: rgba(200, 32, 20, 0.08);
   color: #c82014;
 }
+.badge-warning {
+  background: rgba(203, 162, 88, 0.18);
+  color: #7a5a1e;
+}
 .badge-neutral {
   background: #edebe9;
   color: rgba(0, 0, 0, 0.58);
