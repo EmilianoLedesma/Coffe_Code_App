@@ -15,6 +15,7 @@ import CajaScreen from './screens/CajaScreen';
 import PagoScreen from './screens/PagoScreen';
 import GastosScreen from './screens/GastosScreen';
 import MenuScreen from './screens/MenuScreen';
+import RecetaScreen from './screens/RecetaScreen';
 import InventarioScreen from './screens/InventarioScreen';
 import RecuperarPassword from './screens/RecuperarPassword';
 import CocinaScreen from './screens/CocinaScreen';
@@ -100,9 +101,14 @@ export default function App() {
           component={GastosScreen} 
         />
 
-        <Stack.Screen 
-          name="Menu" 
-          component={MenuScreen} 
+        <Stack.Screen
+          name="Menu"
+          component={MenuScreen}
+        />
+
+        <Stack.Screen
+          name="Receta"
+          component={RecetaScreen}
         />
 
         <Stack.Screen 
