@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { updateIngrediente, ajustarStock, deleteIngrediente } from '../api/ingredientes';
 import { ApiError } from '../api/client';
 import { Input } from '../components/Input';
@@ -74,7 +74,15 @@ export default function IngredienteDetalleScreen({ route, navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: spacing.xxl }}
+        keyboardShouldPersistTaps="handled"
+      >
       <Text style={styles.title}>Editar ingrediente</Text>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -123,11 +131,13 @@ export default function IngredienteDetalleScreen({ route, navigation }) {
       <View style={styles.eliminarWrap}>
         <Button variant="text" label="Eliminar ingrediente" onPress={confirmarEliminar} />
       </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   container: { flex: 1, padding: spacing.lg, backgroundColor: colors.background },
   title: {
     fontSize: typography.size.xxl,

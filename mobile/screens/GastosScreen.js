@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { crearGasto } from '../api/gastos';
 import { getResumenCaja } from '../api/caja';
@@ -210,18 +210,22 @@ export default function GastosScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
 
       <FlatList
         data={gastosSesion}
         keyExtractor={(item) => item.id.toString()}
+        keyboardShouldPersistTaps="handled"
         ListHeaderComponent={renderHeader()}
         renderItem={({ item }) => (
           <ListItem title={item.concepto} subtitle={`$${item.monto}`} />
         )}
       />
 
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

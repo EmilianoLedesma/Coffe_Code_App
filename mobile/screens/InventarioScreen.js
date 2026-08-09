@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { getIngredientes, createIngrediente, ajustarStock, deleteIngrediente } from '../api/ingredientes';
@@ -111,7 +111,10 @@ export default function InventarioScreen({ navigation }) {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
 
       <Text style={styles.title}>Inventario</Text>
 
@@ -137,6 +140,7 @@ export default function InventarioScreen({ navigation }) {
         data={items}
         keyExtractor={(i) => i.id.toString()}
         style={styles.list}
+        keyboardShouldPersistTaps="handled"
         ListEmptyComponent={<EmptyState icon="cube-outline" message="Sin ingredientes registrados." />}
         renderItem={({ item }) => {
           const bajoMinimo = Number(item.stock_actual) < Number(item.stock_minimo);
@@ -169,7 +173,7 @@ export default function InventarioScreen({ navigation }) {
         }}
       />
 
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

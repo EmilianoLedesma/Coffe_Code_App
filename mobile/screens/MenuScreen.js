@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { getProductos, createProducto, updateProducto, deleteProducto } from '../api/productos';
@@ -126,11 +126,15 @@ export default function MenuScreen({ navigation }) {
     : productos;
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <FlatList
         data={productosVisibles}
         keyExtractor={(item) => item.id.toString()}
         style={styles.list}
+        keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <>
             <Text style={styles.title}>Gestión de Menú</Text>
@@ -210,7 +214,7 @@ export default function MenuScreen({ navigation }) {
         )}
       />
 
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

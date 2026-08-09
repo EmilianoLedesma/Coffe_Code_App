@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getPedido } from '../api/pedidos_caja';
 import { getTicket } from '../api/tickets';
@@ -153,7 +153,15 @@ export default function PagoScreen({ route, navigation }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: spacing.xxl }}>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: spacing.xxl }}
+      keyboardShouldPersistTaps="handled"
+    >
 
       <Text style={styles.title}>Procesar Pago</Text>
 
@@ -212,10 +220,12 @@ export default function PagoScreen({ route, navigation }) {
       />
 
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   title: {

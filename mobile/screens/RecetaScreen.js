@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   getRecetasPorProducto,
@@ -131,11 +131,15 @@ export default function RecetaScreen({ route }) {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <FlatList
         data={receta}
         keyExtractor={(item) => item.id_ingrediente.toString()}
         style={styles.list}
+        keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <>
             <Text style={styles.title}>Receta: {productoNombre}</Text>
@@ -205,7 +209,7 @@ export default function RecetaScreen({ route }) {
           </Card>
         )}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

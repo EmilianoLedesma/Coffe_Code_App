@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { Text, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { colors, typography, spacing } from '../theme';
 import { Card } from '../components/Card';
 import { Input } from '../components/Input';
@@ -24,7 +24,10 @@ export default function RecuperarPassword({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
 
       <Text style={styles.title}>Recuperar contraseña</Text>
 
@@ -46,7 +49,7 @@ export default function RecuperarPassword({ navigation }) {
 
       </Card>
 
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
