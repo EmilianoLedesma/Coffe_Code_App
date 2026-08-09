@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, FlatList, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   getPedido,
@@ -112,6 +112,7 @@ export default function DetalleScreen({ route }) {
     try {
       await cerrarCuenta(pedidoId);
       await cargar();
+      Alert.alert('Cuenta cerrada', 'Caja ya puede cobrar este pedido.');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo cerrar la cuenta');
     } finally {
